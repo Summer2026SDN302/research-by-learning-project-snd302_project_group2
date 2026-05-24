@@ -1,8 +1,6 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/YB-_cscJ)
 # Jira
 [\[Jira Link\]](https://lethuyduongc9.atlassian.net/jira/software/projects/SCRUM/boards/1?atlOrigin=eyJpIjoiMmVmNmViMmQ0YjJjNDdiNmJjY2QwNjE5YWE3ZTI1OWUiLCJwIjoiaiJ9)
-# Git
-[\[Git Repository Link\]](https://github.com/DuongLDT2005/StallBox.git)
 
 # Mục tiêu nghiên cứu hướng đến trong đề tài  
 
