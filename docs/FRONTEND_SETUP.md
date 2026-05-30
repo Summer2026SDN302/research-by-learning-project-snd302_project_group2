@@ -2,6 +2,8 @@
 
 ## Install dependencies
 
+cd frontend
+
 npm install
 
 ---
@@ -47,6 +49,10 @@ npm install zod
 npm install react-hot-toast
 
 npm install dayjs
+
+npm install -D tailwindcss postcss autoprefixer
+
+npx tailwindcss init -p
 
 ---
 
