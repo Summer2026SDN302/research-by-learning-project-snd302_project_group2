@@ -1,31 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { Sidebar, Navbar, ToastContainer, useToast } from '../components/common';
+
+const MOCK_USER = { name: 'Manager User', initials: 'M', email: 'manager@stallbox.com', role: 'manager' };
 
 const ManagerLayout = () => {
+  const [activePath, setActivePath] = useState('/manager/dashboard');
+  const { toasts, showToast, removeToast } = useToast();
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar Placeholder */}
-      <aside className="w-64 bg-gray-800 text-white flex flex-col">
-        <div className="p-4 text-xl font-bold border-b border-gray-700">Canteen Manager</div>
-        <nav className="flex-1 p-4 space-y-2">
-          <a href="#" className="block p-2 hover:bg-gray-700 rounded">Dashboard</a>
-          <a href="#" className="block p-2 hover:bg-gray-700 rounded">Inventory</a>
-          <a href="#" className="block p-2 hover:bg-gray-700 rounded">Dynamic Pricing</a>
-        </nav>
-      </aside>
+    <div className="flex h-screen bg-surface overflow-hidden">
+      <Sidebar
+        role="manager"
+        activePath={activePath}
+        onNavigate={setActivePath}
+        user={MOCK_USER}
+      />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header Placeholder */}
-        <header className="h-16 bg-white shadow flex items-center px-6">
-          <h1 className="text-lg font-semibold">Manager Portal</h1>
-        </header>
+      <div className="flex-1 flex flex-col ml-64 overflow-hidden">
+        <Navbar
+          searchPlaceholder="Search..."
+          user={MOCK_USER}
+          notifications={0}
+        />
 
-        {/* Page Content */}
-        <main className="flex-1 p-6 overflow-auto">
-          <Outlet /> {/* Nơi render các pages của manager */}
+        <main className="flex-1 overflow-y-auto bg-background p-8">
+          <Outlet context={{ showToast }} />
         </main>
       </div>
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };
