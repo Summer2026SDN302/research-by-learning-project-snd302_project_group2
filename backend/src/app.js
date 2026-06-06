@@ -3,21 +3,23 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
+import authRoute from "./modules/auth/auth.route.js";
+import profileRoute from "./modules/user/profile.route.js";
+import userRoute from "./modules/user/user.route.js";
+import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
+
 const app = express();
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
   }),
 );
 
 app.use(express.json());
-
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieParser());
-
 app.use(morgan("dev"));
 
 app.get("/", (req, res) => {
@@ -26,7 +28,11 @@ app.get("/", (req, res) => {
   });
 });
 
-// Example route reference
-// app.use("/api/auth", authRoute);
+app.use("/api/auth", authRoute);
+app.use("/api/profile", profileRoute);
+app.use("/api/users", userRoute);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;
