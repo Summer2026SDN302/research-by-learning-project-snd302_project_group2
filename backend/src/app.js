@@ -3,12 +3,30 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
+import categoryRoute from "./modules/menu/category/category.route.js";
+
 const app = express();
+
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5174",
+  "http://127.0.0.1:5174",
+].filter(Boolean);
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin(origin, callback) {
+      // Allow server-to-server / Postman (no Origin header)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -28,5 +46,7 @@ app.get("/", (req, res) => {
 
 // Example route reference
 // app.use("/api/auth", authRoute);
+
+app.use("/api/categories", categoryRoute);
 
 export default app;
