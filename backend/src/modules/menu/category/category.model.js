@@ -5,13 +5,19 @@ const categorySchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
 
     description: {
       type: String,
       default: null,
+      trim: true,
+      maxlength: 500,
+    },
+
+    icon: {
+      type: String,
+      default: "restaurant_menu",
       trim: true,
     },
 
@@ -36,6 +42,13 @@ const categorySchema = new mongoose.Schema(
     collection: "categories",
   },
 );
+
+categorySchema.index(
+  { name: 1 },
+  { unique: true, partialFilterExpression: { deletedAt: null } },
+);
+
+categorySchema.index({ isActive: 1, deletedAt: 1 });
 
 const Category = mongoose.model("Category", categorySchema);
 
