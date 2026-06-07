@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 
 /**
  * SearchBar
@@ -10,24 +10,27 @@ import React, { useState } from 'react';
  *   onClear     {fn}
  *   className   {string}
  */
+
+const noop = () => {};
+
 const SearchBar = ({
-  placeholder = 'Search...',
+  placeholder = "Tìm kiếm...",
   value: controlledValue,
-  onChange = () => {},
+  onChange = noop,
   onClear,
-  className = '',
+  className = "",
 }) => {
-  const [internalValue, setInternalValue] = useState('');
+  const [internalValue, setInternalValue] = useState("");
   const value = controlledValue !== undefined ? controlledValue : internalValue;
 
   const handleChange = (e) => {
-    setInternalValue(e.target.value);
+    if (controlledValue === undefined) setInternalValue(e.target.value);
     onChange(e.target.value);
   };
 
   const handleClear = () => {
-    setInternalValue('');
-    onChange('');
+    if (controlledValue === undefined) setInternalValue("");
+    onChange("");
     onClear?.();
   };
 
