@@ -1,4 +1,4 @@
-import React from 'react';
+import { Fragment } from 'react';
 
 /**
  * PageHeader
@@ -22,7 +22,7 @@ const PageHeader = ({
         {breadcrumbs.length > 0 && (
           <nav className="flex items-center gap-1 text-label-md text-on-surface-variant mb-2">
             {breadcrumbs.map((crumb, idx) => (
-              <React.Fragment key={idx}>
+              <Fragment key={idx}>
                 {idx > 0 && (
                   <span className="material-symbols-outlined text-[14px] text-outline-variant">
                     chevron_right
@@ -37,7 +37,7 @@ const PageHeader = ({
                 >
                   {crumb.label}
                 </span>
-              </React.Fragment>
+              </Fragment>
             ))}
           </nav>
         )}

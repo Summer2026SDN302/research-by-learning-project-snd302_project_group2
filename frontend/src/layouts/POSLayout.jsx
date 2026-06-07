@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar, ToastContainer, useToast } from '../components/common';
 

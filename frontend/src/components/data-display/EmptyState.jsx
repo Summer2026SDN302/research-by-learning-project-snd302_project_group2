@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * EmptyState
  *
@@ -11,8 +9,8 @@ import React from 'react';
  */
 const EmptyState = ({
   icon = 'inbox',
-  title = 'No Data Found',
-  message = 'There is nothing here yet.',
+  title = 'Chưa có dữ liệu',
+  message = 'Hiện tại chưa có mục nào. Hãy thêm mới để bắt đầu.',
   action = null,
 }) => {
   return (

@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * FilterBar
  *
@@ -31,10 +29,12 @@ const MOCK_FILTERS = [
   },
 ];
 
+const noop = () => {};
+
 const FilterBar = ({
   filters = MOCK_FILTERS,
   values = {},
-  onChange = () => {},
+  onChange = noop,
   onReset,
 }) => {
   const hasActiveFilters = Object.values(values).some(Boolean);
