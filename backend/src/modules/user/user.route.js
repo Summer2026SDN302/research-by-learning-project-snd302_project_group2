@@ -12,11 +12,12 @@ import {
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../middlewares/role.middleware.js";
 import { validateRequest } from "../../middlewares/validate.middleware.js";
+import { USER_ROLES } from "./user.constants.js";
 
 const router = express.Router();
 
 router.use(authenticate);
-router.use(authorizeRoles("Admin"));
+router.use(authorizeRoles(USER_ROLES.ADMIN));
 
 router.get("/", getUsersValidation, validateRequest, userController.getUsers);
 router.get("/:id", getUserByIdValidation, validateRequest, userController.getUserById);
