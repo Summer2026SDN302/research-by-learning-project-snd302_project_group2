@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { USER_ROLE_VALUES } from "../auth/auth.constants.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -39,7 +40,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ["Staff", "Manager", "Admin"],
+      enum: USER_ROLE_VALUES,
     },
 
     isActive: {

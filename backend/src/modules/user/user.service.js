@@ -3,8 +3,9 @@ import User from "./user.model.js";
 import RefreshToken from "../auth/refresh_token.model.js";
 import AppError from "../../shared/exceptions/AppError.js";
 import { comparePassword, hashPassword } from "../../shared/helpers/password.helper.js";
+import { USER_ROLE_VALUES } from "../auth/auth.constants.js";
 
-export const USER_ROLES = ["Staff", "Manager", "Admin"];
+export const USER_ROLES = USER_ROLE_VALUES;
 
 const sanitizeUser = (user) => {
   const plainUser = user?.toObject ? user.toObject() : user;

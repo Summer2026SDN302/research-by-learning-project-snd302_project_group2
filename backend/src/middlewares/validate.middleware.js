@@ -8,12 +8,12 @@ export const validateRequest = (req, _res, next) => {
     return next();
   }
 
-  const errors = result.array().map((error) => ({
+  const details = result.array().map((error) => ({
     field: error.path,
     message: error.msg,
   }));
 
-  const message = errors.map((error) => error.message).join("; ");
+  const message = details.map((error) => error.message).join("; ");
 
-  return next(new AppError(message || "Validation failed", 400));
+  return next(new AppError(message || "Validation failed", 400, "VALIDATION_ERROR", details));
 };
