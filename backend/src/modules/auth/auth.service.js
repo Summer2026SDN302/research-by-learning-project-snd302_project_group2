@@ -35,17 +35,17 @@ export const login = async ({ identifier, username, email, password }) => {
   const user = await authRepository.findUserByIdentifier(loginIdentifier);
 
   if (!user) {
-    throw new AppError("Invalid credentials", 401);
+    throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
 
   if (!user.isActive) {
-    throw new AppError("User account is disabled", 403);
+    throw new AppError("User account is disabled", 403, "ACCOUNT_DISABLED");
   }
 
   const isPasswordValid = await comparePassword(password, user.passwordHash);
 
   if (!isPasswordValid) {
-    throw new AppError("Invalid credentials", 401);
+    throw new AppError("Invalid credentials", 401, "INVALID_CREDENTIALS");
   }
 
   const accessToken = createAccessToken(user);
@@ -60,11 +60,19 @@ export const login = async ({ identifier, username, email, password }) => {
 
 export const refresh = async (refreshToken) => {
   if (!refreshToken) {
-    throw new AppError("Refresh token is required", 401);
+    throw new AppError(
+      "Refresh token is required",
+      401,
+      "REFRESH_TOKEN_REQUIRED",
+    );
   }
 
   if (!process.env.JWT_REFRESH_SECRET) {
-    throw new AppError("Missing JWT_REFRESH_SECRET in environment variables", 500);
+    throw new AppError(
+      "Missing JWT_REFRESH_SECRET in environment variables",
+      500,
+      "SERVER_CONFIGURATION_ERROR",
+    );
   }
 
   let decoded;
@@ -72,27 +80,37 @@ export const refresh = async (refreshToken) => {
   try {
     decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
   } catch (_error) {
-    throw new AppError("Invalid or expired refresh token", 401);
+    throw new AppError(
+      "Invalid or expired refresh token",
+      401,
+      "INVALID_REFRESH_TOKEN",
+    );
   }
 
   if (decoded.type !== TOKEN_TYPES.REFRESH) {
-    throw new AppError("Invalid refresh token", 401);
+    throw new AppError("Invalid refresh token", 401, "INVALID_REFRESH_TOKEN");
   }
 
-  const existingRefreshToken = await authRepository.findValidRefreshTokenByHash(hashToken(refreshToken));
+  const existingRefreshToken = await authRepository.findValidRefreshTokenByHash(
+    hashToken(refreshToken),
+  );
 
   if (!existingRefreshToken) {
-    throw new AppError("Refresh token has been revoked", 401);
+    throw new AppError(
+      "Refresh token has been revoked",
+      401,
+      "REFRESH_TOKEN_REVOKED",
+    );
   }
 
   const user = await authRepository.findActiveUserById(decoded.sub);
 
   if (!user) {
-    throw new AppError("User not found", 401);
+    throw new AppError("User not found", 401, "USER_NOT_FOUND");
   }
 
   if (!user.isActive) {
-    throw new AppError("User account is disabled", 403);
+    throw new AppError("User account is disabled", 403, "ACCOUNT_DISABLED");
   }
 
   await authRepository.revokeRefreshTokenDocument(existingRefreshToken);
@@ -113,4 +131,8 @@ export const logout = async (refreshToken) => {
   }
 
   return null;
+};
+
+export const revokeUserRefreshTokens = async (userId) => {
+  await authRepository.revokeUserRefreshTokens(userId);
 };

@@ -39,3 +39,5 @@ const refreshTokenSchema = new Schema(
     timestamps: true,
   },
 );
+
+export default mongoose.model("RefreshTokenToken", refreshTokenSchema);
