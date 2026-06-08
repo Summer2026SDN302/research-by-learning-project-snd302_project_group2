@@ -5,6 +5,7 @@ import {
 } from "../../shared/helpers/password.helper.js";
 import { USER_ROLE_VALUES } from "./user.constants.js";
 import * as userRepository from "./user.repository.js";
+import { revokeUserRefreshTokens } from "../auth/auth.service.js";
 
 export const USER_ROLES = USER_ROLE_VALUES;
 
@@ -18,7 +19,7 @@ const findActiveUserById = async (id, includePassword = false) => {
   const user = await userRepository.findUserById(id, includePassword);
 
   if (!user) {
-    throw new AppError("User not found", 404);
+    throw new AppError("User not found", 404, "USER_NOT_FOUND");
   }
 
   return user;
@@ -205,11 +206,19 @@ export const disableUser = async (id, adminUserId) => {
   const user = await findActiveUserById(id);
 
   if (String(user._id) === String(adminUserId)) {
-    throw new AppError("Admin cannot disable their own account", 400, "ADMIN_CANNOT_DISABLE_SELF");
+    throw new AppError(
+      "Admin cannot disable their own account",
+      400,
+      "ADMIN_CANNOT_DISABLE_SELF",
+    );
   }
 
   if (!user.isActive) {
-    throw new AppError("User is already disabled", 409, "USER_ALREADY_DISABLED");
+    throw new AppError(
+      "User is already disabled",
+      409,
+      "USER_ALREADY_DISABLED",
+    );
   }
 
   user.isActive = false;
@@ -237,6 +246,7 @@ export const resetUserPassword = async (id, { newPassword }, adminUserId) => {
     throw new AppError(
       "Use change password endpoint to update your own password",
       400,
+      "SELF_PASSWORD_RESET_NOT_ALLOWED",
     );
   }
 
@@ -248,6 +258,4 @@ export const resetUserPassword = async (id, { newPassword }, adminUserId) => {
   return null;
 };
 
-export const revokeUserRefreshTokens = async (userId) => {
-  await userRepository.revokeUserRefreshTokens(userId);
-};
+
