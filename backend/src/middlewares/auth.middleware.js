@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import User from "../modules/user/user.model.js";
 import AppError from "../shared/exceptions/AppError.js";
 import { getAccessTokenFromRequest } from "../shared/helpers/token.helper.js";
+import { TOKEN_TYPES } from "../modules/auth/auth.constants.js";
 
 export const authenticate = async (req, _res, next) => {
   try {
@@ -17,7 +18,7 @@ export const authenticate = async (req, _res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (decoded.type !== "access") {
+    if (decoded.type !== TOKEN_TYPES.ACCESS) {
       throw new AppError("Invalid access token", 401);
     }
 

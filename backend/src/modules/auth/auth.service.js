@@ -1,30 +1,43 @@
 import jwt from "jsonwebtoken";
-import User from "../user/user.model.js";
-import RefreshToken from "./refresh_token.model.js";
 import AppError from "../../shared/exceptions/AppError.js";
 import { comparePassword } from "../../shared/helpers/password.helper.js";
 import {
-  clearAuthCookies,
   createAccessToken,
-  createRefreshToken,
-  getRefreshTokenFromRequest,
+  createRefreshTokenValue,
+  getRefreshTokenMaxAge,
   hashToken,
-  setAuthCookies,
 } from "../../shared/helpers/token.helper.js";
+import { TOKEN_TYPES } from "./auth.constants.js";
+import * as authRepository from "./auth.repository.js";
 
 const sanitizeUser = (user) => {
-  const plainUser = user.toObject ? user.toObject() : user;
+  const plainUser = user?.toObject ? user.toObject() : user;
+
+  if (!plainUser) {
+    return plainUser;
+  }
+
   delete plainUser.passwordHash;
   return plainUser;
 };
 
-export const login = async ({ identifier, username, email, password }, res) => {
+const createAndStoreRefreshToken = async (user) => {
+  const refreshToken = createRefreshTokenValue(user);
+  const expiresAt = new Date(Date.now() + getRefreshTokenMaxAge());
+
+  await authRepository.createRefreshTokenRecord({
+    userId: user._id,
+    tokenHash: hashToken(refreshToken),
+    expiresAt,
+  });
+
+  return refreshToken;
+};
+
+export const login = async ({ identifier, username, email, password }) => {
   const loginIdentifier = identifier || username || email;
 
-  const user = await User.findOne({
-    $or: [{ username: loginIdentifier }, { email: String(loginIdentifier).toLowerCase() }],
-    deletedAt: null,
-  });
+  const user = await authRepository.findUserByIdentifier(loginIdentifier);
 
   if (!user) {
     throw new AppError("Invalid credentials", 401);
@@ -41,9 +54,7 @@ export const login = async ({ identifier, username, email, password }, res) => {
   }
 
   const accessToken = createAccessToken(user);
-  const refreshToken = await createRefreshToken(user);
-
-  setAuthCookies(res, accessToken, refreshToken);
+  const refreshToken = await createAndStoreRefreshToken(user);
 
   return {
     user: sanitizeUser(user),
@@ -52,9 +63,7 @@ export const login = async ({ identifier, username, email, password }, res) => {
   };
 };
 
-export const refresh = async (req, res) => {
-  const refreshToken = getRefreshTokenFromRequest(req);
-
+export const refresh = async (refreshToken) => {
   if (!refreshToken) {
     throw new AppError("Refresh token is required", 401);
   }
@@ -67,34 +76,21 @@ export const refresh = async (req, res) => {
 
   try {
     decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-  } catch (error) {
+  } catch (_error) {
     throw new AppError("Invalid or expired refresh token", 401);
   }
 
-  if (decoded.type !== "refresh") {
+  if (decoded.type !== TOKEN_TYPES.REFRESH) {
     throw new AppError("Invalid refresh token", 401);
   }
 
-  const existingRefreshToken = await RefreshToken.findOne({
-    tokenHash: hashToken(refreshToken),
-    isRevoked: false,
-  });
+  const existingRefreshToken = await authRepository.findValidRefreshTokenByHash(hashToken(refreshToken));
 
   if (!existingRefreshToken) {
     throw new AppError("Refresh token has been revoked", 401);
   }
 
-  if (existingRefreshToken.expiresAt <= new Date()) {
-    existingRefreshToken.isRevoked = true;
-    existingRefreshToken.revokedAt = new Date();
-    await existingRefreshToken.save();
-    throw new AppError("Refresh token expired", 401);
-  }
-
-  const user = await User.findOne({
-    _id: decoded.sub,
-    deletedAt: null,
-  });
+  const user = await authRepository.findActiveUserById(decoded.sub);
 
   if (!user) {
     throw new AppError("User not found", 401);
@@ -104,14 +100,10 @@ export const refresh = async (req, res) => {
     throw new AppError("User account is disabled", 403);
   }
 
-  existingRefreshToken.isRevoked = true;
-  existingRefreshToken.revokedAt = new Date();
-  await existingRefreshToken.save();
+  await authRepository.revokeRefreshTokenDocument(existingRefreshToken);
 
   const newAccessToken = createAccessToken(user);
-  const newRefreshToken = await createRefreshToken(user);
-
-  setAuthCookies(res, newAccessToken, newRefreshToken);
+  const newRefreshToken = await createAndStoreRefreshToken(user);
 
   return {
     user: sanitizeUser(user),
@@ -120,17 +112,10 @@ export const refresh = async (req, res) => {
   };
 };
 
-export const logout = async (req, res) => {
-  const refreshToken = getRefreshTokenFromRequest(req);
-
+export const logout = async (refreshToken) => {
   if (refreshToken) {
-    await RefreshToken.findOneAndUpdate(
-      { tokenHash: hashToken(refreshToken), isRevoked: false },
-      { isRevoked: true, revokedAt: new Date() },
-    );
+    await authRepository.revokeRefreshTokenByHash(hashToken(refreshToken));
   }
-
-  clearAuthCookies(res);
 
   return null;
 };
