@@ -14,7 +14,11 @@ export const findUserById = async (id, includePassword = false) => {
   return query;
 };
 
-export const findDuplicatedUser = async ({ username, email, excludeUserId = null }) => {
+export const findDuplicatedUser = async ({
+  username,
+  email,
+  excludeUserId = null,
+}) => {
   const conditions = [];
 
   if (username) conditions.push({ username });
@@ -54,17 +58,4 @@ export const createUser = async (payload) => {
 
 export const saveUser = async (user) => {
   return user.save();
-};
-
-export const revokeUserRefreshTokens = async (userId) => {
-  return RefreshToken.updateMany(
-    {
-      userId,
-      isRevoked: false,
-    },
-    {
-      isRevoked: true,
-      revokedAt: new Date(),
-    },
-  );
 };

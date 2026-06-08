@@ -9,17 +9,25 @@ export const authenticate = async (req, _res, next) => {
     const token = getAccessTokenFromRequest(req);
 
     if (!token) {
-      throw new AppError("Authentication required", 401);
+      throw new AppError(
+        "Authentication required",
+        401,
+        "AUTHENTICATION_REQUIRED",
+      );
     }
 
     if (!process.env.JWT_SECRET) {
-      throw new AppError("Missing JWT_SECRET in environment variables", 500);
+      throw new AppError(
+        "Missing JWT_SECRET in environment variables",
+        500,
+        "SERVER_CONFIGURATION_ERROR",
+      );
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     if (decoded.type !== TOKEN_TYPES.ACCESS) {
-      throw new AppError("Invalid access token", 401);
+      throw new AppError("Invalid access token", 401, "INVALID_ACCESS_TOKEN");
     }
 
     const user = await User.findOne({
@@ -28,11 +36,11 @@ export const authenticate = async (req, _res, next) => {
     }).select("-passwordHash");
 
     if (!user) {
-      throw new AppError("User not found", 401);
+      throw new AppError("User not found", 401, "USER_NOT_FOUND");
     }
 
     if (!user.isActive) {
-      throw new AppError("User account is disabled", 403);
+      throw new AppError("User account is disabled", 403, "ACCOUNT_DISABLED");
     }
 
     req.user = user;
@@ -43,11 +51,15 @@ export const authenticate = async (req, _res, next) => {
     if (error instanceof AppError) return next(error);
 
     if (error.name === "TokenExpiredError") {
-      return next(new AppError("Access token expired", 401));
+      return next(
+        new AppError("Access token expired", 401, "ACCESS_TOKEN_EXPIRED"),
+      );
     }
 
     if (error.name === "JsonWebTokenError") {
-      return next(new AppError("Invalid access token", 401));
+      return next(
+        new AppError("Invalid access token", 401, "INVALID_ACCESS_TOKEN"),
+      );
     }
 
     return next(error);

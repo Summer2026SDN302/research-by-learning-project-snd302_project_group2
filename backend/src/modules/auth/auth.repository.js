@@ -18,7 +18,11 @@ export const findActiveUserById = async (userId) => {
   });
 };
 
-export const createRefreshTokenRecord = async ({ userId, tokenHash, expiresAt }) => {
+export const createRefreshTokenRecord = async ({
+  userId,
+  tokenHash,
+  expiresAt,
+}) => {
   return RefreshToken.create({
     userId,
     tokenHash,
@@ -55,4 +59,17 @@ export const revokeRefreshTokenDocument = async (refreshTokenDocument) => {
   refreshTokenDocument.revokedAt = new Date();
 
   return refreshTokenDocument.save();
+};
+
+export const revokeUserRefreshTokens = async (userId) => {
+  return RefreshToken.updateMany(
+    {
+      userId,
+      isRevoked: false,
+    },
+    {
+      isRevoked: true,
+      revokedAt: new Date(),
+    },
+  );
 };
