@@ -29,7 +29,7 @@ const passwordResetTokenSchema = new Schema(
     },
   },
   {
-    timestamps: { createdAt: true, updatedAt: false },
+    timestamps: true,
   },
 );
 

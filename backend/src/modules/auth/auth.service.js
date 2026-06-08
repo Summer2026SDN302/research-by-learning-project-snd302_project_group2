@@ -11,12 +11,7 @@ import { TOKEN_TYPES } from "./auth.constants.js";
 import * as authRepository from "./auth.repository.js";
 
 const sanitizeUser = (user) => {
-  const plainUser = user?.toObject ? user.toObject() : user;
-
-  if (!plainUser) {
-    return plainUser;
-  }
-
+  const plainUser = user.toObject ? user.toObject() : { ...user };
   delete plainUser.passwordHash;
   return plainUser;
 };

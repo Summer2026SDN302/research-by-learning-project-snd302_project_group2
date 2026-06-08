@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { body, param, query } from "express-validator";
-import { USER_ROLES } from "./user.service.js";
+import { USER_ROLE_VALUES } from "./user.constants.js";
 
 const passwordValidation = (fieldName) =>
   body(fieldName)
@@ -29,7 +29,7 @@ const objectIdParamValidation = [
 export const getUsersValidation = [
   query("page").optional().isInt({ min: 1 }).withMessage("Page must be greater than 0"),
   query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be from 1 to 100"),
-  query("role").optional().isIn(USER_ROLES).withMessage("Invalid role"),
+  query("role").optional().isIn(USER_ROLE_VALUES).withMessage("Invalid role"),
   query("isActive").optional().isBoolean().withMessage("isActive must be true or false"),
 ];
 
@@ -47,7 +47,7 @@ export const createUserValidation = [
   body("fullName").trim().notEmpty().withMessage("Full name is required"),
   body("email").trim().isEmail().withMessage("Invalid email format").normalizeEmail(),
   body("phone").optional({ nullable: true, checkFalsy: true }).trim(),
-  body("role").isIn(USER_ROLES).withMessage("Invalid role"),
+  body("role").isIn(USER_ROLE_VALUES).withMessage("Invalid role"),
 ];
 
 export const updateUserValidation = [
@@ -63,7 +63,7 @@ export const updateUserValidation = [
   body("fullName").optional().trim().notEmpty().withMessage("Full name cannot be empty"),
   body("email").optional().trim().isEmail().withMessage("Invalid email format").normalizeEmail(),
   body("phone").optional({ nullable: true, checkFalsy: true }).trim(),
-  body("role").optional().isIn(USER_ROLES).withMessage("Invalid role"),
+  body("role").optional().isIn(USER_ROLE_VALUES).withMessage("Invalid role"),
 ];
 
 export const updateProfileValidation = [
