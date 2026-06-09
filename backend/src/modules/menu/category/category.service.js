@@ -18,7 +18,7 @@ const parseBooleanQuery = (value) => {
   }
 
   throw new AppError(
-    "Trạng thái không hợp lệ",
+    "Invalid status",
     400,
     "VALIDATION_ERROR",
   );
@@ -29,16 +29,6 @@ const parsePagination = (query) => {
   const limit = Math.min(50, Math.max(1, parseInt(query.limit, 10) || 10));
 
   return { page, limit };
-};
-
-const assertValidObjectId = (id) => {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new AppError(
-      "Category not found",
-      404,
-      "CATEGORY_NOT_FOUND",
-    );
-  }
 };
 
 const assertUniqueName = async (name, excludeId = null) => {
@@ -54,8 +44,6 @@ const assertUniqueName = async (name, excludeId = null) => {
 };
 
 const getCategoryOrThrow = async (id, withFoodItemCount = false) => {
-  assertValidObjectId(id);
-
   const category = withFoodItemCount
     ? await categoryRepository.findByIdWithFoodItemCount(
         new mongoose.Types.ObjectId(id),
@@ -116,7 +104,6 @@ const categoryService = {
   },
 
   async updateCategory(id, body) {
-    await getCategoryOrThrow(id);
     await assertUniqueName(body.name, id);
 
     const category = await categoryRepository.updateById(id, {
@@ -134,14 +121,14 @@ const categoryService = {
       );
     }
 
-    const foodItemCount = await categoryRepository.countActiveFoodItems(id);
+    const updatedCategory = await categoryRepository.findByIdWithFoodItemCount(
+      new mongoose.Types.ObjectId(id),
+    );
 
-    return toCategoryResponse({ ...category.toObject(), foodItemCount });
+    return toCategoryResponse(updatedCategory);
   },
 
   async updateCategoryStatus(id, isActive) {
-    await getCategoryOrThrow(id);
-
     const category = await categoryRepository.updateStatusById(id, isActive);
 
     if (!category) {
@@ -152,9 +139,11 @@ const categoryService = {
       );
     }
 
-    const foodItemCount = await categoryRepository.countActiveFoodItems(id);
+    const updatedCategory = await categoryRepository.findByIdWithFoodItemCount(
+      new mongoose.Types.ObjectId(id),
+    );
 
-    return toCategoryResponse({ ...category.toObject(), foodItemCount });
+    return toCategoryResponse(updatedCategory);
   },
 
   async deleteCategory(id, userId) {

@@ -1,16 +1,10 @@
 class AppError extends Error {
-  constructor(
-    message,
-    statusCode = 500,
-    code = "INTERNAL_ERROR",
-    details = [],
-    isOperational = true,
-  ) {
+  constructor(message, statusCode = 500, code = "APP_ERROR", details = [], isOperational = true) {
     super(message);
 
     this.statusCode = statusCode;
     this.code = code;
-    this.details = details;
+    this.details = Array.isArray(details) ? details : [];
     this.isOperational = isOperational;
 
     Error.captureStackTrace(this, this.constructor);
