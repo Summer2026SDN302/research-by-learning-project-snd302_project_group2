@@ -1,48 +1,31 @@
-import { body, query, validationResult } from "express-validator";
+import { body, param, query } from "express-validator";
 
-import AppError from "../../../shared/exceptions/AppError.js";
 import { ALLOWED_ICONS } from "./category.dto.js";
-
-const handleValidation = (req, res, next) => {
-  const errors = validationResult(req);
-
-  if (!errors.isEmpty()) {
-    return next(
-      new AppError(
-        errors.array()[0].msg,
-        400,
-        "VALIDATION_ERROR",
-        errors.array().map((error) => ({
-          field: error.path,
-          message: error.msg,
-        })),
-      ),
-    );
-  }
-
-  next();
-};
 
 const categoryFieldsValidation = [
   body("name")
     .trim()
     .notEmpty()
-    .withMessage("Tên danh mục phải từ 2–100 ký tự")
+    .withMessage("Category name must be between 2 and 100 characters")
     .isLength({ min: 2, max: 100 })
-    .withMessage("Tên danh mục phải từ 2–100 ký tự"),
+    .withMessage("Category name must be between 2 and 100 characters"),
   body("description")
     .optional({ values: "null" })
     .trim()
     .isLength({ max: 500 })
-    .withMessage("Mô tả không được vượt quá 500 ký tự"),
+    .withMessage("Description must not exceed 500 characters"),
   body("icon")
     .optional()
     .isIn(ALLOWED_ICONS)
-    .withMessage("Biểu tượng không hợp lệ"),
+    .withMessage("Invalid icon"),
   body("isActive")
     .optional()
     .isBoolean()
-    .withMessage("Trạng thái không hợp lệ"),
+    .withMessage("Invalid status"),
+];
+
+const objectIdParamValidation = [
+  param("id").isMongoId().withMessage("Invalid category id"),
 ];
 
 export const validateListQuery = [
@@ -57,17 +40,20 @@ export const validateListQuery = [
   query("isActive")
     .optional()
     .isIn(["true", "false"])
-    .withMessage("Trạng thái không hợp lệ"),
-  handleValidation,
+    .withMessage("Invalid status"),
 ];
 
-export const validateCreate = [...categoryFieldsValidation, handleValidation];
+export const validateCreate = [...categoryFieldsValidation];
 
-export const validateUpdate = [...categoryFieldsValidation, handleValidation];
+export const getCategoryByIdValidation = objectIdParamValidation;
+
+export const validateUpdate = [...objectIdParamValidation, ...categoryFieldsValidation];
 
 export const validateStatus = [
+  ...objectIdParamValidation,
   body("isActive")
     .isBoolean()
-    .withMessage("Trạng thái không hợp lệ"),
-  handleValidation,
+    .withMessage("Invalid status"),
 ];
+
+export const validateDelete = objectIdParamValidation;

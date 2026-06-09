@@ -1,36 +1,28 @@
-import { Router } from "express";
-
-import {
-  createCategory,
-  deleteCategory,
-  getCategories,
-  getCategoryById,
-  updateCategory,
-  updateCategoryStatus,
-  categoryErrorHandler,
-} from "./category.controller.js";
+import express from "express";
+import * as categoryController from "./category.controller.js";
 import {
   validateCreate,
+  validateDelete,
+  getCategoryByIdValidation,
   validateListQuery,
   validateStatus,
   validateUpdate,
 } from "./category.validation.js";
+import { authenticate } from "../../../middlewares/auth.middleware.js";
+import { authorizeRoles } from "../../../middlewares/role.middleware.js";
+import { validateRequest } from "../../../middlewares/validate.middleware.js";
+import { CATEGORY_ALLOWED_ROLES } from "./category.constants.js";
 
-// TODO: Uncomment when auth middleware is merged from auth team
-// import authenticateToken from "../../../middlewares/authenticateToken.js";
-// import authorizeRoles from "../../../middlewares/authorizeRoles.js";
+const router = express.Router();
 
-const router = Router();
+router.use(authenticate);
+router.use(authorizeRoles(...CATEGORY_ALLOWED_ROLES));
 
-// router.use(authenticateToken, authorizeRoles(["Admin"]));
-
-router.get("/", validateListQuery, getCategories);
-router.get("/:id", getCategoryById);
-router.post("/", validateCreate, createCategory);
-router.put("/:id", validateUpdate, updateCategory);
-router.patch("/:id/status", validateStatus, updateCategoryStatus);
-router.delete("/:id", deleteCategory);
-
-router.use(categoryErrorHandler);
+router.get("/", validateListQuery, validateRequest, categoryController.getCategories);
+router.get("/:id", getCategoryByIdValidation, validateRequest, categoryController.getCategoryById);
+router.post("/", validateCreate, validateRequest, categoryController.createCategory);
+router.put("/:id", validateUpdate, validateRequest, categoryController.updateCategory);
+router.patch("/:id/status", validateStatus, validateRequest, categoryController.updateCategoryStatus);
+router.delete("/:id", validateDelete, validateRequest, categoryController.deleteCategory);
 
 export default router;

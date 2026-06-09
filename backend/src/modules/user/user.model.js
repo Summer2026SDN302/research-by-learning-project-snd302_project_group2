@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { USER_ROLE_VALUES } from "./user.constants.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -39,17 +40,19 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ["Staff", "Manager", "Admin"],
+      enum: USER_ROLE_VALUES,
     },
 
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
     },
 
     deletedAt: {
       type: Date,
       default: null,
+      index: true,
     },
 
     deletedBy: {
