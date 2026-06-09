@@ -4,6 +4,10 @@
 
 [\[Jira Link\]](https://lethuyduongc9.atlassian.net/jira/software/projects/SCRUM/boards/1?atlOrigin=eyJpIjoiMmVmNmViMmQ0YjJjNDdiNmJjY2QwNjE5YWE3ZTI1OWUiLCJwIjoiaiJ9)
 
+### Springer LNCS LaTeX Template
+
+Overleaf project link: https://www.overleaf.com/2821918727ccqrhwxdgvkr#6f3a88
+
 # Mục tiêu nghiên cứu hướng đến trong đề tài
 
 ## Tổng quan / Overview
@@ -127,6 +131,3 @@ Phương pháp kết hợp được lựa chọn vì:
 | Regression-based       | Better prediction support | Requires training data         |
 | Reinforcement Learning | Highly adaptive           | Complex and resource intensive |
 
-### Springer LNCS LaTeX Template
-
-Overleaf project link: https://www.overleaf.com/2821918727ccqrhwxdgvkr#6f3a88
