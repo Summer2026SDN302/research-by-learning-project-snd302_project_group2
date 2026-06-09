@@ -20,22 +20,3 @@ export const toCategoryResponse = (category) => ({
   createdAt: category.createdAt,
   updatedAt: category.updatedAt,
 });
-
-export const sendSuccess = (res, statusCode, message, data) =>
-  res.status(statusCode).json({
-    success: true,
-    message,
-    data,
-    error: null,
-  });
-
-export const sendError = (res, statusCode, message, code, details = []) =>
-  res.status(statusCode).json({
-    success: false,
-    message,
-    data: null,
-    error: {
-      code,
-      details,
-    },
-  });

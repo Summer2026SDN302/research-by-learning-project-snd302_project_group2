@@ -4,6 +4,10 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
 import categoryRoute from "./modules/menu/category/category.route.js";
+import authRoute from "./modules/auth/auth.route.js";
+import profileRoute from "./modules/user/profile.route.js";
+import userRoute from "./modules/user/user.route.js";
+import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
 
@@ -17,15 +21,16 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin(origin, callback) {
-      // Allow server-to-server / Postman (no Origin header)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
+    // origin(origin, callback) {
+    //   // Allow server-to-server / Postman (no Origin header)
+    //   if (!origin || allowedOrigins.includes(origin)) {
+    //     callback(null, true);
+    //     return;
+    //   }
 
-      callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
+    //   callback(new Error(`CORS blocked for origin: ${origin}`));
+    // },
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -33,11 +38,8 @@ app.use(
 );
 
 app.use(express.json());
-
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieParser());
-
 app.use(morgan("dev"));
 
 app.get("/", (req, res) => {
@@ -46,9 +48,13 @@ app.get("/", (req, res) => {
   });
 });
 
-// Example route reference
-// app.use("/api/auth", authRoute);
-
+app.use("/api/auth", authRoute);
+app.use("/api/profile", profileRoute);
+app.use("/api/users", userRoute);
 app.use("/api/categories", categoryRoute);
+
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;
