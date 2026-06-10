@@ -1,7 +1,6 @@
 import Category from "./category.model.js";
 import FoodItem from "../food_item/food_item.model.js";
-
-const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+import { escapeRegex } from "../../../shared/helpers/regex.helper.js";
 
 const buildListFilter = ({ search, isActive }) => {
   const filter = { deletedAt: null };

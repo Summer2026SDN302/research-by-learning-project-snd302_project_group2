@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
 import categoryRoute from "./modules/menu/category/category.route.js";
+import foodItemRoute from "./modules/menu/food_item/food_item.route.js";
 import authRoute from "./modules/auth/auth.route.js";
 import profileRoute from "./modules/user/profile.route.js";
 import userRoute from "./modules/user/user.route.js";
@@ -52,6 +53,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/profile", profileRoute);
 app.use("/api/users", userRoute);
 app.use("/api/categories", categoryRoute);
+app.use("/api/food-items", foodItemRoute);
 
 
 app.use(notFoundHandler);
