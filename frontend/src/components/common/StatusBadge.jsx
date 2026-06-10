@@ -11,6 +11,7 @@ import React from 'react';
 const STATUS_MAP = {
   active:    { label: 'Active',    classes: 'bg-secondary-container/30 text-secondary border border-secondary/20' },
   inactive:  { label: 'Inactive',  classes: 'bg-error-container/30 text-error border border-error/20' },
+  archived:  { label: 'Archived',  classes: 'bg-surface-container-high text-on-surface-variant border border-outline-variant' },
   pending:   { label: 'Pending',   classes: 'bg-tertiary-container/20 text-tertiary border border-tertiary/20' },
   completed: { label: 'Completed', classes: 'bg-primary/10 text-primary border border-primary/20' },
   cancelled: { label: 'Cancelled', classes: 'bg-error-container/30 text-error border border-error/20' },
