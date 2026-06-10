@@ -1,35 +1,14 @@
 import mongoose from "mongoose";
 
 import AppError from "../../../shared/exceptions/AppError.js";
+import { buildPaginationMeta } from "../../../shared/helpers/pagination.helper.js";
+import {
+  parseBooleanQuery,
+  parsePagination,
+  parseSearchQuery,
+} from "../../../shared/helpers/query.helper.js";
 import categoryRepository from "./category.repository.js";
 import { toCategoryResponse } from "./category.dto.js";
-
-const parseBooleanQuery = (value) => {
-  if (value === undefined || value === null || value === "") {
-    return undefined;
-  }
-
-  if (value === true || value === "true") {
-    return true;
-  }
-
-  if (value === false || value === "false") {
-    return false;
-  }
-
-  throw new AppError(
-    "Invalid status",
-    400,
-    "VALIDATION_ERROR",
-  );
-};
-
-const parsePagination = (query) => {
-  const page = Math.max(1, parseInt(query.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(query.limit, 10) || 10));
-
-  return { page, limit };
-};
 
 const assertUniqueName = async (name, excludeId = null) => {
   const existing = await categoryRepository.findByNameIgnoreCase(name, excludeId);
@@ -65,7 +44,7 @@ const categoryService = {
   async getCategories(query) {
     const { page, limit } = parsePagination(query);
     const isActive = parseBooleanQuery(query.isActive);
-    const search = query.search?.trim() || undefined;
+    const search = parseSearchQuery(query.search);
 
     const { items, total } = await categoryRepository.findAllWithFoodItemCount({
       search,
@@ -76,12 +55,7 @@ const categoryService = {
 
     return {
       items: items.map(toCategoryResponse),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit) || 0,
-      },
+      pagination: buildPaginationMeta({ page, limit, total }),
     };
   },
 
