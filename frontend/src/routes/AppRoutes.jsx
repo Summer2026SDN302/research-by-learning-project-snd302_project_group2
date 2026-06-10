@@ -1,42 +1,79 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Suspense } from "react";
-import adminRoutes from "./adminRoutes"
-import managerRoutes from "./managerRoutes";
-import staffRoutes from "./staffRoutes";
-import LoadingOverlay from "../components/feedback/LoadingOverlay"
+import { Suspense, lazy } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { useSelector } from "react-redux";
 
-/**
- * AppRoutes
- *
- * Root route configuration. Composes role-based route files.
- * BrowserRouter wraps the entire app here — do NOT wrap again in main.jsx.
- * Suspense handles lazy-loaded pages with a fullPage loading overlay.
- *
- * Route structure:
- *   /          → redirect to /admin/dashboard (replace with auth guard when ready)
- *   /admin/*   → adminRoutes   (MainLayout role="admin")
- *   /manager/* → managerRoutes (MainLayout role="manager")
- *   /staff/*   → staffRoutes   (MainLayout role="staff")
- *   *          → redirect to /admin/dashboard (replace with 404 page when ready)
- */
+import AdminRoutes from "./AdminRoutes";
+import ManagerRoutes from "./ManagerRoutes";
+import StaffRoutes from "./StaffRoutes";
 
-const AppRoutes = () => (
-  <BrowserRouter>
-    <Suspense fallback={<LoadingOverlay show fullPage />}>
-      <Routes>
-        {/* Default redirect — replace with auth-based redirect when ready */}
-        <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+import LoadingOverlay from "../components/feedback/LoadingOverlay";
+import useAuthSession from "../modules/auth/hooks/useAuthSession";
+import PublicRoute from "./PublicRoute";
+import ProtectedRoute from "./ProtectedRoute";
+import RoleRoute from "./RoleRoute";
+import {
+  BACKEND_ROLES,
+  getRoleHomePath,
+} from "../modules/auth/constants/authConstants";
 
-        {/* Role-based routes */}
-        {adminRoutes}
-        {managerRoutes}
-        {staffRoutes}
+const LoginPage = lazy(() => import("../pages/auth/Login"));
+const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPassword"));
 
-        {/* Fallback — replace with NotFound page when ready */}
-        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-      </Routes>
-    </Suspense>
-  </BrowserRouter>
-);
+const RootRedirect = () => {
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={getRoleHomePath(user?.role)} replace />;
+};
+
+const AppRoutes = () => {
+  const { isBootstrapped } = useAuthSession();
+
+  if (!isBootstrapped) {
+    return (
+      <LoadingOverlay
+        show
+        fullPage
+        message="Đang khởi tạo phiên làm việc..."
+      />
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <Suspense fallback={<LoadingOverlay show fullPage />}>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+
+          <Route element={<PublicRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute />}>
+            <Route element={<RoleRoute allowedRoles={[BACKEND_ROLES.ADMIN]} />}>
+              {AdminRoutes()}
+            </Route>
+
+            <Route
+              element={<RoleRoute allowedRoles={[BACKEND_ROLES.MANAGER]} />}
+            >
+              {ManagerRoutes()}
+            </Route>
+
+            <Route element={<RoleRoute allowedRoles={[BACKEND_ROLES.STAFF]} />}>
+              {StaffRoutes()}
+            </Route>
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
+  );
+};
 
 export default AppRoutes;
