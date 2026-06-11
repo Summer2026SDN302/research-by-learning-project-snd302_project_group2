@@ -1,6 +1,6 @@
 import Category from "./category.model.js";
-import FoodItem from "../food_item/food_item.model.js";
 import { escapeRegex } from "../../../shared/helpers/regex.helper.js";
+import { toObjectId } from "../../../shared/helpers/mongo.helper.js";
 
 const buildListFilter = ({ search, isActive }) => {
   const filter = { deletedAt: null };
@@ -16,6 +16,8 @@ const buildListFilter = ({ search, isActive }) => {
   return filter;
 };
 
+// Cross-collection read: $lookup into `fooditems` (no FoodItem model import).
+// foodItemCount is computed at query time for list/detail responses.
 const foodItemCountStages = [
   {
     $lookup: {
@@ -68,12 +70,13 @@ const categoryRepository = {
   },
 
   async findById(id) {
-    return Category.findOne({ _id: id, deletedAt: null });
+    return Category.findOne({ _id: toObjectId(id), deletedAt: null });
   },
 
   async findByIdWithFoodItemCount(id) {
+    const objectId = toObjectId(id);
     const [category] = await Category.aggregate([
-      { $match: { _id: id, deletedAt: null } },
+      { $match: { _id: objectId, deletedAt: null } },
       ...foodItemCountStages,
     ]);
 
@@ -82,51 +85,31 @@ const categoryRepository = {
 
   async findByNameIgnoreCase(name, excludeId = null) {
     const filter = {
-      name: { $regex: `^${escapeRegex(name.trim())}$`, $options: "i" },
+      name: name.trim(),
       deletedAt: null,
     };
 
     if (excludeId) {
-      filter._id = { $ne: excludeId };
+      filter._id = { $ne: toObjectId(excludeId) };
     }
 
-    return Category.findOne(filter);
+    return Category.findOne(filter).collation({ locale: "en", strength: 2 });
   },
 
   async create(data) {
     return Category.create(data);
   },
 
-  async updateById(id, data) {
+  async patchById(id, data) {
     return Category.findOneAndUpdate(
-      { _id: id, deletedAt: null },
+      { _id: toObjectId(id), deletedAt: null },
       { $set: data },
       { new: true, runValidators: true },
     );
   },
 
-  async updateStatusById(id, isActive) {
-    return Category.findOneAndUpdate(
-      { _id: id, deletedAt: null },
-      { $set: { isActive } },
-      { new: true, runValidators: true },
-    );
-  },
-
-  async softDeleteById(id, deletedBy) {
-    return Category.findOneAndUpdate(
-      { _id: id, deletedAt: null },
-      { $set: { deletedAt: new Date(), deletedBy } },
-      { new: true },
-    );
-  },
-
-  async countActiveFoodItems(categoryId) {
-    return FoodItem.countDocuments({
-      categoryId,
-      deletedAt: null,
-      isArchived: false,
-    });
+  async updateById(id, data) {
+    return this.patchById(id, data);
   },
 };
 

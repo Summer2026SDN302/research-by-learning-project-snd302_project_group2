@@ -1,9 +1,8 @@
-import mongoose from "mongoose";
-
 import DailyMenu from "../daily_menu/daily_menu.model.js";
 import ScheduledMenu from "../scheduled_menu/scheduled_menu.model.js";
 import Order from "../../order/order.model.js";
 import { escapeRegex } from "../../../shared/helpers/regex.helper.js";
+import { toObjectId } from "../../../shared/helpers/mongo.helper.js";
 import FoodItem from "./food_item.model.js";
 
 const buildListFilter = ({ search, categoryId, isArchived }) => {
@@ -14,7 +13,7 @@ const buildListFilter = ({ search, categoryId, isArchived }) => {
   }
 
   if (categoryId) {
-    filter.categoryId = new mongoose.Types.ObjectId(categoryId);
+    filter.categoryId = toObjectId(categoryId);
   }
 
   if (isArchived !== undefined) {
@@ -24,6 +23,7 @@ const buildListFilter = ({ search, categoryId, isArchived }) => {
   return filter;
 };
 
+// Cross-collection read: $lookup into `categories` (no Category model import).
 const categoryLookupStages = [
   {
     $lookup: {
@@ -67,48 +67,45 @@ const foodItemRepository = {
   },
 
   async findById(id) {
-    return FoodItem.findOne({ _id: id, deletedAt: null });
+    return FoodItem.findOne({ _id: toObjectId(id), deletedAt: null });
   },
 
   async findByIdWithCategory(id) {
     const [foodItem] = await FoodItem.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(id), deletedAt: null } },
+      { $match: { _id: toObjectId(id), deletedAt: null } },
       ...categoryLookupStages,
     ]);
 
     return foodItem ?? null;
   },
 
+  async countActiveByCategoryId(categoryId) {
+    return FoodItem.countDocuments({
+      categoryId: toObjectId(categoryId),
+      deletedAt: null,
+      isArchived: false,
+    });
+  },
+
   async create(data) {
     return FoodItem.create(data);
   },
 
-  async updateById(id, data) {
+  async patchById(id, data) {
     return FoodItem.findOneAndUpdate(
-      { _id: id, deletedAt: null },
+      { _id: toObjectId(id), deletedAt: null },
       { $set: data },
       { new: true, runValidators: true },
     );
   },
 
-  async updateArchiveById(id, isArchived) {
-    return FoodItem.findOneAndUpdate(
-      { _id: id, deletedAt: null },
-      { $set: { isArchived } },
-      { new: true, runValidators: true },
-    );
+  async updateById(id, data) {
+    return this.patchById(id, data);
   },
 
-  async softDeleteById(id, deletedBy) {
-    return FoodItem.findOneAndUpdate(
-      { _id: id, deletedAt: null },
-      { $set: { deletedAt: new Date(), deletedBy } },
-      { new: true },
-    );
-  },
-
+  // Cross-collection integrity check for delete guard (no dedicated repos yet).
   async isReferencedInMenusOrOrders(foodItemId) {
-    const objectId = new mongoose.Types.ObjectId(foodItemId);
+    const objectId = toObjectId(foodItemId);
 
     const [dailyMenuCount, scheduledMenuCount, orderCount] = await Promise.all([
       DailyMenu.countDocuments({ "items.foodItemId": objectId }),
