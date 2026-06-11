@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Sidebar, ToastContainer, useToast } from '../components/common';
+import Sidebar from '../components/layout/Sidebar';
+import ToastContainer from '../components/feedback/ToastContainer';
 
 const MOCK_USER = { name: 'Staff User', initials: 'S', email: 'staff@stallbox.com', role: 'staff' };
 
 const POSLayout = () => {
   const [activePath, setActivePath] = useState('/staff/pos');
-  const { toasts, showToast, removeToast } = useToast();
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -32,11 +32,11 @@ const POSLayout = () => {
 
         {/* POS full-height content (no padding – POS pages manage their own layout) */}
         <main className="flex-1 overflow-hidden">
-          <Outlet context={{ showToast }} />
+          <Outlet />
         </main>
       </div>
 
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer />
     </div>
   );
 };

@@ -8,7 +8,7 @@ import CategoryIconPicker from "./CategoryIconPicker";
 const MODAL_CONFIG = {
   create: {
     title: "Thêm danh mục mới",
-    subtitle: "Tạo danh mục thực đơn mới cho hệ thống.",
+    subtitle: "Phân loại theo loại món: cơm, phở–bún–mì, đồ uống, ăn vặt...",
     submitLabel: "Tạo danh mục",
   },
   edit: {
@@ -108,7 +108,7 @@ const CategoryFormModal = ({
             <input
               {...register("name")}
               type="text"
-              placeholder="Nhập tên danh mục..."
+              placeholder="VD: Cơm trưa, Bún & Mì, Đồ uống..."
               className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
             />
             {errors.name && (
@@ -136,7 +136,7 @@ const CategoryFormModal = ({
             <textarea
               {...register("description")}
               rows={3}
-              placeholder="Thêm mô tả ngắn gọn..."
+              placeholder="VD: Các món cơm trưa phục vụ từ 10h30–13h30..."
               className="w-full px-4 py-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 resize-none"
             />
             {errors.description && (

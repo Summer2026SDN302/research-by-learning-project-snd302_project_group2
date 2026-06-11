@@ -1,7 +1,8 @@
-import { useOutletContext } from 'react-router-dom';
-import EmptyState from '../../../components/common/EmptyState';
-import LoadingOverlay from '../../../components/common/LoadingOverlay';
-import ConfirmDialog from '../../../components/common/ConfirmDialog';
+import PageHeader from '../../../components/layout/PageHeader';
+import EmptyState from '../../../components/data-display/EmptyState';
+import LoadingOverlay from '../../../components/feedback/LoadingOverlay';
+import ConfirmDialog from '../../../components/feedback/ConfirmDialog';
+import useAppToast from '../../../hooks/useAppToast';
 import FoodItemSearchBar from '../components/FoodItemSearchBar';
 import FoodItemCategoryFilter from '../components/FoodItemCategoryFilter';
 import FoodItemStatusFilter from '../components/FoodItemStatusFilter';
@@ -10,7 +11,7 @@ import FoodItemFormModal from '../components/FoodItemFormModal';
 import useFoodItem from '../hooks/useFoodItem';
 
 const FoodItemListPage = () => {
-  const { showToast } = useOutletContext() ?? {};
+  const { toast } = useAppToast();
 
   const {
     items,
@@ -52,38 +53,36 @@ const FoodItemListPage = () => {
   const isEmptyState = !isLoading && !listError && pagination.total === 0 && !hasActiveFilters;
 
   const handleExportClick = () => {
-    showToast?.({ message: 'Tính năng xuất file đang phát triển', type: 'info' });
+    toast.info('Thông tin', 'Tính năng xuất file đang phát triển');
   };
 
   return (
     <div className="relative min-h-[400px] space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h2 className="text-headline-lg font-bold text-on-surface">Quản lý thực đơn</h2>
-          <p className="text-body-md text-on-surface-variant mt-2">
-            Xem, thêm mới và quản lý danh sách món ăn trong hệ thống.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={handleExportClick}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary text-primary text-label-md font-semibold hover:bg-surface-container transition-colors"
-          >
-            <span className="material-symbols-outlined text-[18px]">download</span>
-            Xuất File
-          </button>
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-on-primary text-label-md font-semibold hover:bg-primary-container shadow-sm transition-colors"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            Thêm món mới
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        breadcrumbs={[{ label: 'Admin' }, { label: 'Món ăn' }]}
+        title="Quản lý thực đơn"
+        subtitle="Xem, thêm mới và quản lý danh sách món ăn trong hệ thống."
+        action={
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={handleExportClick}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary text-primary text-label-md font-semibold hover:bg-surface-container transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">download</span>
+              Xuất File
+            </button>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-on-primary text-label-md font-semibold hover:bg-primary-container shadow-sm transition-colors"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Thêm món mới
+            </button>
+          </div>
+        }
+      />
 
       {listError && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-error/30 bg-error-container/20 text-error text-body-sm">
@@ -95,10 +94,8 @@ const FoodItemListPage = () => {
         </div>
       )}
 
-      {/* Search */}
       <FoodItemSearchBar value={searchKeyword} onChange={handleSearchChange} />
 
-      {/* Filters */}
       <div className="bg-surface rounded-xl p-4 border border-outline-variant shadow-sm flex flex-wrap gap-4 items-center justify-between">
         <div className="flex flex-wrap items-center gap-4">
           <FoodItemCategoryFilter

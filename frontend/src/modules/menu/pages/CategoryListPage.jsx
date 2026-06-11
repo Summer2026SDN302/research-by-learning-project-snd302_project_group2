@@ -1,7 +1,7 @@
-import PageHeader from "../../../components/common/PageHeader";
-import EmptyState from "../../../components/common/EmptyState";
-import LoadingOverlay from "../../../components/common/LoadingOverlay";
-import ConfirmDialog from "../../../components/common/ConfirmDialog";
+import PageHeader from "../../../components/layout/PageHeader";
+import EmptyState from "../../../components/data-display/EmptyState";
+import LoadingOverlay from "../../../components/feedback/LoadingOverlay";
+import ConfirmDialog from "../../../components/feedback/ConfirmDialog";
 import useCategory from "../hooks/useCategory";
 import CategorySearchBar from "../components/CategorySearchBar";
 import CategoryTable, { CategoryPagination } from "../components/CategoryTable";
@@ -45,8 +45,9 @@ const CategoryListPage = () => {
   return (
     <div className="relative min-h-[400px]">
       <PageHeader
+        breadcrumbs={[{ label: "Admin" }, { label: "Danh mục món ăn" }]}
         title="Quản lý danh mục"
-        subtitle="Thêm, sửa, xóa và quản lý danh mục thực đơn (Món chính, Đồ uống, Món kèm, v.v.)."
+        subtitle="Phân loại theo loại món: cơm, phở–bún–mì, canh, món kèm, đồ uống, ăn vặt..."
         action={
           <button
             type="button"
@@ -74,7 +75,7 @@ const CategoryListPage = () => {
       )}
 
       {isEmpty ? (
-        <div className="card">
+        <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden">
           <EmptyState
             icon="category"
             title="Chưa có danh mục nào"

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useOutletContext } from "react-router-dom";
+import useAppToast from "../../../hooks/useAppToast";
 import {
   CATEGORY_ERROR_MESSAGES,
   DEFAULT_PAGE_SIZE,
@@ -38,7 +38,7 @@ const buildPayload = (data) => ({
 
 export const useCategory = () => {
   const dispatch = useDispatch();
-  const { showToast } = useOutletContext() ?? {};
+  const { toast: appToast } = useAppToast();
 
   const {
     items,
@@ -91,9 +91,11 @@ export const useCategory = () => {
 
   const toast = useCallback(
     (message, type = "success") => {
-      showToast?.({ message, type });
+      const title =
+        type === "error" ? "Lỗi" : type === "warning" ? "Cảnh báo" : type === "info" ? "Thông tin" : "Thành công";
+      appToast[type]?.(title, message);
     },
-    [showToast],
+    [appToast],
   );
 
   const handleSearchChange = (value) => {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useOutletContext } from 'react-router-dom';
+import useAppToast from '../../../hooks/useAppToast';
 import { getCategories } from '../api/categoryApi';
 import { FOOD_ITEM_ERROR_MESSAGES, DEFAULT_FOOD_ITEM_PAGE_SIZE } from '../constants/foodItemConstants';
 import {
@@ -35,7 +35,7 @@ const useDebouncedValue = (value, delay = 300) => {
 
 const useFoodItem = () => {
   const dispatch = useDispatch();
-  const { showToast } = useOutletContext() ?? {};
+  const { toast: appToast } = useAppToast();
 
   const {
     items,
@@ -66,9 +66,11 @@ const useFoodItem = () => {
 
   const toast = useCallback(
     (message, type = 'success') => {
-      showToast?.({ message, type });
+      const title =
+        type === 'error' ? 'Lỗi' : type === 'warning' ? 'Cảnh báo' : type === 'info' ? 'Thông tin' : 'Thành công';
+      appToast[type]?.(title, message);
     },
-    [showToast],
+    [appToast],
   );
 
   const loadFoodItems = useCallback(

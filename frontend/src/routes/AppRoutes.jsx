@@ -1,20 +1,42 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import AdminLayout from "../layouts/AdminLayout";
-import AdminRoutes from "./AdminRoutes";
+import { Suspense } from "react";
+import adminRoutes from "./AdminRoutes";
+import managerRoutes from "./ManagerRoutes";
+import staffRoutes from "./StaffRoutes";
+import LoadingOverlay from "../components/feedback/LoadingOverlay";
 
-function AppRoutes() {
-  return (
-    <BrowserRouter>
+/**
+ * AppRoutes
+ *
+ * Root route configuration. Composes role-based route files.
+ * BrowserRouter wraps the entire app here — do NOT wrap again in main.jsx.
+ * Suspense handles lazy-loaded pages with a fullPage loading overlay.
+ *
+ * Route structure:
+ *   /          → redirect to /admin/dashboard (replace with auth guard when ready)
+ *   /admin/*   → adminRoutes   (MainLayout role="admin")
+ *   /manager/* → managerRoutes (MainLayout role="manager")
+ *   /staff/*   → staffRoutes   (MainLayout role="staff")
+ *   *          → redirect to /admin/dashboard (replace with 404 page when ready)
+ */
+
+const AppRoutes = () => (
+  <BrowserRouter>
+    <Suspense fallback={<LoadingOverlay show fullPage />}>
       <Routes>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="categories" replace />} />
-          {AdminRoutes}
-        </Route>
-        <Route path="/" element={<Navigate to="/admin/categories" replace />} />
-        <Route path="*" element={<Navigate to="/admin/categories" replace />} />
+        {/* Default redirect — replace with auth-based redirect when ready */}
+        <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+
+        {/* Role-based routes */}
+        {adminRoutes}
+        {managerRoutes}
+        {staffRoutes}
+
+        {/* Fallback — replace with NotFound page when ready */}
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
       </Routes>
-    </BrowserRouter>
-  );
-}
+    </Suspense>
+  </BrowserRouter>
+);
 
 export default AppRoutes;

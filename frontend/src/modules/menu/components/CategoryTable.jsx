@@ -1,5 +1,6 @@
-import DataTable from "../../../components/common/DataTable";
-import StatusBadge from "../../../components/common/StatusBadge";
+import DataTable from "../../../components/data-display/DataTable";
+import StatusBadge from "../../../components/data-display/StatusBadge";
+import PaginationControl from "../../../components/navigation/PaginationControl";
 
 const formatShortId = (id) => {
   if (!id) return "—";
@@ -123,24 +124,11 @@ export const CategoryPagination = ({ pagination, onPageChange }) => {
       <span className="text-on-surface-variant">
         Hiển thị {from}-{to} trên {total} danh mục
       </span>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1}
-          className="px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Trang trước
-        </button>
-        <button
-          type="button"
-          onClick={() => onPageChange(page + 1)}
-          disabled={page >= totalPages}
-          className="px-3 py-1.5 rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Trang sau
-        </button>
-      </div>
+      <PaginationControl
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 };

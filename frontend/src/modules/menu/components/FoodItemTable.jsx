@@ -1,3 +1,4 @@
+import PaginationControl from '../../../components/navigation/PaginationControl';
 import { formatCurrency, formatShortId } from '../utils/foodItemUtils';
 
 const SaleStatusBadge = ({ isArchived }) =>
@@ -140,74 +141,23 @@ const FoodItemTable = ({
 
 export default FoodItemTable;
 
-const getPageNumbers = (page, totalPages) => {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-
-  const pages = new Set([1, totalPages, page, page - 1, page + 1]);
-  const sorted = [...pages].filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
-  const result = [];
-
-  sorted.forEach((p, i) => {
-    if (i > 0 && p - sorted[i - 1] > 1) result.push('...');
-    result.push(p);
-  });
-
-  return result;
-};
-
 export const FoodItemPagination = ({ pagination, onPageChange }) => {
   const { page, limit, total, totalPages } = pagination;
   if (total === 0) return null;
 
   const from = (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
-  const pageNumbers = getPageNumbers(page, totalPages);
 
   return (
     <div className="border-t border-outline-variant p-4 bg-surface flex flex-col sm:flex-row items-center justify-between gap-3">
       <span className="text-body-sm text-on-surface-variant">
         Hiển thị {from}-{to} trên tổng số {total}
       </span>
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1}
-          className="w-8 h-8 flex items-center justify-center rounded-md border border-outline-variant text-on-surface-variant hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-        </button>
-        {pageNumbers.map((item, index) =>
-          item === '...' ? (
-            <span key={`ellipsis-${index}`} className="px-1 text-on-surface-variant">
-              ...
-            </span>
-          ) : (
-            <button
-              key={item}
-              type="button"
-              onClick={() => onPageChange(item)}
-              className={`w-8 h-8 flex items-center justify-center rounded-md text-label-md font-semibold transition-colors ${
-                item === page
-                  ? 'bg-primary text-on-primary'
-                  : 'text-on-surface-variant hover:bg-surface-container'
-              }`}
-            >
-              {item}
-            </button>
-          ),
-        )}
-        <button
-          type="button"
-          onClick={() => onPageChange(page + 1)}
-          disabled={page >= totalPages}
-          className="w-8 h-8 flex items-center justify-center rounded-md border border-outline-variant text-on-surface-variant hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-        </button>
-      </div>
+      <PaginationControl
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 };
