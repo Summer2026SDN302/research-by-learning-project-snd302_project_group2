@@ -1,6 +1,6 @@
 import { body, param, query } from "express-validator";
 
-import { ALLOWED_ICONS } from "./category.dto.js";
+import { ALLOWED_ICONS } from "./category.constants.js";
 
 const categoryFieldsValidation = [
   body("name")
@@ -29,6 +29,11 @@ const objectIdParamValidation = [
 ];
 
 export const validateListQuery = [
+  query("search")
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage("Search must not exceed 100 characters"),
   query("page")
     .optional()
     .isInt({ min: 1 })

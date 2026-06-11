@@ -43,10 +43,13 @@ const categorySchema = new mongoose.Schema(
   },
 );
 
-categorySchema.index(
-  { name: 1 },
-  { unique: true, partialFilterExpression: { deletedAt: null } },
-);
+const nameUniqueIndexOptions = {
+  unique: true,
+  partialFilterExpression: { deletedAt: null },
+  collation: { locale: "en", strength: 2 },
+};
+
+categorySchema.index({ name: 1 }, nameUniqueIndexOptions);
 
 categorySchema.index({ isActive: 1, deletedAt: 1 });
 
