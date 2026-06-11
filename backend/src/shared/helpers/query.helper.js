@@ -1,9 +1,4 @@
-import AppError from "../exceptions/AppError.js";
-
-export const parseBooleanQuery = (
-  value,
-  errorMessage = "Invalid status",
-) => {
+export const parseBooleanQuery = (value) => {
   if (value === undefined || value === null || value === "") {
     return undefined;
   }
@@ -16,7 +11,7 @@ export const parseBooleanQuery = (
     return false;
   }
 
-  throw new AppError(errorMessage, 400, "VALIDATION_ERROR");
+  return undefined;
 };
 
 export const parsePagination = (query, { defaultLimit = 10, maxLimit = 50 } = {}) => {
