@@ -7,7 +7,7 @@ const foodItemFieldsValidation = [
   body("name")
     .trim()
     .notEmpty()
-    .withMessage("Food item name must be between 1 and 150 characters")
+    .withMessage("Food item name is required")
     .isLength({ min: 1, max: 150 })
     .withMessage("Food item name must be between 1 and 150 characters"),
   body("description")
@@ -21,6 +21,10 @@ const foodItemFieldsValidation = [
   body("cost")
     .isFloat({ min: 0 })
     .withMessage("Invalid cost"),
+  body("isActive")
+    .optional()
+    .isBoolean()
+    .withMessage("Invalid status"),
   body("isArchived")
     .optional()
     .isBoolean()

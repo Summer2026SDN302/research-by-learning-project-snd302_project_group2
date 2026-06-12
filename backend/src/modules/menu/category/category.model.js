@@ -51,6 +51,7 @@ const nameUniqueIndexOptions = {
 
 categorySchema.index({ name: 1 }, nameUniqueIndexOptions);
 
+categorySchema.index({ deletedAt: 1 });
 categorySchema.index({ isActive: 1, deletedAt: 1 });
 
 const Category = mongoose.model("Category", categorySchema);

@@ -5,22 +5,17 @@ import {
   parsePagination,
   parseSearchQuery,
 } from "../../../shared/helpers/query.helper.js";
-import foodItemService from "../food_item/food_item.service.js";
+import foodItemRepository from "../food_item/food_item.repository.js";
 import categoryRepository from "./category.repository.js";
 import { toCategoryResponse } from "./category.dto.js";
 
-const categoryNotFoundError = () =>
-  new AppError("Category not found", 404, "CATEGORY_NOT_FOUND");
+const categoryNotFoundError = () => new AppError("CATEGORY_NOT_FOUND", 404);
 
 const assertUniqueName = async (name, excludeId = null) => {
   const existing = await categoryRepository.findByNameIgnoreCase(name, excludeId);
 
   if (existing) {
-    throw new AppError(
-      "Category name already exists",
-      409,
-      "CATEGORY_NAME_EXISTS",
-    );
+    throw new AppError("CATEGORY_NAME_EXISTS", 409);
   }
 };
 
@@ -39,7 +34,7 @@ const getCategoryOrThrow = async (id, withFoodItemCount = false) => {
 const toCategoryResponseFromDocument = async (category, { foodItemCount } = {}) => {
   const resolvedCount =
     foodItemCount ??
-    (await foodItemService.countActiveByCategoryId(category._id));
+    (await foodItemRepository.countActiveByCategoryId(category._id));
 
   return toCategoryResponse({
     ...category.toObject(),
@@ -95,14 +90,10 @@ const changeCategoryStatus = async (id, isActive, { auditDelete = false, userId 
   return mutateCategory(id, {
     beforeMutate: auditDelete
       ? async () => {
-          const foodItemCount = await foodItemService.countActiveByCategoryId(id);
+          const foodItemCount = await foodItemRepository.countActiveByCategoryId(id);
 
           if (foodItemCount > 0) {
-            throw new AppError(
-              "Cannot delete category with active food items",
-              409,
-              "CATEGORY_HAS_FOOD_ITEMS",
-            );
+            throw new AppError("CATEGORY_HAS_FOOD_ITEMS", 409);
           }
         }
       : undefined,
