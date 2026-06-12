@@ -1,6 +1,3 @@
-import DailyMenu from "../daily_menu/daily_menu.model.js";
-import ScheduledMenu from "../scheduled_menu/scheduled_menu.model.js";
-import Order from "../../order/order.model.js";
 import { escapeRegex } from "../../../shared/helpers/regex.helper.js";
 import { toObjectId } from "../../../shared/helpers/mongo.helper.js";
 import FoodItem from "./food_item.model.js";
@@ -83,6 +80,7 @@ const foodItemRepository = {
     return FoodItem.countDocuments({
       categoryId: toObjectId(categoryId),
       deletedAt: null,
+      isActive: true,
       isArchived: false,
     });
   },
@@ -101,19 +99,6 @@ const foodItemRepository = {
 
   async updateById(id, data) {
     return this.patchById(id, data);
-  },
-
-  // Cross-collection integrity check for delete guard (no dedicated repos yet).
-  async isReferencedInMenusOrOrders(foodItemId) {
-    const objectId = toObjectId(foodItemId);
-
-    const [dailyMenuCount, scheduledMenuCount, orderCount] = await Promise.all([
-      DailyMenu.countDocuments({ "items.foodItemId": objectId }),
-      ScheduledMenu.countDocuments({ "menuItems.foodItemId": objectId }),
-      Order.countDocuments({ "items.foodItemId": objectId }),
-    ]);
-
-    return dailyMenuCount + scheduledMenuCount + orderCount > 0;
   },
 };
 

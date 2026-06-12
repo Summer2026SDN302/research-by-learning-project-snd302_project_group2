@@ -46,7 +46,7 @@ export const getRefreshTokenMaxAge = () => {
 
 export const createAccessToken = (user) => {
   if (!process.env.JWT_SECRET) {
-    throw new AppError("Missing JWT_SECRET in environment variables", 500);
+    throw new AppError("SERVER_CONFIGURATION_ERROR", 500);
   }
 
   return jwt.sign(
@@ -64,7 +64,7 @@ export const createAccessToken = (user) => {
 
 export const createRefreshTokenValue = (user) => {
   if (!process.env.JWT_REFRESH_SECRET) {
-    throw new AppError("Missing JWT_REFRESH_SECRET in environment variables", 500);
+    throw new AppError("SERVER_CONFIGURATION_ERROR", 500);
   }
 
   return jwt.sign(

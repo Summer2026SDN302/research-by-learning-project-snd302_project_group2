@@ -19,7 +19,7 @@ const findActiveUserById = async (id, includePassword = false) => {
   const user = await userRepository.findUserById(id, includePassword);
 
   if (!user) {
-    throw new AppError("User not found", 404, "USER_NOT_FOUND");
+    throw new AppError("USER_NOT_FOUND", 404);
   }
 
   return user;
@@ -39,11 +39,11 @@ const checkUniqueUserFields = async ({
   if (!duplicatedUser) return;
 
   if (username && duplicatedUser.username === username) {
-    throw new AppError("Username already exists", 409);
+    throw new AppError("USERNAME_EXISTS", 409);
   }
 
   if (email && duplicatedUser.email === String(email).toLowerCase()) {
-    throw new AppError("Email already exists", 409);
+    throw new AppError("EMAIL_EXISTS", 409);
   }
 };
 
@@ -84,16 +84,13 @@ export const changeOwnPassword = async (
   );
 
   if (!isCurrentPasswordValid) {
-    throw new AppError("Current password is incorrect", 400);
+    throw new AppError("CURRENT_PASSWORD_INCORRECT", 400);
   }
 
   const isSamePassword = await comparePassword(newPassword, user.passwordHash);
 
   if (isSamePassword) {
-    throw new AppError(
-      "New password must be different from current password",
-      400,
-    );
+    throw new AppError("PASSWORD_MUST_DIFFER", 400);
   }
 
   user.passwordHash = await hashPassword(newPassword);
@@ -206,19 +203,11 @@ export const disableUser = async (id, adminUserId) => {
   const user = await findActiveUserById(id);
 
   if (String(user._id) === String(adminUserId)) {
-    throw new AppError(
-      "Admin cannot disable their own account",
-      400,
-      "ADMIN_CANNOT_DISABLE_SELF",
-    );
+    throw new AppError("ADMIN_CANNOT_DISABLE_SELF", 400);
   }
 
   if (!user.isActive) {
-    throw new AppError(
-      "User is already disabled",
-      409,
-      "USER_ALREADY_DISABLED",
-    );
+    throw new AppError("USER_ALREADY_DISABLED", 409);
   }
 
   user.isActive = false;
@@ -243,11 +232,7 @@ export const resetUserPassword = async (id, { newPassword }, adminUserId) => {
   const user = await findActiveUserById(id, true);
 
   if (String(user._id) === String(adminUserId)) {
-    throw new AppError(
-      "Use change password endpoint to update your own password",
-      400,
-      "SELF_PASSWORD_RESET_NOT_ALLOWED",
-    );
+    throw new AppError("SELF_PASSWORD_RESET_NOT_ALLOWED", 400);
   }
 
   user.passwordHash = await hashPassword(newPassword);
