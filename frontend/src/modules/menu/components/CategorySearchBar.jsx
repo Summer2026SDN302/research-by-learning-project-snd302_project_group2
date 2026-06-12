@@ -1,4 +1,4 @@
-import SearchBar from "../../../components/search/SearchBar";
+import SearchBar from "@/components/search/SearchBar";
 
 const CategorySearchBar = ({ value, onChange }) => (
   <div className="mb-6 max-w-md">

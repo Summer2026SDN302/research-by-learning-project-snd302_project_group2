@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import useAppToast from '../../../hooks/useAppToast';
-import { getCategories } from '../api/categoryApi';
+import useDebouncedValue from '@/hooks/useDebouncedValue';
+import useNotify from '@/hooks/useNotify';
 import { FOOD_ITEM_ERROR_MESSAGES, DEFAULT_FOOD_ITEM_PAGE_SIZE } from '../constants/foodItemConstants';
+import { fetchCategories } from '../redux/categorySlice';
 import {
   clearListError,
   clearMutationError,
@@ -22,20 +23,9 @@ import {
 } from '../redux/foodItemSlice';
 import { mapApiValidationErrors, normalizeFoodItemPayload } from '../utils/foodItemUtils';
 
-const useDebouncedValue = (value, delay = 300) => {
-  const [debounced, setDebounced] = useState(value);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-
-  return debounced;
-};
-
 const useFoodItem = () => {
   const dispatch = useDispatch();
-  const { toast: appToast } = useAppToast();
+  const { notify } = useNotify();
 
   const {
     items,
@@ -48,30 +38,24 @@ const useFoodItem = () => {
     mutationError,
   } = useSelector((state) => state.foodItem);
 
+  const {
+    items: categoryItems,
+    listStatus: categoryListStatus,
+    error: categoryError,
+  } = useSelector((state) => state.category);
+
   const [searchKeyword, setSearchKeyword] = useState(filters.search ?? '');
   const [modalMode, setModalMode] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [serverFieldErrors, setServerFieldErrors] = useState({});
-  const [categoryOptions, setCategoryOptions] = useState([]);
-  const [categoryOptionsLoading, setCategoryOptionsLoading] = useState(false);
-  const [categoryOptionsError, setCategoryOptionsError] = useState(null);
 
   const pendingCloseRef = useRef(false);
   const debouncedSearch = useDebouncedValue(searchKeyword);
 
   const isLoading = listStatus === 'loading';
   const isSubmitting = mutationStatus === 'loading';
-
-  const toast = useCallback(
-    (message, type = 'success') => {
-      const title =
-        type === 'error' ? 'Lỗi' : type === 'warning' ? 'Cảnh báo' : type === 'info' ? 'Thông tin' : 'Thành công';
-      appToast[type]?.(title, message);
-    },
-    [appToast],
-  );
 
   const loadFoodItems = useCallback(
     (overrides = {}) => {
@@ -95,25 +79,23 @@ const useFoodItem = () => {
   }, [debouncedSearch, dispatch, loadFoodItems]);
 
   useEffect(() => {
-    const loadCategoryOptions = async () => {
-      setCategoryOptionsLoading(true);
-      setCategoryOptionsError(null);
+    dispatch(fetchCategories({ limit: 50, page: 1 }));
+  }, [dispatch]);
 
-      try {
-        const response = await getCategories({ limit: 50 });
-        setCategoryOptions((response.items ?? []).map((category) => ({
-          value: category._id,
-          label: category.name,
-        })));
-      } catch (error) {
-        setCategoryOptionsError(error?.message ?? 'Không thể tải danh mục');
-      } finally {
-        setCategoryOptionsLoading(false);
-      }
-    };
+  const categoryOptions = useMemo(
+    () =>
+      categoryItems.map((category) => ({
+        value: category._id,
+        label: category.name,
+      })),
+    [categoryItems],
+  );
 
-    loadCategoryOptions();
-  }, []);
+  const categoryOptionsLoading = categoryListStatus === 'loading';
+  const categoryOptionsError =
+    categoryListStatus === 'failed'
+      ? categoryError?.message ?? 'Không thể tải danh mục'
+      : null;
 
   const handleSearchChange = (value) => {
     setSearchKeyword(value);
@@ -166,7 +148,7 @@ const useFoodItem = () => {
       try {
         await dispatch(fetchFoodItemById(foodItem._id)).unwrap();
       } catch (error) {
-        toast(error?.message ?? 'Không thể tải chi tiết món ăn', 'error');
+        notify(error?.message ?? 'Không thể tải chi tiết món ăn', 'error');
       }
     }
   };
@@ -221,10 +203,10 @@ const useFoodItem = () => {
     try {
       if (modalMode === 'create') {
         await dispatch(createFoodItem(payload)).unwrap();
-        toast('Tạo món ăn thành công');
+        notify('Tạo món ăn thành công');
       } else if (modalMode === 'edit' && selectedItem?._id) {
         await dispatch(updateFoodItem({ id: selectedItem._id, body: payload })).unwrap();
-        toast('Cập nhật món ăn thành công');
+        notify('Cập nhật món ăn thành công');
       }
 
       setModalMode(null);
@@ -239,7 +221,7 @@ const useFoodItem = () => {
         setServerFieldErrors({ categoryId: FOOD_ITEM_ERROR_MESSAGES.CATEGORY_NOT_FOUND });
       }
 
-      toast(error?.message ?? 'Đã xảy ra lỗi', 'error');
+      notify(error?.message ?? 'Đã xảy ra lỗi', 'error');
     }
   };
 
@@ -251,10 +233,10 @@ const useFoodItem = () => {
           isArchived: !foodItem.isArchived,
         }),
       ).unwrap();
-      toast(foodItem.isArchived ? 'Đã huỷ lưu trữ món ăn' : 'Đã lưu trữ món ăn');
+      notify(foodItem.isArchived ? 'Đã huỷ lưu trữ món ăn' : 'Đã lưu trữ món ăn');
       refreshList();
     } catch (error) {
-      toast(error?.message ?? 'Không thể cập nhật trạng thái', 'error');
+      notify(error?.message ?? 'Không thể cập nhật trạng thái', 'error');
     }
   };
 
@@ -273,7 +255,7 @@ const useFoodItem = () => {
 
     try {
       await dispatch(deleteFoodItem(deleteTarget._id)).unwrap();
-      toast('Xóa món ăn thành công');
+      notify('Xóa món ăn thành công');
       setDeleteTarget(null);
       setDeleteError(null);
       refreshList();
@@ -283,7 +265,7 @@ const useFoodItem = () => {
           ? FOOD_ITEM_ERROR_MESSAGES.FOODITEM_IN_USE
           : error?.message ?? 'Không thể xóa món ăn';
       setDeleteError(message);
-      toast(message, 'error');
+      notify(message, 'error');
     }
   };
 
@@ -293,6 +275,10 @@ const useFoodItem = () => {
     }
     return 'Chưa có món ăn nào.';
   }, [filters.categoryId, filters.isArchived, searchKeyword]);
+
+  const handleExport = useCallback(() => {
+    notify('Tính năng xuất file đang phát triển', 'info');
+  }, [notify]);
 
   return {
     items,
@@ -327,6 +313,7 @@ const useFoodItem = () => {
     handleDeleteClick,
     cancelDelete,
     confirmDelete,
+    handleExport,
   };
 };
 

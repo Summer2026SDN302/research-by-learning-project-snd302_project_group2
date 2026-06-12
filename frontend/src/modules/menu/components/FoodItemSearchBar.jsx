@@ -1,4 +1,4 @@
-import SearchBar from '../../../components/search/SearchBar';
+import SearchBar from '@/components/search/SearchBar';
 
 const FoodItemSearchBar = ({ value, onChange }) => (
   <SearchBar

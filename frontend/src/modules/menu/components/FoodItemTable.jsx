@@ -1,4 +1,4 @@
-import PaginationControl from '../../../components/navigation/PaginationControl';
+import PaginationControl from '@/components/navigation/PaginationControl';
 import { formatCurrency, formatShortId } from '../utils/foodItemUtils';
 
 const SaleStatusBadge = ({ isArchived }) =>

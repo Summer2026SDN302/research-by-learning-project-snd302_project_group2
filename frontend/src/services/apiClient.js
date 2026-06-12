@@ -7,7 +7,6 @@ const apiClient = axios.create({
   },
 });
 
-// Gắn accessToken vào mọi request
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");

@@ -1,8 +1,7 @@
-import PageHeader from '../../../components/layout/PageHeader';
-import EmptyState from '../../../components/data-display/EmptyState';
-import LoadingOverlay from '../../../components/feedback/LoadingOverlay';
-import ConfirmDialog from '../../../components/feedback/ConfirmDialog';
-import useAppToast from '../../../hooks/useAppToast';
+import PageHeader from '@/components/layout/PageHeader';
+import EmptyState from '@/components/data-display/EmptyState';
+import LoadingOverlay from '@/components/feedback/LoadingOverlay';
+import ConfirmDialog from '@/components/feedback/ConfirmDialog';
 import FoodItemSearchBar from '../components/FoodItemSearchBar';
 import FoodItemCategoryFilter from '../components/FoodItemCategoryFilter';
 import FoodItemStatusFilter from '../components/FoodItemStatusFilter';
@@ -11,8 +10,6 @@ import FoodItemFormModal from '../components/FoodItemFormModal';
 import useFoodItem from '../hooks/useFoodItem';
 
 const FoodItemListPage = () => {
-  const { toast } = useAppToast();
-
   const {
     items,
     pagination,
@@ -45,16 +42,13 @@ const FoodItemListPage = () => {
     handleDeleteClick,
     cancelDelete,
     confirmDelete,
+    handleExport,
   } = useFoodItem();
 
   const hasActiveFilters =
     Boolean(searchKeyword.trim()) || Boolean(filters.categoryId) || filters.isArchived !== '';
 
   const isEmptyState = !isLoading && !listError && pagination.total === 0 && !hasActiveFilters;
-
-  const handleExportClick = () => {
-    toast.info('Thông tin', 'Tính năng xuất file đang phát triển');
-  };
 
   return (
     <div className="relative min-h-[400px] space-y-6">
@@ -66,7 +60,7 @@ const FoodItemListPage = () => {
           <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
-              onClick={handleExportClick}
+              onClick={handleExport}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary text-primary text-label-md font-semibold hover:bg-surface-container transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">download</span>

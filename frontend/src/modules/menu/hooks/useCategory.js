@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import useAppToast from "../../../hooks/useAppToast";
+import useDebouncedValue from "@/hooks/useDebouncedValue";
+import useNotify from "@/hooks/useNotify";
 import {
   CATEGORY_ERROR_MESSAGES,
   DEFAULT_PAGE_SIZE,
@@ -18,17 +19,6 @@ import {
   updateCategory,
 } from "../redux/categorySlice";
 
-const useDebouncedValue = (value, delay = 300) => {
-  const [debounced, setDebounced] = useState(value);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-
-  return debounced;
-};
-
 const buildPayload = (data) => ({
   name: data.name.trim(),
   description: data.description?.trim() || undefined,
@@ -38,7 +28,7 @@ const buildPayload = (data) => ({
 
 export const useCategory = () => {
   const dispatch = useDispatch();
-  const { toast: appToast } = useAppToast();
+  const { notify } = useNotify();
 
   const {
     items,
@@ -88,15 +78,6 @@ export const useCategory = () => {
       }),
     );
   }, [debouncedSearch, dispatch, filters.isActive]);
-
-  const toast = useCallback(
-    (message, type = "success") => {
-      const title =
-        type === "error" ? "Lỗi" : type === "warning" ? "Cảnh báo" : type === "info" ? "Thông tin" : "Thành công";
-      appToast[type]?.(title, message);
-    },
-    [appToast],
-  );
 
   const handleSearchChange = (value) => {
     setSearchKeyword(value);
@@ -156,12 +137,12 @@ export const useCategory = () => {
     try {
       if (modalMode === "create") {
         await dispatch(createCategory(payload)).unwrap();
-        toast("Tạo danh mục thành công");
+        notify("Tạo danh mục thành công");
       } else if (modalMode === "edit" && selectedCategory?._id) {
         await dispatch(
           updateCategory({ id: selectedCategory._id, body: payload }),
         ).unwrap();
-        toast("Cập nhật danh mục thành công");
+        notify("Cập nhật danh mục thành công");
       }
 
       setModalMode(null);
@@ -174,7 +155,7 @@ export const useCategory = () => {
           message: CATEGORY_ERROR_MESSAGES.CATEGORY_NAME_EXISTS,
         });
       }
-      toast(err?.message ?? "Đã xảy ra lỗi", "error");
+      notify(err?.message ?? "Đã xảy ra lỗi", "error");
     }
   };
 
@@ -186,9 +167,9 @@ export const useCategory = () => {
           isActive: !category.isActive,
         }),
       ).unwrap();
-      toast("Cập nhật trạng thái thành công");
+      notify("Cập nhật trạng thái thành công");
     } catch (err) {
-      toast(err?.message ?? "Không thể cập nhật trạng thái", "error");
+      notify(err?.message ?? "Không thể cập nhật trạng thái", "error");
     }
   };
 
@@ -207,7 +188,7 @@ export const useCategory = () => {
 
     try {
       await dispatch(deleteCategory(deleteTarget._id)).unwrap();
-      toast("Xóa danh mục thành công");
+      notify("Xóa danh mục thành công");
       setDeleteTarget(null);
       setDeleteError(null);
       loadCategories({ search: debouncedSearch, page: pagination.page });

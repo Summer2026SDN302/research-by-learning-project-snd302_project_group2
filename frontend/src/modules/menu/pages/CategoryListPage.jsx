@@ -1,10 +1,11 @@
-import PageHeader from "../../../components/layout/PageHeader";
-import EmptyState from "../../../components/data-display/EmptyState";
-import LoadingOverlay from "../../../components/feedback/LoadingOverlay";
-import ConfirmDialog from "../../../components/feedback/ConfirmDialog";
+import PageHeader from "@/components/layout/PageHeader";
+import EmptyState from "@/components/data-display/EmptyState";
+import LoadingOverlay from "@/components/feedback/LoadingOverlay";
+import ConfirmDialog from "@/components/feedback/ConfirmDialog";
 import useCategory from "../hooks/useCategory";
 import CategorySearchBar from "../components/CategorySearchBar";
-import CategoryTable, { CategoryPagination } from "../components/CategoryTable";
+import CategoryTable from "../components/CategoryTable";
+import CategoryPagination from "../components/CategoryPagination";
 import CategoryFormModal from "../components/CategoryFormModal";
 
 const CategoryListPage = () => {

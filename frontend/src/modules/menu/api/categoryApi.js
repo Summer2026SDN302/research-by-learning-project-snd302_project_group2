@@ -1,4 +1,4 @@
-import apiClient from "../../../services/appClient";
+import apiClient from "@/services/apiClient";
 
 const BASE_PATH = "/categories";
 
