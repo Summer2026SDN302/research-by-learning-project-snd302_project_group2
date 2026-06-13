@@ -14,15 +14,6 @@ const app = express();
 
 app.use(
   cors({
-    // origin(origin, callback) {
-    //   // Allow server-to-server / Postman (no Origin header)
-    //   if (!origin || allowedOrigins.includes(origin)) {
-    //     callback(null, true);
-    //     return;
-    //   }
-
-    //   callback(new Error(`CORS blocked for origin: ${origin}`));
-    // },
     origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

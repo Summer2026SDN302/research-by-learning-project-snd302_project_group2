@@ -35,11 +35,6 @@ const foodItemSchema = new Schema(
       min: 0,
     },
 
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-
     isArchived: {
       type: Boolean,
       default: false,
@@ -62,8 +57,13 @@ const foodItemSchema = new Schema(
   },
 );
 
+const nameUniqueIndexOptions = {
+  unique: true,
+  collation: { locale: "vi", strength: 2 },
+};
+
 foodItemSchema.index({ deletedAt: 1 });
-foodItemSchema.index({ categoryId: 1, isActive: 1, isArchived: 1, deletedAt: 1 });
+foodItemSchema.index({ categoryId: 1, isArchived: 1, deletedAt: 1 });
 
 const FoodItem = mongoose.model("FoodItem", foodItemSchema);
 

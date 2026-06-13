@@ -6,13 +6,33 @@ import {
   parseSearchQuery,
 } from "../../../shared/helpers/query.helper.js";
 import orderRepository from "../../order/order.repository.js";
-import categoryService from "../category/category.service.js";
+import categoryRepository from "../category/category.repository.js";
 import dailyMenuRepository from "../daily_menu/daily_menu.repository.js";
 import scheduledMenuRepository from "../scheduled_menu/scheduled_menu.repository.js";
 import foodItemRepository from "./food_item.repository.js";
 import { toFoodItemResponse } from "./food_item.dto.js";
+import { USER_ROLES } from "../../user/user.constants.js";
 
-const foodItemNotFoundError = () => new AppError("FOODITEM_NOT_FOUND", 404);
+const foodItemNotFoundError = () =>
+  new AppError("Food item not found", 404, "FOODITEM_NOT_FOUND");
+
+const categoryNotFoundError = () =>
+  new AppError("Category not found", 404, "CATEGORY_NOT_FOUND");
+
+const assertUniqueName = async (name, excludeId = null) => {
+  const existing = await foodItemRepository.findByNameIgnoreCase(
+    name,
+    excludeId,
+  );
+
+  if (existing) {
+    throw new AppError(
+      "Food item name already exists",
+      409,
+      "FOODITEM_NAME_EXISTS",
+    );
+  }
+};
 
 const buildFoodItemPayload = (body) => ({
   categoryId: body.categoryId,
@@ -20,7 +40,6 @@ const buildFoodItemPayload = (body) => ({
   description: body.description?.trim() || null,
   basePrice: Number(body.basePrice),
   cost: Number(body.cost),
-  isActive: body.isActive,
   isArchived: body.isArchived,
 });
 
@@ -52,61 +71,31 @@ const assertFoodItemNotReferenced = async (foodItemId) => {
   }
 };
 
-const mutateFoodItem = async (
-  id,
-  { beforeMutate, patch, responseMode = "withCategory", categoryName },
-) => {
-  if (beforeMutate) {
-    await beforeMutate();
-  }
-
+const mutateFoodItem = async (id, { patch, categoryName }) => {
   const foodItem = await foodItemRepository.patchById(id, patch);
 
   if (!foodItem) {
     throw foodItemNotFoundError();
   }
 
-  if (responseMode === "deleted") {
-    return toFoodItemResponse({
-      ...foodItem.toObject(),
-      categoryName: null,
-    });
-  }
-
   return toFoodItemResponseFromDocument(foodItem, categoryName);
 };
 
-/**
- * Archive toggle vs delete share one mutate path.
- * - PATCH /archive: isArchived only.
- * - DELETE: isActive=false + isArchived=true + deletedAt + deletedBy (inactive + audit).
- */
-const changeFoodItemArchiveState = async (
-  id,
-  isArchived,
-  { auditDelete = false, userId, categoryName } = {},
-) => {
-  const patch = { isArchived };
+const getCategoryOrThrow = async (categoryId) => {
+  const category = await categoryRepository.findById(categoryId);
 
-  if (auditDelete) {
-    patch.isActive = false;
-    patch.isArchived = true;
-    patch.deletedAt = new Date();
-    patch.deletedBy = userId ?? null;
+  if (!category) {
+    throw categoryNotFoundError();
   }
 
-  return mutateFoodItem(id, {
-    beforeMutate: auditDelete ? () => assertFoodItemNotReferenced(id) : undefined,
-    patch,
-    responseMode: auditDelete ? "deleted" : "withCategory",
-    categoryName,
-  });
+  return category;
 };
 
 const foodItemService = {
-  async getFoodItems(query) {
+  async getFoodItems(query, role) {
     const { page, limit } = parsePagination(query);
-    const isArchived = parseBooleanQuery(query.isArchived);
+    const isArchived =
+      role === USER_ROLES.STAFF ? false : parseBooleanQuery(query.isArchived);
     const search = parseSearchQuery(query.search);
     const categoryId = query.categoryId?.trim() || undefined;
 
@@ -130,35 +119,73 @@ const foodItemService = {
   },
 
   async createFoodItem(body) {
-    const category = await categoryService.getCategoryReference(body.categoryId);
-    const foodItem = await foodItemRepository.create(buildFoodItemPayload(body));
+    await assertUniqueName(body.name);
+
+    const category = await getCategoryOrThrow(body.categoryId);
+    const foodItem = await foodItemRepository.create(
+      buildFoodItemPayload(body),
+    );
 
     return toFoodItemResponseFromDocument(foodItem, category.name);
   },
 
   async updateFoodItem(id, body) {
-    const category = await categoryService.getCategoryReference(body.categoryId);
-
-    return mutateFoodItem(id, {
-      patch: buildFoodItemPayload(body),
-      categoryName: category.name,
-    });
-  },
-
-  async updateFoodItemArchive(id, isArchived) {
-    const foodItem = await foodItemRepository.findByIdWithCategory(id);
-
-    if (!foodItem) {
-      throw foodItemNotFoundError();
+    if (body.name !== undefined) {
+      await assertUniqueName(body.name, id);
     }
 
-    return changeFoodItemArchiveState(id, isArchived, {
-      categoryName: foodItem.categoryName,
-    });
+    let categoryName;
+
+    if (body.categoryId !== undefined) {
+      const category = await getCategoryOrThrow(body.categoryId);
+      categoryName = category.name;
+    }
+
+    const patch = {};
+    if (body.categoryId !== undefined) patch.categoryId = body.categoryId;
+    if (body.name !== undefined) patch.name = body.name.trim();
+    if (body.description !== undefined)
+      patch.description = body.description?.trim() || null;
+    if (body.basePrice !== undefined) patch.basePrice = Number(body.basePrice);
+    if (body.cost !== undefined) patch.cost = Number(body.cost);
+
+    if (categoryName === undefined) {
+      const foodItem = await getFoodItemOrThrow(id);
+      categoryName = foodItem.categoryName;
+    }
+
+    return mutateFoodItem(id, { patch, categoryName });
   },
 
-  async deleteFoodItem(id, userId) {
-    return changeFoodItemArchiveState(id, true, { auditDelete: true, userId });
+  async updateFoodItemArchive(id, isArchived, userId) {
+    const foodItem = await getFoodItemOrThrow(id);
+    const patch = { isArchived };
+
+    if (isArchived) {
+      const [dailyMenuCount, scheduledMenuCount] = await Promise.all([
+        dailyMenuRepository.countActiveByFoodItemId(id, new Date()),
+        scheduledMenuRepository.countByFoodItemId(id),
+      ]);
+
+      if (dailyMenuCount + scheduledMenuCount > 0) {
+        throw new AppError(
+          "Cannot disable food item referenced by active daily/scheduled menu",
+          409,
+          "FOODITEM_IN_USE",
+        );
+      }
+
+      patch.deletedAt = new Date();
+      patch.deletedBy = userId ?? null;
+    } else {
+      patch.deletedAt = null;
+      patch.deletedBy = null;
+    }
+
+    return mutateFoodItem(id, {
+      patch,
+      categoryName: foodItem.categoryName,
+    });
   },
 };
 

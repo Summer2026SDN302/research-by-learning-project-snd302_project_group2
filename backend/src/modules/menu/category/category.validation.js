@@ -14,14 +14,25 @@ const categoryFieldsValidation = [
     .trim()
     .isLength({ max: 500 })
     .withMessage("Description must not exceed 500 characters"),
-  body("icon")
+  body("icon").optional().isIn(ALLOWED_ICONS).withMessage("Invalid icon"),
+  body("isActive").optional().isBoolean().withMessage("Invalid status"),
+];
+
+const categoryUpdateFieldsValidation = [
+  body("name")
     .optional()
-    .isIn(ALLOWED_ICONS)
-    .withMessage("Invalid icon"),
-  body("isActive")
-    .optional()
-    .isBoolean()
-    .withMessage("Invalid status"),
+    .trim()
+    .notEmpty()
+    .withMessage("Category name cannot be empty")
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Category name must be between 2 and 100 characters"),
+  body("description")
+    .optional({ values: "null" })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Description must not exceed 500 characters"),
+  body("icon").optional().isIn(ALLOWED_ICONS).withMessage("Invalid icon"),
+  body("isActive").optional().isBoolean().withMessage("Invalid status"),
 ];
 
 const objectIdParamValidation = [
@@ -52,13 +63,12 @@ export const validateCreate = [...categoryFieldsValidation];
 
 export const getCategoryByIdValidation = objectIdParamValidation;
 
-export const validateUpdate = [...objectIdParamValidation, ...categoryFieldsValidation];
+export const validateUpdate = [
+  ...objectIdParamValidation,
+  ...categoryUpdateFieldsValidation,
+];
 
 export const validateStatus = [
   ...objectIdParamValidation,
-  body("isActive")
-    .isBoolean()
-    .withMessage("Invalid status"),
+  body("isActive").isBoolean().withMessage("Invalid status"),
 ];
-
-export const validateDelete = objectIdParamValidation;

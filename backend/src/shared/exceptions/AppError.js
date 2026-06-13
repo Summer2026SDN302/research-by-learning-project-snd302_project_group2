@@ -1,8 +1,6 @@
-import { resolveErrorMessage } from "./error.messages.js";
-
 class AppError extends Error {
-  constructor(code, statusCode = 500, details = [], isOperational = true) {
-    super(resolveErrorMessage(code, details));
+  constructor(message, statusCode = 500, code = "APP_ERROR", details = [], isOperational = true) {
+    super(message);
 
     this.statusCode = statusCode;
     this.code = code;

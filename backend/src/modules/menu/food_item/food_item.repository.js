@@ -3,7 +3,7 @@ import { toObjectId } from "../../../shared/helpers/mongo.helper.js";
 import FoodItem from "./food_item.model.js";
 
 const buildListFilter = ({ search, categoryId, isArchived }) => {
-  const filter = { deletedAt: null };
+  const filter = {};
 
   if (search) {
     filter.name = { $regex: escapeRegex(search), $options: "i" };
@@ -64,23 +64,30 @@ const foodItemRepository = {
   },
 
   async findById(id) {
-    return FoodItem.findOne({ _id: toObjectId(id), deletedAt: null });
+    return FoodItem.findOne({ _id: toObjectId(id) });
   },
 
   async findByIdWithCategory(id) {
     const [foodItem] = await FoodItem.aggregate([
-      { $match: { _id: toObjectId(id), deletedAt: null } },
+      { $match: { _id: toObjectId(id) } },
       ...categoryLookupStages,
     ]);
 
     return foodItem ?? null;
   },
+  async findByNameIgnoreCase(name, excludeId = null) {
+    const filter = { name: name.trim() };
+
+    if (excludeId) {
+      filter._id = { $ne: toObjectId(excludeId) };
+    }
+
+    return FoodItem.findOne(filter).collation({ locale: "vi", strength: 2 });
+  },
 
   async countActiveByCategoryId(categoryId) {
     return FoodItem.countDocuments({
       categoryId: toObjectId(categoryId),
-      deletedAt: null,
-      isActive: true,
       isArchived: false,
     });
   },
@@ -91,14 +98,10 @@ const foodItemRepository = {
 
   async patchById(id, data) {
     return FoodItem.findOneAndUpdate(
-      { _id: toObjectId(id), deletedAt: null },
+      { _id: toObjectId(id) },
       { $set: data },
       { new: true, runValidators: true },
     );
-  },
-
-  async updateById(id, data) {
-    return this.patchById(id, data);
   },
 };
 
