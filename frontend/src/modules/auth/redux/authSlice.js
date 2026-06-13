@@ -41,6 +41,11 @@ const authSlice = createSlice({
       state.error = null;
     },
 
+    updateAuthUser: (state, action) => {
+      state.user = action.payload || state.user;
+      state.isAuthenticated = Boolean(state.user);
+    },
+
     finishBootstrap: (state) => {
       state.isBootstrapped = true;
       state.isLoading = false;
@@ -53,6 +58,7 @@ export const {
   authSuccess,
   authFailure,
   clearAuth,
+  updateAuthUser,
   finishBootstrap,
 } = authSlice.actions;
 

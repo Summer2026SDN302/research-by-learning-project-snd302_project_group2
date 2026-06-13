@@ -1,4 +1,5 @@
-﻿.env.example
+﻿.env
+.env.example
 .gitignore
 eslint.config.js
 index.html
@@ -66,11 +67,17 @@ src\modules\analytics\pages\.gitkeep
 src\modules\analytics\redux\.gitkeep
 src\modules\analytics\validation\.gitkeep
 src\modules\auth\api\.gitkeep
+src\modules\auth\api\authApi.js
 src\modules\auth\components\.gitkeep
 src\modules\auth\constants\.gitkeep
+src\modules\auth\constants\authConstants.js
 src\modules\auth\hooks\.gitkeep
+src\modules\auth\hooks\useAuthSession.js
+src\modules\auth\hooks\useLogin.js
+src\modules\auth\hooks\useLogout.js
 src\modules\auth\pages\.gitkeep
 src\modules\auth\redux\.gitkeep
+src\modules\auth\redux\authSlice.js
 src\modules\auth\validation\.gitkeep
 src\modules\dashboard\api\.gitkeep
 src\modules\dashboard\components\.gitkeep
@@ -139,8 +146,10 @@ src\pages\admin\UserManagement\index.jsx
 src\pages\admin\UserManagement\screen.png
 src\pages\auth\index.jsx
 src\pages\auth\ForgotPassword\code.html
+src\pages\auth\ForgotPassword\index.jsx
 src\pages\auth\ForgotPassword\screen.png
 src\pages\auth\Login\code.html
+src\pages\auth\Login\index.jsx
 src\pages\auth\Login\screen.png
 src\pages\manager\AIFoodOptimization\code.html
 src\pages\manager\AIFoodOptimization\index.jsx
@@ -195,6 +204,9 @@ src\pages\staff\Receipt\screen.png
 src\routes\AdminRoutes.jsx
 src\routes\AppRoutes.jsx
 src\routes\ManagerRoutes.jsx
+src\routes\ProtectedRoute.jsx
+src\routes\PublicRoute.jsx
+src\routes\RoleRoute.jsx
 src\routes\StaffRoutes.jsx
 src\services\appClient.js
 src\utils\.gitkeep

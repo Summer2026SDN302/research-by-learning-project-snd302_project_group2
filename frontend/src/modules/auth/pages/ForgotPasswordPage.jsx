@@ -1,22 +1,17 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import useAppToast from "../../../hooks/useAppToast";
+
+import useForgotPassword from "../hooks/useForgotPassword";
 
 const ForgotPasswordPage = () => {
-  const { toast } = useAppToast();
-  const [identifier, setIdentifier] = useState("");
-
-  const icon = identifier.includes("@") ? "mail" : "person";
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    toast.info(
-      "Chưa hỗ trợ backend",
-      "Backend hiện chưa có API quên mật khẩu nên màn này chỉ dựng UI trước.",
-      4000,
-    );
-  };
+  const {
+    identifier,
+    icon,
+    fieldError,
+    isLoading,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+  } = useForgotPassword();
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 md:p-8 dotted-auth-bg">
@@ -62,21 +57,33 @@ const ForgotPasswordPage = () => {
                 </div>
 
                 <input
-                  className="block w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-0 transition-all"
+                  className={`block w-full pl-11 pr-4 py-3.5 bg-surface-container-lowest border rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-0 transition-all ${
+                    fieldError ? "border-error" : "border-outline-variant"
+                  }`}
                   id="identifier"
                   name="identifier"
                   placeholder="username@stallbox.com"
-                  required
                   type="text"
                   value={identifier}
-                  onChange={(event) => setIdentifier(event.target.value)}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  disabled={isLoading}
                 />
               </div>
+
+              {fieldError ? (
+                <p className="text-body-sm text-error">{fieldError}</p>
+              ) : (
+                <p className="text-body-sm text-on-surface-variant/70">
+                  Nhập email hoặc mã nhân viên đã được cấp trong hệ thống.
+                </p>
+              )}
             </div>
 
             <button
-              className="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-lg hover:bg-primary-container transition-all duration-300 transform active:scale-[0.98] ambient-shadow flex items-center justify-center gap-2"
+              className="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-lg hover:bg-primary-container transition-all duration-300 transform active:scale-[0.98] ambient-shadow flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70 disabled:active:scale-100"
               type="submit"
+              disabled={isLoading}
             >
               Gửi yêu cầu đặt lại
             </button>

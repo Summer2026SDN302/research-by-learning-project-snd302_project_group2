@@ -1,12 +1,16 @@
 import { Link } from "react-router-dom";
-import useLogin from "../../../modules/auth/hooks/useLogin";
+
+import Spinner from "../../../components/feedback/Spinner";
+import useLogin from "../hooks/useLogin";
 
 const LoginPage = () => {
   const {
     formData,
     fieldErrors,
     formError,
+    isLoading,
     handleChange,
+    handleBlur,
     handleSubmit,
   } = useLogin();
 
@@ -64,17 +68,23 @@ const LoginPage = () => {
                     }`}
                     id="identifier"
                     name="identifier"
-                    placeholder="Nhập mã nhân viên"
+                    placeholder="Nhập mã nhân viên hoặc email"
                     type="text"
                     value={formData.identifier}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     autoComplete="username"
+                    disabled={isLoading}
                   />
                 </div>
 
-                {fieldErrors.identifier && (
+                {fieldErrors.identifier ? (
                   <p className="text-body-sm text-error">
                     {fieldErrors.identifier}
+                  </p>
+                ) : (
+                  <p className="text-body-sm text-on-surface-variant/70">
+                    Có thể dùng tên đăng nhập hoặc email đã được cấp.
                   </p>
                 )}
               </div>
@@ -104,13 +114,19 @@ const LoginPage = () => {
                     type="password"
                     value={formData.password}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     autoComplete="current-password"
+                    disabled={isLoading}
                   />
                 </div>
 
-                {fieldErrors.password && (
+                {fieldErrors.password ? (
                   <p className="text-body-sm text-error">
                     {fieldErrors.password}
+                  </p>
+                ) : (
+                  <p className="text-body-sm text-on-surface-variant/70">
+                    Mật khẩu phân biệt chữ hoa/thường, không nhập toàn khoảng trắng.
                   </p>
                 )}
               </div>
@@ -124,6 +140,7 @@ const LoginPage = () => {
                     type="checkbox"
                     checked={formData.rememberMe}
                     onChange={handleChange}
+                    disabled={isLoading}
                   />
                   <label
                     className="ml-2 block font-body-sm text-body-sm text-on-surface-variant cursor-pointer"
@@ -143,16 +160,26 @@ const LoginPage = () => {
 
               <div className="pt-4">
                 <button
-                  className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-surface-tint text-on-primary font-headline-sm text-headline-sm py-3 px-4 rounded-[8px] shadow-sm hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-surface-tint text-on-primary font-headline-sm text-headline-sm py-3 px-4 rounded-[8px] shadow-sm hover:shadow-md transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-primary disabled:active:scale-100"
                   type="submit"
+                  disabled={isLoading}
                 >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    login
-                  </span>
-                  Đăng nhập
+                  {isLoading ? (
+                    <>
+                      <Spinner size="sm" />
+                      Đang đăng nhập...
+                    </>
+                  ) : (
+                    <>
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontVariationSettings: "'FILL' 1" }}
+                      >
+                        login
+                      </span>
+                      Đăng nhập
+                    </>
+                  )}
                 </button>
               </div>
             </form>

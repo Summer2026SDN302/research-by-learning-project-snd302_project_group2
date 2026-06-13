@@ -1,11 +1,10 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import AdminRoutes from "./AdminRoutes";
 import ManagerRoutes from "./ManagerRoutes";
 import StaffRoutes from "./StaffRoutes";
-
 import LoadingOverlay from "../components/feedback/LoadingOverlay";
 import useAuthSession from "../modules/auth/hooks/useAuthSession";
 import PublicRoute from "./PublicRoute";
@@ -16,8 +15,10 @@ import {
   getRoleHomePath,
 } from "../modules/auth/constants/authConstants";
 
-const LoginPage = lazy(() => import("../pages/auth/Login"));
-const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPassword"));
+const LoginPage = lazy(() => import("../modules/auth/pages/LoginPage"));
+const ForgotPasswordPage = lazy(
+  () => import("../modules/auth/pages/ForgotPasswordPage"),
+);
 
 const RootRedirect = () => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -43,36 +44,32 @@ const AppRoutes = () => {
   }
 
   return (
-    <BrowserRouter>
-      <Suspense fallback={<LoadingOverlay show fullPage />}>
-        <Routes>
-          <Route path="/" element={<RootRedirect />} />
+    <Suspense fallback={<LoadingOverlay show fullPage />}>
+      <Routes>
+        <Route path="/" element={<RootRedirect />} />
 
-          <Route element={<PublicRoute />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        </Route>
+
+        <Route element={<ProtectedRoute />}>
+          <Route element={<RoleRoute allowedRoles={[BACKEND_ROLES.ADMIN]} />}>
+            {AdminRoutes()}
           </Route>
 
-          <Route element={<ProtectedRoute />}>
-            <Route element={<RoleRoute allowedRoles={[BACKEND_ROLES.ADMIN]} />}>
-              {AdminRoutes()}
-            </Route>
-
-            <Route
-              element={<RoleRoute allowedRoles={[BACKEND_ROLES.MANAGER]} />}
-            >
-              {ManagerRoutes()}
-            </Route>
-
-            <Route element={<RoleRoute allowedRoles={[BACKEND_ROLES.STAFF]} />}>
-              {StaffRoutes()}
-            </Route>
+          <Route element={<RoleRoute allowedRoles={[BACKEND_ROLES.MANAGER]} />}>
+            {ManagerRoutes()}
           </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+          <Route element={<RoleRoute allowedRoles={[BACKEND_ROLES.STAFF]} />}>
+            {StaffRoutes()}
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 
