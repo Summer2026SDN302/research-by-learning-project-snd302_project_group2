@@ -14,6 +14,7 @@ const MainLayout = ({ role }) => {
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
+      {/* Sidebar – collapsible, width driven by sidebarWidth from useSidebar */}
       <Sidebar
         role={role}
         activePath={activePath}
@@ -24,7 +25,9 @@ const MainLayout = ({ role }) => {
         className={`${sidebarWidth} transition-all duration-300`}
       />
 
+      {/* Main area – flex-1 fills remaining space next to sidebar */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {/* Navbar – sticky top, manages its own dropdown state internally */}
         <Navbar
           user={user}
           searchPlaceholder="Tìm kiếm..."
@@ -39,6 +42,7 @@ const MainLayout = ({ role }) => {
           onLogout={logout}
         />
 
+        {/* Page content */}
         <main className="flex-1 overflow-y-auto bg-background p-8">
           <Outlet />
         </main>

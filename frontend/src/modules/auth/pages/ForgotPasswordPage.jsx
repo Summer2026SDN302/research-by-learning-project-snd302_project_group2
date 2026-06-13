@@ -111,26 +111,6 @@ const ForgotPasswordPage = () => {
         <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute -top-12 -left-12 w-32 h-32 bg-primary-fixed/10 rounded-full blur-3xl" />
       </main>
-
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-4 text-on-surface-variant/60">
-        <div className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[16px]">
-            verified_user
-          </span>
-          <span className="font-label-md text-label-md">Bảo mật đa tầng</span>
-        </div>
-
-        <div className="w-1 h-1 rounded-full bg-outline-variant" />
-
-        <div className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[16px]">
-            psychology
-          </span>
-          <span className="font-label-md text-label-md">
-            AI Insights Integrated
-          </span>
-        </div>
-      </div>
     </div>
   );
 };
