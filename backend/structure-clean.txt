@@ -1,4 +1,5 @@
 ﻿.env
+.env.example
 .gitignore
 package-lock.json
 package.json
@@ -7,14 +8,15 @@ src\app.js
 src\server.js
 src\config\database.js
 src\jobs\.gitkeep
-src\middlewares\.gitkeep
 src\middlewares\auth.middleware.js
 src\middlewares\error.middleware.js
 src\middlewares\role.middleware.js
 src\middlewares\validate.middleware.js
 src\modules\ai\ai_insight.model.js
 src\modules\analytics\.gitkeep
+src\modules\auth\auth.constants.js
 src\modules\auth\auth.controller.js
+src\modules\auth\auth.repository.js
 src\modules\auth\auth.route.js
 src\modules\auth\auth.service.js
 src\modules\auth\auth.validation.js
@@ -29,8 +31,10 @@ src\modules\notification\notification.model.js
 src\modules\order\order.model.js
 src\modules\payment\payment.model.js
 src\modules\user\profile.route.js
+src\modules\user\user.constants.js
 src\modules\user\user.controller.js
 src\modules\user\user.model.js
+src\modules\user\user.repository.js
 src\modules\user\user.route.js
 src\modules\user\user.service.js
 src\modules\user\user.validation.js
