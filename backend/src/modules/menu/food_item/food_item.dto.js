@@ -6,7 +6,6 @@ export const toFoodItemResponse = (foodItem) => ({
   description: foodItem.description ?? null,
   basePrice: foodItem.basePrice,
   cost: foodItem.cost,
-  isActive: foodItem.isActive,
   isArchived: foodItem.isArchived,
   createdAt: foodItem.createdAt,
   updatedAt: foodItem.updatedAt,

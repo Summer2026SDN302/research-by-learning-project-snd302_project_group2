@@ -45,8 +45,7 @@ const categorySchema = new mongoose.Schema(
 
 const nameUniqueIndexOptions = {
   unique: true,
-  partialFilterExpression: { deletedAt: null },
-  collation: { locale: "en", strength: 2 },
+  collation: { locale: "vi", strength: 2 },
 };
 
 categorySchema.index({ name: 1 }, nameUniqueIndexOptions);

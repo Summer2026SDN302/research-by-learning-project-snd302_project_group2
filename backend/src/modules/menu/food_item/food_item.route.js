@@ -5,25 +5,22 @@ import {
   getFoodItemByIdValidation,
   validateArchive,
   validateCreate,
-  validateDelete,
   validateListQuery,
   validateUpdate,
 } from "./food_item.validation.js";
 import { authenticate } from "../../../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../../../middlewares/role.middleware.js";
 import { validateRequest } from "../../../middlewares/validate.middleware.js";
-import { FOOD_ITEM_ALLOWED_ROLES } from "./food_item.constants.js";
+import { FOOD_ITEM_READ_ROLES, FOOD_ITEM_WRITE_ROLES } from "./food_item.constants.js";
 
 const router = express.Router();
 
 router.use(authenticate);
-router.use(authorizeRoles(...FOOD_ITEM_ALLOWED_ROLES));
 
-router.get("/", validateListQuery, validateRequest, foodItemController.getFoodItems);
-router.get("/:id", getFoodItemByIdValidation, validateRequest, foodItemController.getFoodItemById);
-router.post("/", validateCreate, validateRequest, foodItemController.createFoodItem);
-router.put("/:id", validateUpdate, validateRequest, foodItemController.updateFoodItem);
-router.patch("/:id/archive", validateArchive, validateRequest, foodItemController.updateFoodItemArchive);
-router.delete("/:id", validateDelete, validateRequest, foodItemController.deleteFoodItem);
+router.get("/", authorizeRoles(...FOOD_ITEM_READ_ROLES), validateListQuery, validateRequest, foodItemController.getFoodItems);
+router.get("/:id", authorizeRoles(...FOOD_ITEM_READ_ROLES), getFoodItemByIdValidation, validateRequest, foodItemController.getFoodItemById);
+router.post("/", authorizeRoles(...FOOD_ITEM_WRITE_ROLES), validateCreate, validateRequest, foodItemController.createFoodItem);
+router.put("/:id", authorizeRoles(...FOOD_ITEM_WRITE_ROLES), validateUpdate, validateRequest, foodItemController.updateFoodItem);
+router.patch("/:id/archive", authorizeRoles(...FOOD_ITEM_WRITE_ROLES), validateArchive, validateRequest, foodItemController.updateFoodItemArchive);
 
 export default router;
