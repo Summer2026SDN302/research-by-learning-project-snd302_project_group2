@@ -75,3 +75,5 @@ dump/
 # Docker (optional ignore local override)
 # =====================
 docker-compose.override.yml
+
+docs/
