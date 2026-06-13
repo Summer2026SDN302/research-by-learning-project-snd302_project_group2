@@ -8,13 +8,12 @@ Tài liệu này mô tả toàn bộ các component, hook, và Redux slice dùng
 
 ```
 src/
-├── components/common/
-│   ├── navigation/       ← điều hướng, layout shell
-│   ├── notification/     ← thông báo, phản hồi hành động
-│   ├── status/           ← trạng thái dữ liệu, loading
-│   ├── table/            ← bảng dữ liệu và công cụ liên quan
-│   ├── dialog/           ← modal, confirm, popup
-│   └── page/             ← thành phần cấu trúc trang
+├── components/
+│   ├── navigation/       ← pagination
+│   ├── dropdown/         ← notification dropdown và user dropdown
+│   ├── feedback/         ← loading, thông báo toast, confirm dialog
+│   ├── data-display/     ← bảng dữ liệu, empty state và status badge
+│   └── layout/           ← thành phần cấu trúc trang (navbar, page header và sidebar)
 │
 ├── hooks/                ← shared hooks
 └── app/                  ← Redux slices
