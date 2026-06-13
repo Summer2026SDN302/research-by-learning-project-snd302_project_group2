@@ -19,6 +19,8 @@ const foodItemSchema = new Schema(
     description: {
       type: String,
       default: null,
+      trim: true,
+      maxlength: 1000,
     },
 
     basePrice: {
@@ -51,7 +53,18 @@ const foodItemSchema = new Schema(
   },
   {
     timestamps: true,
+    collection: "fooditems",
   },
 );
 
-export default mongoose.model("FoodItem", foodItemSchema);
+const nameUniqueIndexOptions = {
+  unique: true,
+  collation: { locale: "vi", strength: 2 },
+};
+
+foodItemSchema.index({ deletedAt: 1 });
+foodItemSchema.index({ categoryId: 1, isArchived: 1, deletedAt: 1 });
+
+const FoodItem = mongoose.model("FoodItem", foodItemSchema);
+
+export default FoodItem;
