@@ -76,6 +76,16 @@ const orderSchema = new Schema(
       type: String,
       required: true,
     },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
