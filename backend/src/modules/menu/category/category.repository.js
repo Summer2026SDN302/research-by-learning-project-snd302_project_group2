@@ -3,7 +3,7 @@ import { escapeRegex } from "../../../shared/helpers/regex.helper.js";
 import { toObjectId } from "../../../shared/helpers/mongo.helper.js";
 
 const buildListFilter = ({ search, isActive }) => {
-  const filter = { deletedAt: null };
+  const filter = {};
 
   if (search) {
     filter.name = { $regex: escapeRegex(search), $options: "i" };
@@ -70,13 +70,13 @@ const categoryRepository = {
   },
 
   async findById(id) {
-    return Category.findOne({ _id: toObjectId(id), deletedAt: null });
+    return Category.findOne({ _id: toObjectId(id) });
   },
 
   async findByIdWithFoodItemCount(id) {
     const objectId = toObjectId(id);
     const [category] = await Category.aggregate([
-      { $match: { _id: objectId, deletedAt: null } },
+      { $match: { _id: objectId } },
       ...foodItemCountStages,
     ]);
 
@@ -86,14 +86,13 @@ const categoryRepository = {
   async findByNameIgnoreCase(name, excludeId = null) {
     const filter = {
       name: name.trim(),
-      deletedAt: null,
     };
 
     if (excludeId) {
       filter._id = { $ne: toObjectId(excludeId) };
     }
 
-    return Category.findOne(filter).collation({ locale: "en", strength: 2 });
+    return Category.findOne(filter).collation({ locale: "vi", strength: 2 });
   },
 
   async create(data) {
@@ -102,14 +101,10 @@ const categoryRepository = {
 
   async patchById(id, data) {
     return Category.findOneAndUpdate(
-      { _id: toObjectId(id), deletedAt: null },
+      { _id: toObjectId(id) },
       { $set: data },
       { new: true, runValidators: true },
     );
-  },
-
-  async updateById(id, data) {
-    return this.patchById(id, data);
   },
 };
 

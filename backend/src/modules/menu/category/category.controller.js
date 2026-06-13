@@ -3,7 +3,7 @@ import { successResponse } from "../../../shared/response/responseFormatter.js";
 import categoryService from "./category.service.js";
 
 export const getCategories = asyncHandler(async (req, res) => {
-  const data = await categoryService.getCategories(req.query);
+  const data = await categoryService.getCategories(req.query, req.user.role);
   return successResponse(res, data, "Categories retrieved successfully");
 });
 
@@ -26,11 +26,7 @@ export const updateCategoryStatus = asyncHandler(async (req, res) => {
   const data = await categoryService.updateCategoryStatus(
     req.params.id,
     req.body.isActive,
+    req.userId,
   );
   return successResponse(res, data, "Category status updated successfully");
-});
-
-export const deleteCategory = asyncHandler(async (req, res) => {
-  const data = await categoryService.deleteCategory(req.params.id, req.userId);
-  return successResponse(res, data, "Category deleted successfully");
 });

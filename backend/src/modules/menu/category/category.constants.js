@@ -1,8 +1,13 @@
 import { USER_ROLES } from "../../user/user.constants.js";
 
-export const CATEGORY_ALLOWED_ROLES = [USER_ROLES.ADMIN, USER_ROLES.MANAGER];
+export const CATEGORY_READ_ROLES = [
+  USER_ROLES.ADMIN,
+  USER_ROLES.MANAGER,
+  USER_ROLES.STAFF,
+];
 
-/** Đồng bộ với frontend/src/modules/menu/constants/categoryConstants.js */
+export const CATEGORY_WRITE_ROLES = [USER_ROLES.ADMIN];
+
 export const ALLOWED_ICONS = [
   "rice_bowl",
   "ramen_dining",
@@ -15,7 +20,7 @@ export const ALLOWED_ICONS = [
   "cookie",
   "set_meal",
   "restaurant_menu",
-  // legacy — danh mục đã tạo trước khi đổi icon
+  // legacy
   "local_dining",
   "local_bar",
   "restaurant",

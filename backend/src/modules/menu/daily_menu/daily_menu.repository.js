@@ -7,6 +7,17 @@ const dailyMenuRepository = {
       "items.foodItemId": toObjectId(foodItemId),
     });
   },
+  async countActiveByFoodItemId(foodItemId, fromDate) {
+    return DailyMenu.countDocuments({
+      date: { $gte: fromDate },
+      items: {
+        $elemMatch: {
+          foodItemId: toObjectId(foodItemId),
+          status: "Available",
+        },
+      },
+    });
+  },
 };
 
 export default dailyMenuRepository;
