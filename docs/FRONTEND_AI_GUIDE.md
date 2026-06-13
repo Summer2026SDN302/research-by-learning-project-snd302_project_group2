@@ -102,7 +102,7 @@ Example:
 
 ALL API calls MUST use:
 
-services/apiClient.js
+services/appClient.js
 
 NEVER use axios directly inside components.
 
