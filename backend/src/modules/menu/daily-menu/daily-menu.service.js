@@ -1,6 +1,6 @@
 import AppError from "../../../shared/exceptions/AppError.js";
 import * as dailyMenuRepository from "./daily-menu.repository.js";
-import * as scheduledMenuRepository from "../scheduled_menu/scheduled-menu.repository.js";
+import scheduledMenuRepository from "../scheduled_menu/scheduled_menu.repository.js";
 import * as foodItemRepository from "../food_item/food_item.repository.js";
 import {
   DATE_FORMAT_REGEX,
