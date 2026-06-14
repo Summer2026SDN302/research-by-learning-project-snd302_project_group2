@@ -26,3 +26,13 @@
     @apply bg-surface-container-lowest rounded-lg shadow-soft p-6 border-l-2 border-indigo-500;
   }
 }
+
+@keyframes shrink {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
