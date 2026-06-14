@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 import useAppToast from "../../../hooks/useAppToast";
-import { clearAccessToken } from "../../../services/appClient";
+import { clearAccessToken } from "../../../services/apiClient";
 import { clearAuth } from "../../auth/redux/authSlice";
 import * as userApi from "../api/userApi";
 

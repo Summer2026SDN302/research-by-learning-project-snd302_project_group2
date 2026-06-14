@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import * as authApi from "../api/authApi";
 import { clearAuth } from "../redux/authSlice";
-import { clearAccessToken } from "../../../services/appClient";
+import { clearAccessToken } from "../../../services/apiClient";
 import useAppToast from "../../../hooks/useAppToast";
 
 const useLogout = () => {

@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import * as authApi from "../api/authApi";
 import { authFailure, authStart, authSuccess } from "../redux/authSlice";
 import { getRoleHomePath } from "../constants/authConstants";
-import { setAccessToken } from "../../../services/appClient";
+import { setAccessToken } from "../../../services/apiClient";
 import useAppToast from "../../../hooks/useAppToast";
 
 const REMEMBER_IDENTIFIER_KEY = "stallbox_remember_identifier";

@@ -17,7 +17,7 @@ export const clearAccessToken = () => {
   accessToken = null;
 };
 
-const appClient = axios.create({
+const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
@@ -56,7 +56,7 @@ const resolvePendingRequests = (error, token = null) => {
   pendingRequests = [];
 };
 
-appClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
@@ -64,7 +64,7 @@ appClient.interceptors.request.use((config) => {
   return config;
 });
 
-appClient.interceptors.response.use(
+apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
@@ -83,7 +83,7 @@ appClient.interceptors.response.use(
         pendingRequests.push({ resolve, reject });
       }).then((token) => {
         originalRequest.headers.Authorization = `Bearer ${token}`;
-        return appClient(originalRequest);
+        return apiClient(originalRequest);
       });
     }
 
@@ -96,7 +96,7 @@ appClient.interceptors.response.use(
 
       originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`;
 
-      return appClient(originalRequest);
+      return apiClient(originalRequest);
     } catch (refreshError) {
       clearAccessToken();
       resolvePendingRequests(refreshError);
@@ -112,4 +112,4 @@ appClient.interceptors.response.use(
   },
 );
 
-export default appClient;
+export default apiClient;

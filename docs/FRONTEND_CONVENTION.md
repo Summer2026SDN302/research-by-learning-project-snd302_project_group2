@@ -81,6 +81,6 @@ modules/auth/hooks/
 
 All API calls MUST use:
 
-services/appClient.js
+services/apiClient.js
 
 NEVER use axios directly inside components.

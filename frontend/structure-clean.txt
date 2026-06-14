@@ -208,5 +208,5 @@ src\routes\ProtectedRoute.jsx
 src\routes\PublicRoute.jsx
 src\routes\RoleRoute.jsx
 src\routes\StaffRoutes.jsx
-src\services\appClient.js
+src\services\apiClient.js
 src\utils\.gitkeep

@@ -13,15 +13,16 @@ src/
 │   ├── dropdown/         ← notification dropdown và user dropdown
 │   ├── feedback/         ← loading, thông báo toast, confirm dialog
 │   ├── data-display/     ← bảng dữ liệu, empty state và status badge
-│   └── layout/           ← thành phần cấu trúc trang (navbar, page header và sidebar)
-│
+│   ├── layout/           ← thành phần cấu trúc trang (navbar, page header và sidebar)
+│   └── search/           ← filter bar và search bar
+|
 ├── hooks/                ← shared hooks
 └── app/                  ← Redux slices
 ```
 
 ---
 
-## Navigation
+## Layout
 
 ### `Sidebar.jsx`
 
@@ -75,6 +76,33 @@ Thanh navigation trên cùng. Tích hợp search bar, notification dropdown, use
 
 ---
 
+### `PageHeader.jsx`
+
+Header trang với breadcrumb, tiêu đề, mô tả và slot CTA button. Responsive: CTA xuống hàng trên mobile.
+
+**Props:**
+
+| Prop | Kiểu | Mô tả |
+|---|---|---|
+| `breadcrumbs` | `Array` | `[{ label, path? }]` |
+| `title` | `string` | Tiêu đề trang |
+| `subtitle` | `string` | Mô tả ngắn bên dưới tiêu đề |
+| `action` | `ReactNode` | CTA button tuỳ chọn bên phải |
+
+**Ví dụ:**
+```jsx
+<PageHeader
+  breadcrumbs={[{ label: 'Admin' }, { label: 'Người dùng' }]}
+  title="Quản lý người dùng"
+  subtitle="Danh sách toàn bộ tài khoản trong hệ thống"
+  action={<button>Thêm người dùng</button>}
+/>
+```
+
+---
+
+## Dropdown
+
 ### `NotificationDropdown.jsx`
 
 Dropdown hiển thị danh sách thông báo. Hỗ trợ 3 loại: `order`, `system`, `payment`. Tự đóng khi click ra ngoài.
@@ -121,7 +149,7 @@ Dropdown tài khoản hiển thị thông tin user và các hành động: thôn
 
 ---
 
-## Notification
+## Feedback
 
 ### `Toast.jsx`
 
@@ -163,7 +191,25 @@ toast.info('Thông tin', 'Phiên làm việc sắp hết hạn');
 
 ---
 
-## Status
+### `ConfirmDialog.jsx`
+
+Modal xác nhận hành động. Hỗ trợ 3 variant với màu sắc và icon khác nhau. Hiển thị spinner khi đang xử lý.
+
+**Props:**
+
+| Prop | Kiểu | Mặc định | Mô tả |
+|---|---|---|---|
+| `open` | `boolean` | `false` | Kiểm soát hiển thị |
+| `title` | `string` | `'Are you sure?'` | Tiêu đề |
+| `description` | `string` | `'This action cannot be undone.'` | Mô tả |
+| `confirmLabel` | `string` | `'Confirm'` | Label nút xác nhận |
+| `cancelLabel` | `string` | `'Cancel'` | Label nút huỷ |
+| `variant` | `string` | `'danger'` | `'danger'` \| `'warning'` \| `'info'` |
+| `onConfirm` | `fn` | `noop` | `() => void` khi xác nhận |
+| `onCancel` | `fn` | `noop` | `() => void` khi huỷ hoặc click backdrop |
+| `isLoading` | `boolean` | `false` | Hiện spinner và disable cả 2 nút |
+
+---
 
 ### `LoadingOverlay.jsx`
 
@@ -211,6 +257,7 @@ Spinner vòng tròn nhỏ, dùng inline trong button hoặc các slot nhỏ.
 ```
 
 ---
+## Data Display
 
 ### `EmptyState.jsx`
 
@@ -241,7 +288,42 @@ Badge hiển thị trạng thái với màu sắc tương ứng.
 
 ---
 
-## Table
+### `StatisticCard.jsx`
+
+Card hiển thị một chỉ số thống kê với icon, nhãn, giá trị và mức thay đổi so với hôm qua. Dùng trong Dashboard.
+
+**Props:**
+
+| Prop | Kiểu | Mặc định | Mô tả |
+|---|---|---|---|
+| `icon` | `string` | `'bar_chart'` | Tên Material Symbol icon |
+| `label` | `string` | `'Metric'` | Nhãn chỉ số |
+| `value` | `string \| number` | `'—'` | Giá trị hiển thị |
+| `change` | `string` | `''` | Mức thay đổi, ví dụ: `'+12%'` hoặc `'-3%'` (tuỳ chọn) |
+| `variant` | `string` | `'primary'` | `'primary'` \| `'secondary'` \| `'tertiary'` \| `'error'` |
+
+**Ví dụ:**
+```jsx
+<StatisticCard
+  icon="receipt_long"
+  label="Doanh thu hôm nay"
+  value="4.200.000 ₫"
+  change="+12%"
+  variant="primary"
+/>
+
+<StatisticCard
+  icon="cancel"
+  label="Đơn huỷ"
+  value="3"
+  change="-1%"
+  variant="error"
+/>
+```
+
+---
+
+## Data Table
 
 ### `DataTable.jsx`
 
@@ -260,6 +342,7 @@ Bảng dữ liệu có sort theo cột, empty state, và loading overlay. Logic 
 | `renderCell` | `fn` | `(key, value, row) => ReactNode` custom cell |
 
 ---
+## Search
 
 ### `FilterBar.jsx`
 
@@ -291,6 +374,7 @@ Thanh lọc với nhiều dropdown filter. Hiện nút reset khi có filter đan
 | `className` | `string` | Class Tailwind bổ sung |
 
 ---
+## Navigation
 
 ### `PaginationControl.jsx`
 
@@ -304,55 +388,6 @@ Phân trang với số trang và nút Prev/Next. Hiển thị ellipsis khi có n
 | `totalPages` | `number` | `1` | Tổng số trang |
 | `onPageChange` | `fn` | `noop` | `(page: number) => void` |
 | `showPageNumbers` | `boolean` | `true` | Hiển thị số trang |
-
----
-
-## Dialog
-
-### `ConfirmDialog.jsx`
-
-Modal xác nhận hành động. Hỗ trợ 3 variant với màu sắc và icon khác nhau. Hiển thị spinner khi đang xử lý.
-
-**Props:**
-
-| Prop | Kiểu | Mặc định | Mô tả |
-|---|---|---|---|
-| `open` | `boolean` | `false` | Kiểm soát hiển thị |
-| `title` | `string` | `'Are you sure?'` | Tiêu đề |
-| `description` | `string` | `'This action cannot be undone.'` | Mô tả |
-| `confirmLabel` | `string` | `'Confirm'` | Label nút xác nhận |
-| `cancelLabel` | `string` | `'Cancel'` | Label nút huỷ |
-| `variant` | `string` | `'danger'` | `'danger'` \| `'warning'` \| `'info'` |
-| `onConfirm` | `fn` | `noop` | `() => void` khi xác nhận |
-| `onCancel` | `fn` | `noop` | `() => void` khi huỷ hoặc click backdrop |
-| `isLoading` | `boolean` | `false` | Hiện spinner và disable cả 2 nút |
-
----
-
-## Page
-
-### `PageHeader.jsx`
-
-Header trang với breadcrumb, tiêu đề, mô tả và slot CTA button. Responsive: CTA xuống hàng trên mobile.
-
-**Props:**
-
-| Prop | Kiểu | Mô tả |
-|---|---|---|
-| `breadcrumbs` | `Array` | `[{ label, path? }]` |
-| `title` | `string` | Tiêu đề trang |
-| `subtitle` | `string` | Mô tả ngắn bên dưới tiêu đề |
-| `action` | `ReactNode` | CTA button tuỳ chọn bên phải |
-
-**Ví dụ:**
-```jsx
-<PageHeader
-  breadcrumbs={[{ label: 'Admin' }, { label: 'Người dùng' }]}
-  title="Quản lý người dùng"
-  subtitle="Danh sách toàn bộ tài khoản trong hệ thống"
-  action={<button>Thêm người dùng</button>}
-/>
-```
 
 ---
 

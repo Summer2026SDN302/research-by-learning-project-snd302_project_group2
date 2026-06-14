@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import * as authApi from "../api/authApi";
 import { authStart, authSuccess, clearAuth } from "../redux/authSlice";
-import { setAccessToken, clearAccessToken } from "../../../services/appClient";
+import { setAccessToken, clearAccessToken } from "../../../services/apiClient";
 
 const useAuthSession = () => {
   const dispatch = useDispatch();
