@@ -1,5 +1,23 @@
+import { toObjectId } from "../../../shared/helpers/mongo.helper.js";
 import mongoose from "mongoose";
 import DailyMenu from "./daily-menu.model.js";
+
+export const countByFoodItemId = async (foodItemId) => {
+  return DailyMenu.countDocuments({
+    "items.foodItemId": toObjectId(foodItemId),
+  });
+};
+export const countActiveByFoodItemId = async (foodItemId, fromDate) => {
+  return DailyMenu.countDocuments({
+    date: { $gte: fromDate },
+    items: {
+      $elemMatch: {
+        foodItemId: toObjectId(foodItemId),
+        status: "Available",
+      },
+    },
+  });
+};
 
 export const findMenuByDate = async (date) => {
   return DailyMenu.findOne({ date })
