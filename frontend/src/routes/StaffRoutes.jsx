@@ -1,27 +1,21 @@
-import { Route } from "react-router-dom";
 import { lazy } from "react";
+import { Navigate, Route } from "react-router-dom";
+
+import PlaceholderPage from "../components/feedback/PlaceholderPage";
 import MainLayout from "../layouts/MainLayout";
 
-/**
- * staffRoutes
- *
- * Route definitions for the Staff role.
- * All routes are nested under /staff and share MainLayout.
- *
- * Pages:
- *   /staff/dashboard  – Tổng quan
- *   /staff/pos        – Bán hàng tại quầy
- *   /staff/my-orders  – Đơn hàng của tôi
- */
+const ProfilePage = lazy(() => import("../modules/user/pages/ProfilePage"));
+const ChangePasswordPage = lazy(() => import("../modules/user/pages/ChangePasswordPage"));
 
-// const StaffDashboard = lazy(() => import('../modules/staff/pages/StaffDashboard'));
-
-const staffRoutes = (
+const StaffRoutes = () => (
   <Route path="/staff" element={<MainLayout role="staff" />}>
-    {/* <Route path="dashboard" element={<StaffDashboard />} />
-    <Route path="pos"       element={<PointOfSale />} />
-    <Route path="my-orders" element={<MyOrders />} /> */}
+    <Route index element={<Navigate to="dashboard" replace />} />
+    <Route path="dashboard" element={<PlaceholderPage title="Tổng quan Staff" />} />
+    <Route path="pos" element={<PlaceholderPage title="POS" />} />
+    <Route path="my-orders" element={<PlaceholderPage title="Đơn hàng của tôi" />} />
+    <Route path="profile" element={<ProfilePage />} />
+    <Route path="change-password" element={<ChangePasswordPage />} />
   </Route>
 );
 
-export default staffRoutes;
+export default StaffRoutes;

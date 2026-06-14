@@ -1,30 +1,46 @@
+import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import useSidebar from "./useSideBar";
 
-/**
- * useMainLayout
- *
- * Shared hook for Admin, Manager and Staff layouts.
- * Provides routing state, user data from Redux, and sidebar collapse logic.
- *
- * @returns {object}
- *   activePath   {string}   – current route pathname (synced with React Router)
- *   navigate     {fn}       – React Router navigate function
- *   user         {object}   – current user from Redux auth state
- *   collapsed    {boolean}  – sidebar collapsed state
- *   toggle       {fn}       – () => void  toggle sidebar collapse
- *   sidebarWidth {string}   – Tailwind width class for sidebar
- *   marginLeft   {string}   – Tailwind margin class for main content area
- */
+const getInitials = (name = "") => {
+  const words = String(name).trim().split(/\s+/).filter(Boolean);
+
+  if (words.length === 0) return "U";
+  if (words.length === 1) return words[0].charAt(0).toUpperCase();
+
+  return `${words[0].charAt(0)}${words[words.length - 1].charAt(0)}`.toUpperCase();
+};
+
+const formatLayoutUser = (user) => {
+  if (!user) {
+    return {
+      name: "Người dùng",
+      initials: "U",
+      email: "",
+      role: "",
+    };
+  }
+
+  const name = user.fullName || user.username || "Người dùng";
+
+  return {
+    name,
+    initials: getInitials(name),
+    email: user.email || "",
+    role: user.role || "",
+  };
+};
+
 const useMainLayout = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  /** Get current user from Redux auth state */
-  const user = useSelector((state) => state.auth.user);
+  const authUser = useSelector((state) => state.auth.user);
 
-  const { collapsed, toggle, sidebarWidth, marginLeft } = useSidebar();
+  const user = useMemo(() => formatLayoutUser(authUser), [authUser]);
+
+  const { collapsed, toggle, sidebarWidth } = useSidebar();
 
   return {
     activePath: pathname,
@@ -33,7 +49,6 @@ const useMainLayout = () => {
     collapsed,
     toggle,
     sidebarWidth,
-    marginLeft,
   };
 };
 

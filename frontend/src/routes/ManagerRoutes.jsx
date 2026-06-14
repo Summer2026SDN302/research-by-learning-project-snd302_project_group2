@@ -1,35 +1,27 @@
-import { Route } from "react-router-dom";
 import { lazy } from "react";
+import { Navigate, Route } from "react-router-dom";
+
+import PlaceholderPage from "../components/feedback/PlaceholderPage";
 import MainLayout from "../layouts/MainLayout";
 
-/**
- * managerRoutes
- *
- * Route definitions for the Manager role.
- * All routes are nested under /manager and share MainLayout with role="manager".
- *
- * Pages:
- *   /manager/dashboard        – Tổng quan
- *   /manager/daily-menu       – Thực đơn hôm nay
- *   /manager/scheduled-menu   – Thực đơn theo lịch
- *   /manager/pricing          – Định giá linh hoạt
- *   /manager/ai               – Tối ưu hoá AI
- *   /manager/create-order     – Tạo đơn hàng
- *   /manager/orders           – Danh sách đơn hàng
- *   /manager/revenue          – Doanh thu & Bán hàng
- */
+const ProfilePage = lazy(() => import("../modules/user/pages/ProfilePage"));
+const ChangePasswordPage = lazy(() => import("../modules/user/pages/ChangePasswordPage"));
 
-// const ManagerDashboard = lazy(() => import("../modules/manager/pages/ManagerDashboard"));
-
-const managerRoutes = (
+const ManagerRoutes = () => (
   <Route path="/manager" element={<MainLayout role="manager" />}>
-    {/* <Route path="dashboard"      element={<ManagerDashboard />} />
-    <Route path="daily-menu"     element={<DailyMenu />} />
-    <Route path="scheduled-menu" element={<ScheduledMenu />} />
-    <Route path="ai"             element={<AIOptimization />} />
-    <Route path="create-order"   element={<CreateOrder />} />
-    <Route path="orders"         element={<OrderList />} /> */}
+    <Route index element={<Navigate to="dashboard" replace />} />
+    <Route path="dashboard" element={<PlaceholderPage title="Tổng quan Manager" />} />
+    <Route path="create-order" element={<PlaceholderPage title="POS" />} />
+    <Route path="my-orders" element={<PlaceholderPage title="Đơn hàng của tôi" />} />
+    <Route path="daily-menu" element={<PlaceholderPage title="Thực đơn hôm nay" />} />
+    <Route path="scheduled-menu" element={<PlaceholderPage title="Thực đơn theo lịch" />} />
+    <Route path="pricing" element={<PlaceholderPage title="Định giá linh hoạt" />} />
+    <Route path="ai" element={<PlaceholderPage title="Tối ưu hóa AI" />} />
+    <Route path="orders" element={<PlaceholderPage title="Đơn hàng" />} />
+    <Route path="payments" element={<PlaceholderPage title="Thanh toán" />} />
+    <Route path="profile" element={<ProfilePage />} />
+    <Route path="change-password" element={<ChangePasswordPage />} />
   </Route>
 );
 
-export default managerRoutes;
+export default ManagerRoutes;
