@@ -22,7 +22,6 @@ const DEFAULT_STATS = {
   inactive: 0,
 };
 
-
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^[0-9+()\s.-]{8,20}$/;
 
@@ -78,7 +77,9 @@ const useUserManager = () => {
 
   const [statusAction, setStatusAction] = useState(null);
   const [resetUser, setResetUser] = useState(null);
-  const [resetPasswordForm, setResetPasswordForm] = useState(DEFAULT_RESET_PASSWORD_FORM);
+  const [resetPasswordForm, setResetPasswordForm] = useState(
+    DEFAULT_RESET_PASSWORD_FORM,
+  );
   const [resetPasswordErrors, setResetPasswordErrors] = useState({});
 
   const queryParams = useMemo(() => {
@@ -94,7 +95,7 @@ const useUserManager = () => {
     return params;
   }, [filters]);
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = async () => {
     try {
       const [totalData, activeData, inactiveData] = await Promise.all([
         userApi.getUsers({ page: 1, limit: 1 }),
@@ -110,7 +111,7 @@ const useUserManager = () => {
     } catch {
       // Stats chỉ là phụ trợ, lỗi chính sẽ hiển thị ở list.
     }
-  }, []);
+  };
 
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -124,7 +125,10 @@ const useUserManager = () => {
         ...(data?.pagination || {}),
       });
     } catch (error) {
-      const message = getApiErrorMessage(error, "Không thể tải danh sách người dùng.");
+      const message = getApiErrorMessage(
+        error,
+        "Không thể tải danh sách người dùng.",
+      );
       setUsersError(message);
       toast.error("Tải người dùng thất bại", message);
     } finally {
@@ -133,16 +137,45 @@ const useUserManager = () => {
   }, [queryParams, toast]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      fetchUsers();
-    }, filters.search ? 300 : 0);
+    const timeoutId = window.setTimeout(
+      () => {
+        fetchUsers();
+      },
+      filters.search ? 300 : 0,
+    );
 
     return () => window.clearTimeout(timeoutId);
   }, [fetchUsers, filters.search]);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    let isCancelled = false;
+
+    const loadStats = async () => {
+      try {
+        const [totalData, activeData, inactiveData] = await Promise.all([
+          userApi.getUsers({ page: 1, limit: 1 }),
+          userApi.getUsers({ page: 1, limit: 1, isActive: true }),
+          userApi.getUsers({ page: 1, limit: 1, isActive: false }),
+        ]);
+
+        if (isCancelled) return;
+
+        setStats({
+          total: totalData?.pagination?.total || 0,
+          active: activeData?.pagination?.total || 0,
+          inactive: inactiveData?.pagination?.total || 0,
+        });
+      } catch {
+        // Stats chỉ là phụ trợ, lỗi chính sẽ hiển thị ở list.
+      }
+    };
+
+    loadStats();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const handleSearchChange = (event) => {
     setFilters((prev) => ({ ...prev, search: event.target.value, page: 1 }));
@@ -154,11 +187,18 @@ const useUserManager = () => {
   };
 
   const handleResetFilters = () => {
-    setFilters((prev) => ({ ...prev, search: "", role: "", isActive: "", page: 1 }));
+    setFilters((prev) => ({
+      ...prev,
+      search: "",
+      role: "",
+      isActive: "",
+      page: 1,
+    }));
   };
 
   const handlePageChange = (page) => {
-    if (page < 1 || page === pagination.page || page > pagination.totalPages) return;
+    if (page < 1 || page === pagination.page || page > pagination.totalPages)
+      return;
     setFilters((prev) => ({ ...prev, page }));
   };
 
@@ -199,18 +239,24 @@ const useUserManager = () => {
     } else if (formData.username.trim().length < 4) {
       nextErrors.username = "Tên đăng nhập phải có ít nhất 4 ký tự.";
     } else if (!/^[a-zA-Z0-9._-]+$/.test(formData.username.trim())) {
-      nextErrors.username = "Tên đăng nhập chỉ gồm chữ, số, dấu chấm, gạch dưới và gạch ngang.";
+      nextErrors.username =
+        "Tên đăng nhập chỉ gồm chữ, số, dấu chấm, gạch dưới và gạch ngang.";
     }
 
     if (formMode === "create") {
       if (!formData.password) {
         nextErrors.password = "Vui lòng nhập mật khẩu.";
-      } else if (formData.password.length < 6 || formData.password.trim().length < 6) {
-        nextErrors.password = "Mật khẩu phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+      } else if (
+        formData.password.length < 6 ||
+        formData.password.trim().length < 6
+      ) {
+        nextErrors.password =
+          "Mật khẩu phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
       }
     }
 
-    if (!formData.fullName.trim()) nextErrors.fullName = "Vui lòng nhập họ tên.";
+    if (!formData.fullName.trim())
+      nextErrors.fullName = "Vui lòng nhập họ tên.";
 
     if (!formData.email.trim()) {
       nextErrors.email = "Vui lòng nhập email.";
@@ -219,7 +265,8 @@ const useUserManager = () => {
     }
 
     if (formData.phone.trim() && !PHONE_PATTERN.test(formData.phone.trim())) {
-      nextErrors.phone = "Số điện thoại chỉ nên gồm 8–20 ký tự: số, +, (), dấu cách hoặc dấu gạch.";
+      nextErrors.phone =
+        "Số điện thoại chỉ nên gồm 8–20 ký tự: số, +, (), dấu cách hoặc dấu gạch.";
     }
 
     if (!formData.role) nextErrors.role = "Vui lòng chọn vai trò.";
@@ -239,10 +286,16 @@ const useUserManager = () => {
       const payload = buildPayload(formData, formMode);
       if (formMode === "create") {
         await userApi.createUser(payload);
-        toast.success("Đã tạo người dùng", "Tài khoản mới đã được thêm vào hệ thống.");
+        toast.success(
+          "Đã tạo người dùng",
+          "Tài khoản mới đã được thêm vào hệ thống.",
+        );
       } else {
         await userApi.updateUser(selectedUser._id, payload);
-        toast.success("Đã cập nhật người dùng", "Thông tin tài khoản đã được lưu.");
+        toast.success(
+          "Đã cập nhật người dùng",
+          "Thông tin tài khoản đã được lưu.",
+        );
       }
 
       setIsFormOpen(false);
@@ -252,7 +305,9 @@ const useUserManager = () => {
     } catch (error) {
       const message = getApiErrorMessage(
         error,
-        formMode === "create" ? "Không thể tạo người dùng." : "Không thể cập nhật người dùng.",
+        formMode === "create"
+          ? "Không thể tạo người dùng."
+          : "Không thể cập nhật người dùng.",
       );
       setUsersError(message);
       toast.error("Lưu người dùng thất bại", message);
@@ -261,7 +316,8 @@ const useUserManager = () => {
     }
   };
 
-  const openStatusAction = (user) => setStatusAction({ user, nextActive: !user.isActive });
+  const openStatusAction = (user) =>
+    setStatusAction({ user, nextActive: !user.isActive });
 
   const closeStatusAction = () => {
     if (usersSaving) return;
@@ -277,17 +333,26 @@ const useUserManager = () => {
     try {
       if (statusAction.nextActive) {
         await userApi.enableUser(statusAction.user._id);
-        toast.success("Đã mở khóa tài khoản", "Người dùng có thể đăng nhập lại.");
+        toast.success(
+          "Đã mở khóa tài khoản",
+          "Người dùng có thể đăng nhập lại.",
+        );
       } else {
         await userApi.disableUser(statusAction.user._id);
-        toast.success("Đã tạm khóa tài khoản", "Refresh token của người dùng đã bị thu hồi.");
+        toast.success(
+          "Đã tạm khóa tài khoản",
+          "Refresh token của người dùng đã bị thu hồi.",
+        );
       }
 
       setStatusAction(null);
       await fetchUsers();
       await fetchStats();
     } catch (error) {
-      const message = getApiErrorMessage(error, "Không thể cập nhật trạng thái người dùng.");
+      const message = getApiErrorMessage(
+        error,
+        "Không thể cập nhật trạng thái người dùng.",
+      );
       setUsersError(message);
       toast.error("Cập nhật trạng thái thất bại", message);
     } finally {
@@ -322,7 +387,8 @@ const useUserManager = () => {
       resetPasswordForm.newPassword.length < 6 ||
       resetPasswordForm.newPassword.trim().length < 6
     ) {
-      nextErrors.newPassword = "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+      nextErrors.newPassword =
+        "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
     }
 
     if (resetPasswordForm.confirmPassword !== resetPasswordForm.newPassword) {
@@ -342,11 +408,17 @@ const useUserManager = () => {
 
     try {
       await userApi.resetUserPassword(resetUser._id, resetPasswordForm);
-      toast.success("Đã đặt lại mật khẩu", "Người dùng cần đăng nhập lại bằng mật khẩu mới.");
+      toast.success(
+        "Đã đặt lại mật khẩu",
+        "Người dùng cần đăng nhập lại bằng mật khẩu mới.",
+      );
       setResetUser(null);
       await fetchUsers();
     } catch (error) {
-      const message = getApiErrorMessage(error, "Không thể đặt lại mật khẩu người dùng.");
+      const message = getApiErrorMessage(
+        error,
+        "Không thể đặt lại mật khẩu người dùng.",
+      );
       setUsersError(message);
       toast.error("Đặt lại mật khẩu thất bại", message);
     } finally {

@@ -6,7 +6,6 @@ import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
 import { updateAuthUser } from "../../auth/redux/authSlice";
 import * as userApi from "../api/userApi";
 
-
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^[0-9+()\s.-]{8,20}$/;
 
@@ -38,10 +37,6 @@ const useProfile = () => {
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
-    setFormData(toProfileForm(currentUser));
-  }, [currentUser?._id, currentUser?.fullName, currentUser?.email, currentUser?.phone]);
-
-  useEffect(() => {
     let isCancelled = false;
 
     const loadProfile = async () => {
@@ -53,11 +48,15 @@ const useProfile = () => {
         if (isCancelled) return;
 
         setProfile(data);
+        setFormData(toProfileForm(data));
         dispatch(updateAuthUser(data));
       } catch (loadError) {
         if (isCancelled) return;
 
-        const message = getApiErrorMessage(loadError, "Không thể tải hồ sơ cá nhân.");
+        const message = getApiErrorMessage(
+          loadError,
+          "Không thể tải hồ sơ cá nhân.",
+        );
         setError(message);
         toast.error("Tải hồ sơ thất bại", message);
       } finally {
@@ -90,7 +89,8 @@ const useProfile = () => {
     }
 
     if (formData.phone.trim() && !PHONE_PATTERN.test(formData.phone.trim())) {
-      nextErrors.phone = "Số điện thoại chỉ nên gồm 8–20 ký tự: số, +, (), dấu cách hoặc dấu gạch.";
+      nextErrors.phone =
+        "Số điện thoại chỉ nên gồm 8–20 ký tự: số, +, (), dấu cách hoặc dấu gạch.";
     }
 
     setFieldErrors(nextErrors);
