@@ -14,10 +14,11 @@ const passwordResetTokenSchema = new Schema(
     tokenHash: {
       type: String,
       required: true,
+      unique: true,
       index: true,
     },
 
-    expiredAt: {
+    expiresAt: {
       type: Date,
       required: true,
       index: true,
@@ -26,6 +27,25 @@ const passwordResetTokenSchema = new Schema(
     usedAt: {
       type: Date,
       default: null,
+      index: true,
+    },
+
+    attempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+      index: true,
     },
   },
   {
