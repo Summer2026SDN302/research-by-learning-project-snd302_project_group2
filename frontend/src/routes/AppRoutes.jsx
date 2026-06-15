@@ -19,6 +19,9 @@ const LoginPage = lazy(() => import("../modules/auth/pages/LoginPage"));
 const ForgotPasswordPage = lazy(
   () => import("../modules/auth/pages/ForgotPasswordPage"),
 );
+const ResetPasswordPage = lazy(
+  () => import("../modules/auth/pages/ResetPasswordPage"),
+);
 
 const RootRedirect = () => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -35,11 +38,7 @@ const AppRoutes = () => {
 
   if (!isBootstrapped) {
     return (
-      <LoadingOverlay
-        show
-        fullPage
-        message="Đang khởi tạo phiên làm việc..."
-      />
+      <LoadingOverlay show fullPage message="Đang khởi tạo phiên làm việc..." />
     );
   }
 
@@ -51,6 +50,7 @@ const AppRoutes = () => {
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>

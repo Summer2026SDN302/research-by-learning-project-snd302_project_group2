@@ -35,7 +35,7 @@ const refreshAccessToken = async () => {
   const nextAccessToken = response.data?.data?.accessToken;
 
   if (!nextAccessToken) {
-    throw new Error("Refresh response does not include access token.");
+    throw new Error("Phiên đăng nhập không trả về token mới.");
   }
 
   setAccessToken(nextAccessToken);

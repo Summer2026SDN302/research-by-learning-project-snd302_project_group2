@@ -1,105 +1,97 @@
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
+
 import Spinner from "./Spinner";
 
-/**
- * ConfirmDialog
- *
- * Props:
- *   open         {boolean}  – controls dialog visibility
- *   title        {string}   – main heading text
- *   description  {string}   – supporting text below the title
- *   confirmLabel {string}   – label for the confirm button
- *   cancelLabel  {string}   – label for the cancel button
- *   variant      {string}   – 'danger' | 'warning' | 'info'  (default: 'danger')
- *   onConfirm    {fn}       – () => void  called when confirm button is clicked
- *   onCancel     {fn}       – () => void  called when cancel button or backdrop is clicked
- *   isLoading    {boolean}  – shows spinner and disables both buttons when true
- */
 const VARIANT_CONFIG = {
   danger: {
-    icon: "delete_forever",
-    iconColor: "text-error",
-    bg: "bg-error-container/20",
-    btn: "bg-error hover:opacity-90 text-on-error",
+    icon: "warning",
+    iconClass: "bg-error-container text-error",
+    buttonClass: "bg-error text-on-error hover:opacity-90",
   },
   warning: {
-    icon: "warning",
-    iconColor: "text-tertiary",
-    bg: "bg-tertiary-container/20",
-    btn: "bg-tertiary hover:opacity-90 text-on-tertiary",
+    icon: "priority_high",
+    iconClass: "bg-tertiary-container text-tertiary",
+    buttonClass: "bg-tertiary text-on-tertiary hover:opacity-90",
   },
   info: {
     icon: "info",
-    iconColor: "text-primary",
-    bg: "bg-primary/10",
-    btn: "bg-primary hover:opacity-90 text-on-primary",
+    iconClass: "bg-primary-container text-on-primary-container",
+    buttonClass: "bg-primary text-on-primary hover:opacity-90",
   },
 };
 
-const noop = () => {};
-
 const ConfirmDialog = ({
   open = false,
-  title = "Xác nhận thao tác",
-  description = "Thao tác này có thể ảnh hưởng đến dữ liệu hiện có.",
+  title = "Xác nhận thao tác?",
+  description = "Thao tác này sẽ được áp dụng ngay sau khi xác nhận.",
   confirmLabel = "Xác nhận",
   cancelLabel = "Hủy",
   variant = "danger",
-  onConfirm = noop,
-  onCancel = noop,
+  onConfirm = () => {},
+  onCancel = () => {},
   isLoading = false,
 }) => {
+  const config = VARIANT_CONFIG[variant] ?? VARIANT_CONFIG.danger;
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
-  const { icon, iconColor, bg, btn } =
-    VARIANT_CONFIG[variant] ?? VARIANT_CONFIG.danger;
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex min-h-dvh items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 h-full w-full cursor-default bg-black/45 backdrop-blur-sm"
         onClick={onCancel}
+        aria-label="Đóng hộp thoại xác nhận"
+        disabled={isLoading}
       />
 
-      {/* Dialog */}
-      <div className="relative bg-surface-container-lowest rounded-2xl shadow-elevated p-6 w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
-        {/* Icon */}
-        <div
-          className={`w-14 h-14 ${bg} ${iconColor} rounded-2xl flex items-center justify-center mb-5 mx-auto`}
-        >
-          <span className="material-symbols-outlined text-[32px]">{icon}</span>
+      <section className="relative w-full max-w-md rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 shadow-elevated">
+        <div className="mb-5 flex items-start gap-4">
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${config.iconClass}`}>
+            <span className="material-symbols-outlined">{config.icon}</span>
+          </div>
+
+          <div>
+            <h2 className="text-headline-sm font-bold text-on-surface">{title}</h2>
+            <p className="mt-2 text-body-sm text-on-surface-variant">{description}</p>
+          </div>
         </div>
 
-        {/* Text */}
-        <div className="text-center mb-6">
-          <h3 className="text-headline-sm font-bold text-on-surface">
-            {title}
-          </h3>
-          <p className="text-body-sm text-on-surface-variant mt-2">
-            {description}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
+            type="button"
+            className="rounded-lg border border-outline-variant px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 py-2.5 rounded-xl border border-outline-variant text-body-sm font-semibold text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50"
           >
             {cancelLabel}
           </button>
+
           <button
+            type="button"
+            className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-label-md text-label-md disabled:cursor-not-allowed disabled:opacity-60 ${config.buttonClass}`}
             onClick={onConfirm}
             disabled={isLoading}
-            className={`flex-1 py-2.5 rounded-xl text-body-sm font-semibold transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 ${btn}`}
           >
             {isLoading && <Spinner size="sm" />}
             {confirmLabel}
           </button>
         </div>
-      </div>
-    </div>
+      </section>
+    </div>,
+    document.body,
   );
 };
 
