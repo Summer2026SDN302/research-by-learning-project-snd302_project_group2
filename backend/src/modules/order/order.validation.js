@@ -37,6 +37,14 @@ export const validateGetOrders = [
     .optional()
     .matches(/^\d{4}-\d{2}-\d{2}$/)
     .withMessage("Date must be in YYYY-MM-DD format"),
+  query("fromDate")
+    .optional()
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("fromDate must be in YYYY-MM-DD format"),
+  query("toDate")
+    .optional()
+    .matches(/^\d{4}-\d{2}-\d{2}$/)
+    .withMessage("toDate must be in YYYY-MM-DD format"),
 ];
 
 export const validateGetOrderById = [

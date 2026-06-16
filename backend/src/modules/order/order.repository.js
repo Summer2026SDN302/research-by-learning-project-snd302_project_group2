@@ -1,13 +1,29 @@
 import { toObjectId } from "../../shared/helpers/mongo.helper.js";
 import Order from "./order.model.js";
 
+const parseToUTCMidnight = (dateString) => {
+  const [year, month, day] = dateString.split("-");
+  return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+};
+
+/**
+ * Trả về đầu ngày tiếp theo (UTC midnight của ngày + 1).
+ * Dùng cho $lt khi query “≤ toDate” để bao gồm toàn bộ ngày toDate.
+ */
+const parseToNextDayUTCMidnight = (dateString) => {
+  const [year, month, day] = dateString.split("-");
+  return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day) + 1));
+};
+
 const orderRepository = {
-  async create(payload) {
-    return Order.create(payload);
+  async create(payload, session) {
+    // Fix #3: nhận session từ transaction để đảm bảo rollback nếu có lỗi
+    const [order] = await Order.create([payload], { session });
+    return order;
   },
 
-  async findAll({ staffId, orderStatus, date, page, limit }) {
-    const filter = { deletedAt: null };
+  async findAll({ staffId, orderStatus, date, fromDate, toDate, page, limit }) {
+    const filter = {};
 
     if (staffId) {
       filter.staffId = toObjectId(staffId);
@@ -18,13 +34,24 @@ const orderRepository = {
     }
 
     if (date) {
-      filter.orderDate = date;
+      filter.orderDate = parseToUTCMidnight(date);
+    } else if (fromDate || toDate) {
+      filter.orderDate = {};
+      if (fromDate) filter.orderDate.$gte = parseToUTCMidnight(fromDate);
+      // Dùng $lt với ngày tiếp theo để bao gồm toàn bộ ngày toDate
+      // Ví dụ: toDate=2026-06-15 → $lt 2026-06-16T00:00Z (đúng)
+      // Nếu dùng $lte 2026-06-15T00:00Z → bỏ sót mọi order tạo sau midnight
+      if (toDate) filter.orderDate.$lt = parseToNextDayUTCMidnight(toDate);
     }
 
     const skip = (page - 1) * limit;
 
     const [items, total] = await Promise.all([
-      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Order.find(filter)
+        .populate("items.foodItemId", "name") // Fix #7: populate để có tên món trong response
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
       Order.countDocuments(filter),
     ]);
 
@@ -32,12 +59,15 @@ const orderRepository = {
   },
 
   async findById(id) {
-    return Order.findOne({ _id: toObjectId(id), deletedAt: null });
+    return Order.findOne({ _id: toObjectId(id) }).populate(
+      "items.foodItemId",
+      "name",
+    );
   },
 
   async updateStatusById(id, status) {
     return Order.findOneAndUpdate(
-      { _id: toObjectId(id), deletedAt: null },
+      { _id: toObjectId(id) },
       { $set: { orderStatus: status } },
       { new: true, runValidators: true },
     );

@@ -26,6 +26,16 @@ const orderItemSchema = new Schema(
       required: true,
       min: 1,
     },
+
+    /**
+     * Snapshot tại thời điểm đặt hàng: unitPrice × quantity.
+     * Không tính lại sau — phản ánh đúng giá khách trả thực tế.
+     */
+    lineTotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
   },
   { _id: false },
 );
@@ -47,6 +57,20 @@ const orderSchema = new Schema(
 
     items: [orderItemSchema],
 
+    /**
+     * Tổng giá trước thuế: Σ lineTotal của tất cả order items.
+     */
+    subTotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    /**
+     * Tổng tiền đã giảm do AI / MANUAL áp dụng.
+     * = Σ (originalPrice − currentPrice) × quantity.
+     * Chỉ dùng để thống kê nội bộ, không hiển thị trên receipt.
+     */
     discountAmount: {
       type: Number,
       default: 0,
@@ -73,19 +97,10 @@ const orderSchema = new Schema(
     },
 
     orderDate: {
-      type: String,
+      type: Date, // Fix #5: dùng Date thay vì String để hỗ trợ query $gte/$lte theo range
       required: true,
     },
 
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-
-    deletedAt: {
-      type: Date,
-      default: null,
-    },
   },
   {
     timestamps: true,

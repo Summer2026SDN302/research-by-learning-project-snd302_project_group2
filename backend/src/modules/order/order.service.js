@@ -1,24 +1,28 @@
+import mongoose from "mongoose";
 import AppError from "../../shared/exceptions/AppError.js";
 import { buildPaginationMeta } from "../../shared/helpers/pagination.helper.js";
 import { parsePagination } from "../../shared/helpers/query.helper.js";
 import dailyMenuRepository from "../menu/daily_menu/daily_menu.repository.js";
 import orderRepository from "./order.repository.js";
 import { toOrderResponse } from "./order.dto.js";
-import { USER_ROLES } from "../user/user.constants.js";
-import { VALID_STATUS_TRANSITIONS } from "./order.constants.js";
+import { VALID_STATUS_TRANSITIONS, TAX_PERCENT } from "./order.constants.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const getTodayDateString = () => {
+/**
+ * Trả về ngày hôm nay theo UTC midnight (Date object).
+ * Dùng Date thay vì String để hỗ trợ query $gte/$lte theo range.
+ */
+const getTodayUTCMidnight = () => {
   const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
 };
 
 const generateOrderNumber = () => {
-  const dateStr = getTodayDateString().replace(/-/g, "");
+  const now = new Date();
+  const dateStr = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}${String(now.getUTCDate()).padStart(2, "0")}`;
   const random = Math.floor(1000 + Math.random() * 9000);
   return `ORD-${dateStr}-${random}`;
 };
@@ -31,11 +35,74 @@ const getOrderOrThrow = async (id) => {
   return order;
 };
 
+/**
+ * Pure function — tính toán giá trị đơn hàng từ danh sách món đã validate.
+ *
+ * @param {Array<{ menuItem, requestedQty }>} lineItems
+ *   menuItem: document từ dailyMenu (có originalPrice, currentPrice, foodItemId đã populate)
+ *   requestedQty: số lượng khách yêu cầu
+ *
+ * @returns {{
+ *   orderItems: Array,   — mảng item để lưu vào DB
+ *   subTotal: number,    — Σ lineTotal (trước thuế)
+ *   discountAmount: number, — Σ (originalPrice − currentPrice) × qty
+ *   taxAmount: number,   — subTotal × TAX_PERCENT
+ *   totalAmount: number  — subTotal + taxAmount
+ * }}
+ */
+const calculateOrderPricing = (lineItems) => {
+  let subTotal = 0;
+  let discountAmount = 0;
+
+  const orderItems = lineItems.map(({ menuItem, requestedQty }) => {
+    const unitPrice = menuItem.currentPrice;
+    const lineTotal = unitPrice * requestedQty;
+    const discount = (menuItem.originalPrice - menuItem.currentPrice) * requestedQty;
+
+    subTotal += lineTotal;
+    discountAmount += discount;
+
+    return {
+      foodItemId: menuItem.foodItemId._id,
+      name: menuItem.foodItemId.name,
+      unitPrice,
+      quantity: requestedQty,
+      lineTotal,
+    };
+  });
+
+  const taxAmount = Math.round(subTotal * TAX_PERCENT * 100) / 100;
+  const totalAmount = Math.round((subTotal + taxAmount) * 100) / 100;
+
+  return {
+    orderItems,
+    subTotal: Math.round(subTotal * 100) / 100,
+    discountAmount: Math.round(discountAmount * 100) / 100,
+    taxAmount,
+    totalAmount,
+  };
+};
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 const orderService = {
   async createOrder(body, staffId) {
-    const today = getTodayDateString();
+    const today = getTodayUTCMidnight(); // Fix #5: dùng Date thay vì String
+
+    // Fix #9: validate duplicate foodItemId trong items trước khi xử lý
+    const seen = new Set();
+    for (const item of body.items) {
+      if (seen.has(item.foodItemId)) {
+        throw new AppError(
+          "Duplicate food item in order",
+          400,
+          "DUPLICATE_ITEM",
+        );
+      }
+      seen.add(item.foodItemId);
+    }
+
+    // Fix #1: findByDate giờ populate items.foodItemId với field "name"
     const dailyMenu = await dailyMenuRepository.findByDate(today);
 
     if (!dailyMenu || !dailyMenu.isConfigured) {
@@ -46,15 +113,14 @@ const orderService = {
       );
     }
 
-    // Build a lookup map for daily menu items
+    // Build lookup map — sau khi populate, foodItemId là FoodItem object
     const menuItemMap = {};
     for (const item of dailyMenu.items) {
-      menuItemMap[item.foodItemId.toString()] = item;
+      menuItemMap[item.foodItemId._id.toString()] = item;
     }
 
-    // Validate each requested item and build order items
-    const orderItems = [];
-    let totalAmount = 0;
+    // Validate từng item và collect lineItems để tính giá
+    const lineItems = [];
 
     for (const requested of body.items) {
       const menuItem = menuItemMap[requested.foodItemId];
@@ -69,7 +135,7 @@ const orderService = {
 
       if (menuItem.status !== "Available") {
         throw new AppError(
-          `Food item "${menuItem.foodItemId}" is unavailable`,
+          `Food item "${menuItem.foodItemId.name}" is unavailable`,
           400,
           "ITEM_UNAVAILABLE",
         );
@@ -77,56 +143,68 @@ const orderService = {
 
       if (menuItem.remainingQuantity < requested.quantity) {
         throw new AppError(
-          `Insufficient quantity for item "${menuItem.foodItemId}"`,
+          `Insufficient quantity for item "${menuItem.foodItemId.name}"`,
           400,
           "INSUFFICIENT_QUANTITY",
         );
       }
 
-      orderItems.push({
-        foodItemId: menuItem.foodItemId,
-        name: menuItem.foodItemId.toString(), // will be enriched from FoodItem ref
-        unitPrice: menuItem.currentPrice,
-        quantity: requested.quantity,
-      });
-
-      totalAmount += menuItem.currentPrice * requested.quantity;
+      // Thu thập dữ liệu để truyền vào calculateOrderPricing
+      lineItems.push({ menuItem, requestedQty: requested.quantity });
     }
 
-    // Deduct sold quantities atomically
-    await Promise.all(
-      body.items.map(({ foodItemId, quantity }) =>
-        dailyMenuRepository.deductSoldQuantity(today, foodItemId, quantity),
-      ),
-    );
+    // Tính toán giá trị đơn hàng
+    const { orderItems, subTotal, discountAmount, taxAmount, totalAmount } =
+      calculateOrderPricing(lineItems);
 
-    // Create order
-    const order = await orderRepository.create({
-      orderNumber: generateOrderNumber(),
-      staffId,
-      items: orderItems,
-      discountAmount: 0,
-      taxAmount: 0,
-      totalAmount,
-      orderStatus: "Pending",
-      orderDate: today,
-    });
+    // Fix #3: dùng Mongoose session + transaction để đảm bảo rollback nếu có lỗi.
+    // Nếu orderRepository.create thất bại, các deduct đã làm sẽ bị rollback.
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    return toOrderResponse(order);
+    try {
+      // Fix #2: deductSoldQuantity giờ có atomic guard ($gte) và nhận session
+      await Promise.all(
+        body.items.map(({ foodItemId, quantity }) =>
+          dailyMenuRepository.deductSoldQuantity(today, foodItemId, quantity, session),
+        ),
+      );
+
+      const order = await orderRepository.create(
+        {
+          orderNumber: generateOrderNumber(),
+          staffId,
+          items: orderItems,
+          subTotal,
+          discountAmount,
+          taxAmount,
+          totalAmount,
+          orderStatus: "Pending",
+          orderDate: today,
+        },
+        session,
+      );
+
+      await session.commitTransaction();
+      return toOrderResponse(order);
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
+    }
   },
 
-  async getOrders(query, userId, role) {
+  async getOrders(query) {
     const { page, limit } = parsePagination(query);
-    const { orderStatus, date } = query;
-
-    // Staff only sees their own orders
-    const staffId =
-      role === USER_ROLES.STAFF ? userId : query.staffId ?? undefined;
+    const { orderStatus, date, staffId, fromDate, toDate } = query;
 
     const { items, total } = await orderRepository.findAll({
       staffId,
       orderStatus,
       date,
+      fromDate,
+      toDate,
       page,
       limit,
     });
@@ -142,7 +220,9 @@ const orderService = {
     return toOrderResponse(order);
   },
 
-  async updateOrderStatus(id, newStatus, role) {
+  // Fix #4: bỏ param `role` vì không dùng trong hàm này.
+  // Việc kiểm tra role (chỉ Manager/Admin mới cancel được) nên để ở middleware/router.
+  async updateOrderStatus(id, newStatus) {
     const order = await getOrderOrThrow(id);
     const currentStatus = order.orderStatus;
 

@@ -10,6 +10,8 @@ import {
 import {
   ORDER_CREATE_ROLES,
   ORDER_READ_ROLES,
+  ORDER_READ_ALL_ROLES,
+  ORDER_MY_ORDERS_ROLES,
   ORDER_STATUS_MANAGE_ROLES,
 } from "./order.constants.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
@@ -21,10 +23,19 @@ const router = express.Router();
 // Apply authentication to all order routes
 router.use(authenticate);
 
-// GET /api/orders – Staff sees own, Manager/Admin sees all
+// GET /api/orders/my-orders – Staff/Manager xem order của chính mình
+router.get(
+  "/my-orders",
+  authorizeRoles(...ORDER_MY_ORDERS_ROLES),
+  validateGetOrders,
+  validateRequest,
+  orderController.getMyOrders,
+);
+
+// GET /api/orders – Manager/Admin xem tất cả order
 router.get(
   "/",
-  authorizeRoles(...ORDER_READ_ROLES),
+  authorizeRoles(...ORDER_READ_ALL_ROLES),
   validateGetOrders,
   validateRequest,
   orderController.getOrders,

@@ -21,14 +21,22 @@ const dailyMenuRepository = {
   },
 
   async findByDate(dateString) {
-    return DailyMenu.findOne({ date: dateString });
+    return DailyMenu.findOne({ date: dateString }).populate(
+      "items.foodItemId",
+      "name",
+    );
   },
 
-  async deductSoldQuantity(dateString, foodItemId, quantity) {
-    return DailyMenu.findOneAndUpdate(
+  async deductSoldQuantity(dateString, foodItemId, quantity, session) {
+    const result = await DailyMenu.findOneAndUpdate(
       {
         date: dateString,
-        "items.foodItemId": toObjectId(foodItemId),
+        items: {
+          $elemMatch: {
+            foodItemId: toObjectId(foodItemId),
+            remainingQuantity: { $gte: quantity }, // atomic guard — chỉ update khi còn đủ hàng
+          },
+        },
       },
       {
         $inc: {
@@ -36,8 +44,9 @@ const dailyMenuRepository = {
           "items.$.remainingQuantity": -quantity,
         },
       },
-      { new: true },
+      { new: true, session },
     );
+    return result;
   },
 };
 
