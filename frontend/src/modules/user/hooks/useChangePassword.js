@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 import useAppToast from "../../../hooks/useAppToast";
+import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
 import { clearAccessToken } from "../../../services/apiClient";
 import { clearAuth } from "../../auth/redux/authSlice";
 import * as userApi from "../api/userApi";
@@ -13,9 +14,6 @@ const initialForm = {
   confirmPassword: "",
 };
 
-const getApiErrorMessage = (error, fallback) => {
-  return error?.response?.data?.message || error?.message || fallback;
-};
 
 const useChangePassword = () => {
   const dispatch = useDispatch();

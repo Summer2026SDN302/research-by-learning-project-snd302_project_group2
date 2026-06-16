@@ -7,32 +7,13 @@ import { authFailure, authStart, authSuccess } from "../redux/authSlice";
 import { getRoleHomePath } from "../constants/authConstants";
 import { setAccessToken } from "../../../services/apiClient";
 import useAppToast from "../../../hooks/useAppToast";
+import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
 
 const REMEMBER_IDENTIFIER_KEY = "stallbox_remember_identifier";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_PATTERN = /^[a-zA-Z0-9._-]+$/;
 
 const normalizeIdentifier = (value = "") => String(value).trim();
-
-const getApiErrorMessage = (error) => {
-  const serverMessage = error?.response?.data?.message;
-
-  if (serverMessage) return serverMessage;
-
-  if (!error?.response) {
-    return "Không thể kết nối server. Vui lòng kiểm tra mạng hoặc thử lại sau.";
-  }
-
-  if (error.response.status === 401) {
-    return "Tên đăng nhập hoặc mật khẩu không đúng.";
-  }
-
-  if (error.response.status >= 500) {
-    return "Server đang gặp lỗi. Vui lòng thử lại sau.";
-  }
-
-  return "Không thể đăng nhập. Vui lòng thử lại.";
-};
 
 const validateIdentifier = (identifier) => {
   const value = normalizeIdentifier(identifier);

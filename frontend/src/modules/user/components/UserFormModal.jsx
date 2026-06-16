@@ -1,8 +1,14 @@
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
+
+import PasswordInput from "../../../components/form/PasswordInput";
 import Spinner from "../../../components/feedback/Spinner";
 import { USER_ROLE_OPTIONS } from "../constants/userConstants";
 
 const inputClass =
   "w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2.5 text-body-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15";
+
+const passwordInputClass = `${inputClass} pr-11`;
 
 const FieldError = ({ message, helper }) => {
   if (message) return <p className="mt-1 text-body-sm text-error">{message}</p>;
@@ -20,15 +26,32 @@ const UserFormModal = ({
   onSubmit,
   onClose,
 }) => {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   const isCreate = mode === "create";
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex min-h-dvh items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 h-full w-full cursor-default bg-black/45 backdrop-blur-sm"
+        onClick={onClose}
+        disabled={isSaving}
+        aria-label="Đóng modal người dùng"
+      />
 
-      <section className="relative w-full max-w-2xl rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-elevated">
+      <section className="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-elevated">
         <div className="flex items-start justify-between border-b border-outline-variant px-6 py-5">
           <div>
             <p className="font-label-md text-label-md uppercase tracking-wider text-primary">
@@ -50,7 +73,7 @@ const UserFormModal = ({
           </button>
         </div>
 
-        <form className="space-y-5 px-6 py-6" onSubmit={onSubmit}>
+        <form className="max-h-[calc(100dvh-9rem)] space-y-5 overflow-y-auto px-6 py-6" onSubmit={onSubmit}>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="username">
@@ -91,23 +114,20 @@ const UserFormModal = ({
             </div>
 
             {isCreate && (
-              <div className="md:col-span-2">
-                <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="password">
-                  Mật khẩu tạm thời
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  className={inputClass}
-                  type="password"
-                  value={formData.password}
-                  onChange={onChange}
-                  autoComplete="new-password"
-                  disabled={isSaving}
-                  placeholder="Ít nhất 6 ký tự"
-                />
-                <FieldError message={fieldErrors.password} helper="Ít nhất 6 ký tự và không được chỉ gồm khoảng trắng." />
-              </div>
+              <PasswordInput
+                id="password"
+                name="password"
+                label="Mật khẩu tạm thời"
+                value={formData.password}
+                onChange={onChange}
+                error={fieldErrors.password}
+                helper="Ít nhất 6 ký tự và không được chỉ gồm khoảng trắng."
+                autoComplete="new-password"
+                disabled={isSaving}
+                placeholder="Ít nhất 6 ký tự"
+                inputClassName={passwordInputClass}
+                wrapperClassName="md:col-span-2"
+              />
             )}
 
             <div>
@@ -182,7 +202,8 @@ const UserFormModal = ({
           </div>
         </form>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

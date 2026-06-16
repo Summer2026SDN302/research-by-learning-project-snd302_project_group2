@@ -1,75 +1,101 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import useAppToast from "../../../hooks/useAppToast";
+import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
+import * as authApi from "../api/authApi";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const USERNAME_PATTERN = /^[a-zA-Z0-9._-]+$/;
 
-const validateIdentifier = (identifier) => {
-  const value = String(identifier || "").trim();
+const validateEmail = (email) => {
+  const value = String(email || "").trim();
 
-  if (!value) return "Vui lòng nhập email hoặc mã nhân viên.";
-  if (value.length < 3) return "Email hoặc mã nhân viên cần có ít nhất 3 ký tự.";
-  if (/\s/.test(value)) return "Email hoặc mã nhân viên không được chứa khoảng trắng.";
-
-  if (value.includes("@")) {
-    if (!EMAIL_PATTERN.test(value)) return "Email chưa đúng định dạng. Ví dụ: user@stallbox.com.";
-    return "";
-  }
-
-  if (!USERNAME_PATTERN.test(value)) {
-    return "Mã nhân viên chỉ gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.";
+  if (!value) return "Vui lòng nhập email đã đăng ký.";
+  if (/\s/.test(value)) return "Email không được chứa khoảng trắng.";
+  if (!EMAIL_PATTERN.test(value)) {
+    return "Email chưa đúng định dạng. Ví dụ: user@stallbox.com.";
   }
 
   return "";
 };
 
 const useForgotPassword = () => {
+  const navigate = useNavigate();
   const { toast } = useAppToast();
 
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [fieldError, setFieldError] = useState("");
-  const [isLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const icon = identifier.includes("@") ? "mail" : "person";
+  const normalizedEmail = email.trim().toLowerCase();
 
   const handleChange = (event) => {
     const nextValue = event.target.value;
-    setIdentifier(nextValue);
+
+    setEmail(nextValue);
+    setFormError("");
+    setIsSubmitted(false);
 
     if (fieldError) {
-      setFieldError(validateIdentifier(nextValue));
+      setFieldError(validateEmail(nextValue));
     }
   };
 
   const handleBlur = () => {
-    setFieldError(validateIdentifier(identifier));
+    setFieldError(validateEmail(email));
   };
 
-  const handleSubmit = (event) => {
+  const goToResetPassword = () => {
+    navigate(`/reset-password?email=${encodeURIComponent(normalizedEmail)}`);
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const message = validateIdentifier(identifier);
+    if (isLoading) return;
+
+    const message = validateEmail(email);
     if (message) {
       setFieldError(message);
       return;
     }
 
-    toast.info(
-      "Chưa hỗ trợ backend",
-      "Backend hiện chưa có API quên mật khẩu nên màn này chỉ dựng UI trước.",
-      4000,
-    );
+    setIsLoading(true);
+    setFormError("");
+
+    try {
+      await authApi.forgotPassword({ email: normalizedEmail });
+      setIsSubmitted(true);
+      toast.success(
+        "Đã gửi mã OTP",
+        "Vui lòng kiểm tra hộp thư đến hoặc thư rác rồi nhập mã để đặt lại mật khẩu.",
+        4500,
+      );
+    } catch (error) {
+      const friendlyMessage = getApiErrorMessage(
+        error,
+        "Không thể gửi mã OTP. Vui lòng thử lại sau.",
+      );
+      setFormError(friendlyMessage);
+      toast.error("Gửi OTP thất bại", friendlyMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return {
-    identifier,
-    icon,
+    email,
+    normalizedEmail,
     fieldError,
+    formError,
     isLoading,
+    isSubmitted,
     handleChange,
     handleBlur,
     handleSubmit,
+    goToResetPassword,
   };
 };
 
