@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import Spinner from "./Spinner";
 
 /**
@@ -53,7 +54,7 @@ const ConfirmDialog = ({
   const { icon, iconColor, bg, btn } =
     VARIANT_CONFIG[variant] ?? VARIANT_CONFIG.danger;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Backdrop */}
       <div
@@ -99,7 +100,8 @@ const ConfirmDialog = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

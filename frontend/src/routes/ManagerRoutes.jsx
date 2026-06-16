@@ -6,6 +6,7 @@ import MainLayout from "../layouts/MainLayout";
 
 const ProfilePage = lazy(() => import("../modules/user/pages/ProfilePage"));
 const ChangePasswordPage = lazy(() => import("../modules/user/pages/ChangePasswordPage"));
+const DailyMenuPage = lazy(() => import("../modules/menu/pages/daily-menu/DailyMenuPage"));
 
 const ManagerRoutes = () => (
   <Route path="/manager" element={<MainLayout role="manager" />}>
@@ -13,7 +14,7 @@ const ManagerRoutes = () => (
     <Route path="dashboard" element={<PlaceholderPage title="Tổng quan Manager" />} />
     <Route path="create-order" element={<PlaceholderPage title="POS" />} />
     <Route path="my-orders" element={<PlaceholderPage title="Đơn hàng của tôi" />} />
-    <Route path="daily-menu" element={<PlaceholderPage title="Thực đơn hôm nay" />} />
+    <Route path="daily-menu" element={<DailyMenuPage />} />
     <Route path="scheduled-menu" element={<PlaceholderPage title="Thực đơn theo lịch" />} />
     <Route path="pricing" element={<PlaceholderPage title="Định giá linh hoạt" />} />
     <Route path="ai" element={<PlaceholderPage title="Tối ưu hóa AI" />} />
