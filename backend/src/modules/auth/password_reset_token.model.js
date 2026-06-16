@@ -18,7 +18,7 @@ const passwordResetTokenSchema = new Schema(
       index: true,
     },
 
-    expiresAt: {
+    expiredAt: {
       type: Date,
       required: true,
       index: true,

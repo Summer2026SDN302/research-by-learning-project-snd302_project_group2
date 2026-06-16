@@ -24,7 +24,7 @@ const refreshTokenSchema = new Schema(
       index: true,
     },
 
-    expiresAt: {
+    expiredAt: {
       type: Date,
       required: true,
       index: true,
@@ -40,4 +40,4 @@ const refreshTokenSchema = new Schema(
   },
 );
 
-export default mongoose.model("RefreshTokenToken", refreshTokenSchema);
+export default mongoose.model("RefreshToken", refreshTokenSchema);
