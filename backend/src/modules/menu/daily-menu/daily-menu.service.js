@@ -131,6 +131,14 @@ export const generateDailyMenu = async (date, createdBy) => {
     })
     .filter((item) => item !== null);
 
+  if (dailyMenuItems.length === 0) {
+    throw new AppError(
+      "No active food items found in the scheduled menu for this day",
+      400,
+      "SCHEDULED_MENU_EMPTY",
+    );
+  }
+
   // Create and return new daily menu
   const newMenu = await dailyMenuRepository.createMenu({
     date,
