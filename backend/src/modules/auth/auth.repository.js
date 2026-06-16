@@ -33,12 +33,12 @@ export const saveUser = async (user) => {
 export const createRefreshTokenRecord = async ({
   userId,
   tokenHash,
-  expiresAt,
+  expiredAt,
 }) => {
   return RefreshToken.create({
     userId,
     tokenHash,
-    expiresAt,
+    expiredAt,
   });
 };
 
@@ -99,11 +99,11 @@ export const markUnusedPasswordResetTokensAsUsed = async (userId) => {
   );
 };
 
-export const createPasswordResetOtp = async ({ userId, otpHash, expiresAt }) => {
+export const createPasswordResetOtp = async ({ userId, otpHash, expiredAt }) => {
   return PasswordResetToken.create({
     userId,
     tokenHash: otpHash,
-    expiresAt,
+    expiredAt,
   });
 };
 
@@ -114,7 +114,7 @@ export const findValidPasswordResetOtp = async ({ userId, otpHash }) => {
     usedAt: null,
     deletedAt: null,
     isActive: true,
-    expiresAt: { $gt: new Date() },
+    expiredAt: { $gt: new Date() },
   });
 };
 
