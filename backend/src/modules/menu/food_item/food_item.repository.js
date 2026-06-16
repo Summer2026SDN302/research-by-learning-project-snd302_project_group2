@@ -1,4 +1,4 @@
-import FoodItem from "./food_item.model.js";
+// import FoodItem from "./food_item.model.js";
 
 export const findFoodItemsByIds = async (ids) => {
   return FoodItem.find({
