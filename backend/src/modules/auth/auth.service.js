@@ -27,12 +27,12 @@ const sanitizeUser = (user) => {
 
 const createAndStoreRefreshToken = async (user) => {
   const refreshToken = createRefreshTokenValue(user);
-  const expiresAt = new Date(Date.now() + getRefreshTokenMaxAge());
+  const expiredAt = new Date(Date.now() + getRefreshTokenMaxAge());
 
   await authRepository.createRefreshTokenRecord({
     userId: user._id,
     tokenHash: hashToken(refreshToken),
-    expiresAt,
+    expiredAt,
   });
 
   return refreshToken;
@@ -191,14 +191,14 @@ export const forgotPassword = async ({ email }) => {
 
   const otp = generateResetOtp();
   const expiresMinutes = getPasswordResetExpiresMinutes();
-  const expiresAt = new Date(Date.now() + expiresMinutes * 60 * 1000);
+  const expiredAt = new Date(Date.now() + expiresMinutes * 60 * 1000);
 
   await authRepository.markUnusedPasswordResetTokensAsUsed(user._id);
 
   await authRepository.createPasswordResetOtp({
     userId: user._id,
     otpHash: hashToken(otp),
-    expiresAt,
+    expiredAt,
   });
 
   const emailContent = buildResetPasswordOtpEmail({ otp, expiresMinutes });
