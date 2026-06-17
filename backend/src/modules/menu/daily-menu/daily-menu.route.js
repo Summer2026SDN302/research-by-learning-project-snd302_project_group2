@@ -40,6 +40,14 @@ router.post(
   dailyMenuController.generateDailyMenu,
 );
 
+// PATCH /:menuId/publish - Manager, Admin can publish daily menu
+router.patch(
+  "/:menuId/publish",
+  authorizeRoles(USER_ROLES.MANAGER, USER_ROLES.ADMIN),
+  validateRequest,
+  dailyMenuController.publishDailyMenu,
+);
+
 // PATCH /:menuId/items/:itemId - Manager, Admin can update item
 router.patch(
   "/:menuId/items/:itemId",

@@ -1,6 +1,7 @@
 import { toObjectId } from "../../../shared/helpers/mongo.helper.js";
 import mongoose from "mongoose";
 import DailyMenu from "./daily-menu.model.js";
+import { DAILY_MENU_ITEM_STATUS } from "./daily-menu.constants.js";
 
 export const countByFoodItemId = async (foodItemId) => {
   return DailyMenu.countDocuments({
@@ -22,14 +23,26 @@ export const countActiveByFoodItemId = async (foodItemId, fromDate) => {
 export const findMenuByDate = async (date) => {
   return DailyMenu.findOne({ date })
     .populate("createdBy", "-passwordHash")
-    .populate("items.foodItemId")
+    .populate({
+      path: "items.foodItemId",
+      populate: {
+        path: "categoryId",
+        select: "name icon",
+      },
+    })
     .populate("items.priceHistory.changedBy", "-passwordHash");
 };
 
 export const findMenuById = async (menuId) => {
   return DailyMenu.findById(menuId)
     .populate("createdBy", "-passwordHash")
-    .populate("items.foodItemId")
+    .populate({
+      path: "items.foodItemId",
+      populate: {
+        path: "categoryId",
+        select: "name icon",
+      },
+    })
     .populate("items.priceHistory.changedBy", "-passwordHash");
 };
 
@@ -65,7 +78,13 @@ export const updateMenuItemFields = async (
     },
   )
     .populate("createdBy", "-passwordHash")
-    .populate("items.foodItemId")
+    .populate({
+      path: "items.foodItemId",
+      populate: {
+        path: "categoryId",
+        select: "name",
+      },
+    })
     .populate("items.priceHistory.changedBy", "-passwordHash");
 
   if (!result) {
@@ -95,7 +114,13 @@ export const pushPriceHistoryAndUpdatePrice = async (
     },
   )
     .populate("createdBy", "-passwordHash")
-    .populate("items.foodItemId")
+    .populate({
+      path: "items.foodItemId",
+      populate: {
+        path: "categoryId",
+        select: "name icon",
+      },
+    })
     .populate("items.priceHistory.changedBy", "-passwordHash");
   if (!result) throw new Error("UPDATE_FAILED");
   return result;
@@ -106,18 +131,35 @@ export const updateMenuIsConfigured = async (menuId) => {
     menuId,
     { $set: { isConfigured: true } },
     { new: true },
-  );
+  )
+    .populate("createdBy", "-passwordHash")
+    .populate({
+      path: "items.foodItemId",
+      populate: {
+        path: "categoryId",
+        select: "name icon",
+      },
+    })
+    .populate("items.priceHistory.changedBy", "-passwordHash");
   return result;
 };
 
 export const addMenuItem = async (menuId, newItem) => {
-  const result = await DailyMenu.findByIdAndUpdate(
-    menuId,
-    { $push: { items: newItem } },
-    { new: true },
-  )
+  const updateObj = Array.isArray(newItem)
+    ? { $push: { items: { $each: newItem } } }
+    : { $push: { items: newItem } };
+
+  const result = await DailyMenu.findByIdAndUpdate(menuId, updateObj, {
+    new: true,
+  })
     .populate("createdBy", "-passwordHash")
-    .populate("items.foodItemId")
+    .populate({
+      path: "items.foodItemId",
+      populate: {
+        path: "categoryId",
+        select: "name icon",
+      },
+    })
     .populate("items.priceHistory.changedBy", "-passwordHash");
 
   if (!result) {
@@ -136,7 +178,13 @@ export const removeMenuItem = async (menuId, foodItemId) => {
     { new: true },
   )
     .populate("createdBy", "-passwordHash")
-    .populate("items.foodItemId")
+    .populate({
+      path: "items.foodItemId",
+      populate: {
+        path: "categoryId",
+        select: "name icon",
+      },
+    })
     .populate("items.priceHistory.changedBy", "-passwordHash");
 
   if (!result) {
@@ -146,8 +194,13 @@ export const removeMenuItem = async (menuId, foodItemId) => {
   return result;
 };
 
-export const decrementSoldQuantity = async (menuId, foodItemId, quantity) => {
-  const result = await DailyMenu.findByIdAndUpdate(
+export const decrementSoldQuantity = async (
+  menuId,
+  foodItemId,
+  quantity,
+  session,
+) => {
+  return DailyMenu.findByIdAndUpdate(
     menuId,
     {
       $inc: {
@@ -158,16 +211,14 @@ export const decrementSoldQuantity = async (menuId, foodItemId, quantity) => {
     {
       arrayFilters: [
         {
-          "item.foodItemId": new mongoose.Types.ObjectId(foodItemId),
+          "item.foodItemId": toObjectId(foodItemId),
           "item.remainingQuantity": { $gte: quantity },
         },
       ],
       new: true,
+      session,
     },
   );
-
-  if (!result) throw new Error("UPDATE_FAILED");
-  return result;
 };
 
 export const setItemUnavailable = async (menuId, foodItemId) => {
@@ -180,5 +231,27 @@ export const setItemUnavailable = async (menuId, foodItemId) => {
       ],
       new: true,
     },
+  );
+};
+
+export const expireMenuStatus = async (menuId) => {
+  return DailyMenu.updateOne(
+    { _id: menuId },
+    {
+      $set: {
+        "items.$[elem].status": "Unavailable",
+      },
+    },
+    {
+      arrayFilters: [{ "elem.status": "Available" }],
+    },
+  );
+};
+
+export const expireAllPastMenus = async (beforeDateStr) => {
+  return DailyMenu.updateMany(
+    { date: { $lt: beforeDateStr } },
+    { $set: { "items.$[elem].status": DAILY_MENU_ITEM_STATUS.UNAVAILABLE } },
+    { arrayFilters: [{ "elem.status": DAILY_MENU_ITEM_STATUS.AVAILABLE }] },
   );
 };

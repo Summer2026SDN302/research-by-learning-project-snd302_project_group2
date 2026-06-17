@@ -3,7 +3,7 @@ import { successResponse } from "../../../shared/response/responseFormatter.js";
 import * as dailyMenuService from "./daily-menu.service.js";
 
 export const getTodayMenu = asyncHandler(async (req, res) => {
-  const data = await dailyMenuService.getTodayMenu();
+  const data = await dailyMenuService.getTodayMenu(req.user.role);
   if (!data) {
     return successResponse(res, null, "No daily menu for today");
   }
@@ -20,6 +20,12 @@ export const generateDailyMenu = asyncHandler(async (req, res) => {
   const { date } = req.body;
   const data = await dailyMenuService.generateDailyMenu(date, req.userId);
   return successResponse(res, data, "Daily menu generated successfully", 201);
+});
+
+export const publishDailyMenu = asyncHandler(async (req, res) => {
+  const { menuId } = req.params;
+  const data = await dailyMenuService.publishDailyMenu(menuId);
+  return successResponse(res, data, "Daily menu published successfully");
 });
 
 export const updateDailyMenuItem = asyncHandler(async (req, res) => {

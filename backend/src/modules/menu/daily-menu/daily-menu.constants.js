@@ -1,6 +1,5 @@
 // Date patterns
 export const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-export const DATE_FORMAT_PATTERN = "YYYY-MM-DD";
 
 // Days of week
 export const DAYS_OF_WEEK = [
