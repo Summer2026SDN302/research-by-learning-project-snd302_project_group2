@@ -9,7 +9,10 @@ import authRoute from "./modules/auth/auth.route.js";
 import profileRoute from "./modules/user/profile.route.js";
 import userRoute from "./modules/user/user.route.js";
 import dailyMenuRoute from "./modules/menu/daily-menu/daily-menu.route.js";
-import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./middlewares/error.middleware.js";
 
 const app = express();
 
@@ -39,7 +42,6 @@ app.use("/api/users", userRoute);
 app.use("/api/daily-menu", dailyMenuRoute);
 app.use("/api/categories", categoryRoute);
 app.use("/api/food-items", foodItemRoute);
-
 
 app.use(notFoundHandler);
 app.use(errorHandler);
