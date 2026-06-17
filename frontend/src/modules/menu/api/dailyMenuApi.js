@@ -1,8 +1,8 @@
-import apiClient from '../../../services/apiClient';
+import apiClient from "../../../services/apiClient";
 
 /** GET /daily-menu/today */
 export const getTodayMenu = () =>
-  apiClient.get('/daily-menu/today').then((r) => r.data.data);
+  apiClient.get("/daily-menu/today").then((r) => r.data.data);
 
 /** GET /daily-menu/date/:date */
 export const getMenuByDate = (date) =>
@@ -10,7 +10,11 @@ export const getMenuByDate = (date) =>
 
 /** POST /daily-menu/generate */
 export const generateDailyMenu = (date) =>
-  apiClient.post('/daily-menu/generate', { date }).then((r) => r.data.data);
+  apiClient.post("/daily-menu/generate", { date }).then((r) => r.data.data);
+
+/** PATCH /daily-menu/:menuId/publish */
+export const publishDailyMenu = (menuId) =>
+  apiClient.patch(`/daily-menu/${menuId}/publish`).then((r) => r.data.data);
 
 /** PATCH /daily-menu/:menuId/items/:itemId */
 export const updateDailyMenuItem = (menuId, itemId, payload) =>

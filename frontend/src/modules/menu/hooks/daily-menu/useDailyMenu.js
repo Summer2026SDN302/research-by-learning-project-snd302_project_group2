@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import dayjs from 'dayjs';
+import { useCallback, useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import dayjs from "dayjs";
 
-import * as dailyMenuApi from '../../api/dailyMenuApi';
+import * as dailyMenuApi from "../../api/dailyMenuApi";
 import {
   setMenu,
   clearMenu,
@@ -20,10 +20,13 @@ import {
   selectSearchTerm,
   selectStatusFilter,
   selectCurrentPage,
-} from '../../redux/dailyMenuSlice';
-import { DAILY_MENU_PAGE_SIZE, DAILY_MENU_ERROR_MAP } from '../../constants/daily-menu/dailyMenuConstants';
-import useAppToast from '../../../../hooks/useAppToast';
-import { getApiErrorMsg } from '../../../../utils/errorUtils';
+} from "../../redux/dailyMenuSlice";
+import {
+  DAILY_MENU_PAGE_SIZE,
+  DAILY_MENU_ERROR_MAP,
+} from "../../constants/daily-menu/dailyMenuConstants";
+import useAppToast from "../../../../hooks/useAppToast";
+import { getApiErrorMsg } from "../../../../utils/errorUtils";
 
 /**
  * useDailyMenu
@@ -35,13 +38,13 @@ const useDailyMenu = () => {
   const { toast } = useAppToast();
 
   // ── Selectors ──────────────────────────────────────────────────────────────
-  const menu         = useSelector(selectDailyMenu);
-  const isLoading    = useSelector(selectDailyMenuLoading);
-  const error        = useSelector(selectDailyMenuError);
+  const menu = useSelector(selectDailyMenu);
+  const isLoading = useSelector(selectDailyMenuLoading);
+  const error = useSelector(selectDailyMenuError);
   const selectedDate = useSelector(selectSelectedDate);
-  const searchTerm   = useSelector(selectSearchTerm);
+  const searchTerm = useSelector(selectSearchTerm);
   const statusFilter = useSelector(selectStatusFilter);
-  const currentPage  = useSelector(selectCurrentPage);
+  const currentPage = useSelector(selectCurrentPage);
 
   // ── Fetch by date ──────────────────────────────────────────────────────────
   const fetchMenu = useCallback(
@@ -53,7 +56,7 @@ const useDailyMenu = () => {
         dispatch(setMenu(data));
       } catch (err) {
         const code = err?.response?.data?.errorCode;
-        if (code === 'DAILY_MENU_NOT_FOUND') {
+        if (code === "DAILY_MENU_NOT_FOUND") {
           dispatch(setMenu(null));
         } else {
           dispatch(setError(getApiErrorMsg(DAILY_MENU_ERROR_MAP, err)));
@@ -73,7 +76,7 @@ const useDailyMenu = () => {
   // Reset selected date to today when unmounting the page
   useEffect(() => {
     return () => {
-      dispatch(setSelectedDate(dayjs().format('YYYY-MM-DD')));
+      dispatch(setSelectedDate(dayjs().format("YYYY-MM-DD")));
     };
   }, [dispatch]);
 
@@ -86,7 +89,7 @@ const useDailyMenu = () => {
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       items = items.filter((item) => {
-        const name = item.foodItemId?.name ?? '';
+        const name = item.foodItemId?.name ?? "";
         return name.toLowerCase().includes(q);
       });
     }
@@ -98,8 +101,11 @@ const useDailyMenu = () => {
     return items;
   }, [allItems, searchTerm, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / DAILY_MENU_PAGE_SIZE));
-  const safePage   = Math.min(currentPage, totalPages);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredItems.length / DAILY_MENU_PAGE_SIZE),
+  );
+  const safePage = Math.min(currentPage, totalPages);
 
   const paginatedItems = useMemo(() => {
     const start = (safePage - 1) * DAILY_MENU_PAGE_SIZE;
@@ -108,15 +114,10 @@ const useDailyMenu = () => {
 
   // ── Statistics ─────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
-    const total        = allItems.length;
-    const available    = allItems.filter((i) => i.status === 'Available').length;
-    const unavailable  = total - available;
-    const totalSold    = allItems.reduce((s, i) => s + (i.soldQuantity || 0), 0);
-    const totalRevenue = allItems.reduce(
-      (s, i) => s + (i.soldQuantity || 0) * (i.currentPrice || 0),
-      0,
-    );
-    return { total, available, unavailable, totalSold, totalRevenue };
+    const total = allItems.length;
+    const available = allItems.filter((i) => i.status === "Available").length;
+    const unavailable = total - available;
+    return { total, available, unavailable };
   }, [allItems]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -152,11 +153,15 @@ const useDailyMenu = () => {
       try {
         const data = await dailyMenuApi.generateDailyMenu(date);
         dispatch(setMenu(data));
+        dispatch(resetFilters());
         dispatch(setSelectedDate(date));
-        toast.success('Tạo thực đơn thành công', `Đã tạo thực đơn ngày ${date}.`);
+        toast.success(
+          "Tạo thực đơn thành công",
+          `Đã tạo thực đơn ngày ${date}.`,
+        );
       } catch (err) {
         const msg = getApiErrorMsg(DAILY_MENU_ERROR_MAP, err);
-        toast.error('Tạo thực đơn thất bại', msg);
+        toast.error("Tạo thực đơn thất bại", msg);
         dispatch(setError(msg));
       } finally {
         dispatch(setLoading(false));

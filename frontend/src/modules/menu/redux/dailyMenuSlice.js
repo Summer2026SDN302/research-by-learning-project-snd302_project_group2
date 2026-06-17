@@ -1,19 +1,19 @@
-import { createSlice } from '@reduxjs/toolkit';
-import dayjs from 'dayjs';
+import { createSlice } from "@reduxjs/toolkit";
+import dayjs from "dayjs";
 
 const initialState = {
-  menu: null,          // DailyMenu document
+  menu: null, // DailyMenu document
   isLoading: false,
-  isMutating: false,   // true during PATCH / POST / DELETE
+  isMutating: false, // true during PATCH / POST / DELETE
   error: null,
-  selectedDate: dayjs().format('YYYY-MM-DD'),
-  searchTerm: '',      // client-side filter by food item name
-  statusFilter: '',    // '' | 'Available' | 'Unavailable'
+  selectedDate: dayjs().format("YYYY-MM-DD"),
+  searchTerm: "", // client-side filter by food item name
+  statusFilter: "", // '' | 'Available' | 'Unavailable'
   currentPage: 1,
 };
 
 const dailyMenuSlice = createSlice({
-  name: 'dailyMenu',
+  name: "dailyMenu",
   initialState,
   reducers: {
     setMenu(state, action) {
@@ -39,8 +39,8 @@ const dailyMenuSlice = createSlice({
     setSelectedDate(state, action) {
       state.selectedDate = action.payload;
       state.currentPage = 1;
-      state.searchTerm = '';
-      state.statusFilter = '';
+      state.searchTerm = "";
+      state.statusFilter = "";
     },
     setSearchTerm(state, action) {
       state.searchTerm = action.payload;
@@ -54,8 +54,8 @@ const dailyMenuSlice = createSlice({
       state.currentPage = action.payload;
     },
     resetFilters(state) {
-      state.searchTerm = '';
-      state.statusFilter = '';
+      state.searchTerm = "";
+      state.statusFilter = "";
       state.currentPage = 1;
     },
   },
@@ -75,13 +75,15 @@ export const {
 } = dailyMenuSlice.actions;
 
 // ── Selectors ────────────────────────────────────────────────────────────────
-export const selectDailyMenu      = (s) => s.dailyMenu.menu;
-export const selectDailyMenuLoading  = (s) => s.dailyMenu.isLoading;
+export const selectDailyMenu = (s) => s.dailyMenu.menu;
+export const selectDailyMenuLoading = (s) => s.dailyMenu.isLoading;
 export const selectDailyMenuMutating = (s) => s.dailyMenu.isMutating;
-export const selectDailyMenuError    = (s) => s.dailyMenu.error;
-export const selectSelectedDate      = (s) => s.dailyMenu.selectedDate;
-export const selectSearchTerm        = (s) => s.dailyMenu.searchTerm;
-export const selectStatusFilter      = (s) => s.dailyMenu.statusFilter;
-export const selectCurrentPage       = (s) => s.dailyMenu.currentPage;
+export const selectDailyMenuError = (s) => s.dailyMenu.error;
+export const selectSelectedDate = (s) => s.dailyMenu.selectedDate;
+export const selectSearchTerm = (s) => s.dailyMenu.searchTerm;
+export const selectStatusFilter = (s) => s.dailyMenu.statusFilter;
+export const selectCurrentPage = (s) => s.dailyMenu.currentPage;
+export const selectIsConfigured = (s) =>
+  s.dailyMenu.menu?.isConfigured ?? false;
 
 export default dailyMenuSlice.reducer;

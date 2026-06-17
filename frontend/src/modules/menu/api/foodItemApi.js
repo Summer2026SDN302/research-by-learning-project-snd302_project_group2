@@ -5,4 +5,4 @@ import apiClient from '../../../services/apiClient';
  * Params: { search, categoryId, isArchived, page, limit }
  */
 export const getFoodItems = (params = {}) =>
-  apiClient.get('/food-items', { params }).then((r) => r.data.data);
+  apiClient.get('/food-items', { params: { isArchived: false, ...params } }).then((r) => r.data.data);

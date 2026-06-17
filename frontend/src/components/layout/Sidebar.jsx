@@ -34,18 +34,25 @@ const Sidebar = ({
       className={`h-screen flex flex-col bg-surface border-r border-outline-variant shadow-soft z-50 relative shrink-0 ${className}`}
     >
       {/* Brand */}
-      <div className="px-6 py-8 border-b border-outline-variant/40">
-        <h1 className="text-headline-sm font-bold text-primary leading-tight">
-          StallBox
-        </h1>
+      <div className={`border-b border-outline-variant/40 relative flex items-center ${
+        collapsed ? "py-6 justify-center px-2" : "py-8 px-6"
+      }`}>
         {!collapsed && (
-          <p className="text-label-md text-on-surface-variant mt-0.5">
-            {ROLE_LABEL[role]}
-          </p>
+          <div>
+            <h1 className="text-headline-sm font-bold text-primary leading-tight">
+              StallBox
+            </h1>
+            <p className="text-label-md text-on-surface-variant mt-0.5">
+              {ROLE_LABEL[role]}
+            </p>
+          </div>
         )}
         <button
           onClick={onToggleCollapse}
-          className="absolute top-4 right-3 p-1 rounded hover:bg-surface-container"
+          className={collapsed
+            ? "p-2 rounded hover:bg-surface-container flex items-center justify-center transition-colors"
+            : "absolute top-4 right-3 p-1 rounded hover:bg-surface-container flex items-center justify-center"
+          }
           aria-label="Toggle sidebar"
         >
           <span className="material-symbols-outlined">

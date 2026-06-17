@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { createPortal } from 'react-dom';
-import Spinner from '../../../../components/feedback/Spinner';
-import dayjs from 'dayjs';
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import Spinner from "../../../../components/feedback/Spinner";
+import dayjs from "dayjs";
+import { generateMenuSchema } from "../../validation/daily-menu/dailyMenuSchema";
 
 /**
  * GenerateMenuModal
@@ -11,42 +12,69 @@ import dayjs from 'dayjs';
  *   onGenerate {fn}        – (date: string) => void
  *   onClose    {fn}
  *   isLoading  {boolean}
+ *   defaultDate {string}
  */
-const GenerateMenuModal = ({ open, onGenerate, onClose, isLoading }) => {
-  const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
-  const [error, setError] = useState('');
+const GenerateMenuModal = ({
+  open,
+  onGenerate,
+  onClose,
+  isLoading,
+  defaultDate,
+}) => {
+  const getInitialDate = () => {
+    if (defaultDate && !dayjs(defaultDate).isBefore(dayjs().startOf("day"))) {
+      return defaultDate;
+    }
+    return dayjs().format("YYYY-MM-DD");
+  };
+
+  const [date, setDate] = useState(getInitialDate);
+  const [error, setError] = useState("");
 
   if (!open) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date).getTime())) {
-      setError('Ngày không hợp lệ');
+    const result = generateMenuSchema.safeParse({ date });
+
+    if (!result.success) {
+      setError(result.error.issues[0]?.message ?? "Ngày không hợp lệ");
+      return;
+    }
+    if (dayjs(date).isBefore(dayjs().startOf("day"))) {
+      setError("Không thể chọn ngày trong quá khứ");
       return;
     }
 
-    setError('');
+    setError("");
     onGenerate(date);
   };
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={isLoading ? undefined : onClose}
+      />
 
       {/* Dialog */}
       <div className="relative bg-surface-container-lowest rounded-2xl shadow-elevated p-6 w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
         {/* Icon */}
         <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-5 mx-auto">
-          <span className="material-symbols-outlined text-[32px]">auto_awesome</span>
+          <span className="material-symbols-outlined text-[32px]">
+            auto_awesome
+          </span>
         </div>
 
         {/* Text */}
         <div className="text-center mb-6">
-          <h3 className="text-headline-sm font-bold text-on-surface">Tạo thực đơn ngày</h3>
+          <h3 className="text-headline-sm font-bold text-on-surface">
+            Tạo thực đơn ngày
+          </h3>
           <p className="text-body-sm text-on-surface-variant mt-2">
-            Tạo thực đơn ngày từ thực đơn theo lịch (scheduled menu).
+            Tạo thực đơn ngày từ thực đơn theo lịch.
           </p>
         </div>
 
@@ -58,9 +86,10 @@ const GenerateMenuModal = ({ open, onGenerate, onClose, isLoading }) => {
             <input
               type="date"
               value={date}
+              min={dayjs().format("YYYY-MM-DD")}
               onChange={(e) => {
                 setDate(e.target.value);
-                setError('');
+                setError("");
               }}
               className="w-full bg-surface-container-low border border-outline-variant rounded-lg py-2.5 px-4 text-body-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
             />
@@ -88,7 +117,7 @@ const GenerateMenuModal = ({ open, onGenerate, onClose, isLoading }) => {
         </form>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 

@@ -1,17 +1,16 @@
-import StatisticCard from '../../../../components/data-display/StatisticCard';
-import { formatVND } from '../../../../utils/formatters';
+import StatisticCard from "../../../../components/data-display/StatisticCard";
 
 /**
  * DailyMenuStats
  *
  * Props:
- *   stats  {object} – { total, available, unavailable, totalSold, totalRevenue }
+ *   stats  {object} – { total, available, unavailable }
  */
 const DailyMenuStats = ({ stats = {} }) => {
-  const { total = 0, available = 0, unavailable = 0, totalSold = 0, totalRevenue = 0 } = stats;
+  const { total = 0, available = 0, unavailable = 0 } = stats;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       <StatisticCard
         icon="restaurant_menu"
         label="Tổng món"
@@ -20,21 +19,15 @@ const DailyMenuStats = ({ stats = {} }) => {
       />
       <StatisticCard
         icon="check_circle"
-        label="Còn phục vụ"
+        label="Sẵn sàng"
         value={available}
         variant="secondary"
       />
       <StatisticCard
-        icon="shopping_cart"
-        label="Đã bán"
-        value={totalSold}
-        variant="tertiary"
-      />
-      <StatisticCard
-        icon="payments"
-        label="Doanh thu tạm tính"
-        value={formatVND(totalRevenue)}
-        variant="primary"
+        icon="cancel"
+        label="Ngừng"
+        value={unavailable}
+        variant="error"
       />
     </div>
   );

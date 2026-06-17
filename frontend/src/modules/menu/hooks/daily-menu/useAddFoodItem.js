@@ -1,17 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useState, useEffect, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-import * as foodItemApi from '../../api/foodItemApi';
-import * as categoryApi from '../../api/categoryApi';
+import * as foodItemApi from "../../api/foodItemApi";
+import * as categoryApi from "../../api/categoryApi";
 import {
   setFoodItems,
   setFoodItemsLoading,
+  setFoodItemsError,
   clearFoodItems,
   selectFoodItems,
   selectFoodItemsPagination,
   selectFoodItemsLoading,
-} from '../../redux/foodItemSlice';
-import useAppToast from '../../../../hooks/useAppToast';
+} from "../../redux/foodItemSlice";
+import {
+  setCategories,
+  setCategoriesLoading,
+  setCategoriesError,
+  clearCategories,
+  selectCategories,
+} from "../../redux/categorySlice";
+import useAppToast from "../../../../hooks/useAppToast";
 
 /**
  * useAddFoodItem
@@ -19,39 +27,51 @@ import useAppToast from '../../../../hooks/useAppToast';
  * Hook to manage states and side-effects for fetching food items
  * to add to the daily menu.
  *
- * @param {boolean} open - Whether the food item modal is currently open.
  */
 export const useAddFoodItem = () => {
   const dispatch = useDispatch();
   const { toast } = useAppToast();
 
-  const items      = useSelector(selectFoodItems);
+  const items = useSelector(selectFoodItems);
   const pagination = useSelector(selectFoodItemsPagination);
-  const loading    = useSelector(selectFoodItemsLoading);
+  const loading = useSelector(selectFoodItemsLoading);
+  const categories = useSelector(selectCategories);
 
-  const [categories, setCategories] = useState([]);
-  const [search, setSearch]       = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [page, setPage]           = useState(1);
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [page, setPage] = useState(1);
 
   // Fetch categories on mount
   useEffect(() => {
     let active = true;
     const fetchCategories = async () => {
+      dispatch(setCategoriesLoading(true));
       try {
-        const data = await categoryApi.getCategories({ isActive: true, limit: 100 });
+        const data = await categoryApi.getCategories({
+          isActive: true,
+          limit: 50,
+        });
         if (active) {
-          setCategories(data?.items || []);
+          dispatch(setCategories(data?.items || []));
         }
       } catch (err) {
-        console.error('Failed to load categories', err);
+        const errMsg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Không thể tải danh sách danh mục.";
+        dispatch(setCategoriesError(errMsg));
+        toast.error("Lỗi", errMsg);
+      } finally {
+        if (active) {
+          dispatch(setCategoriesLoading(false));
+        }
       }
     };
     fetchCategories();
     return () => {
       active = false;
     };
-  }, []);
+  }, [dispatch, toast]);
 
   const fetchItems = useCallback(
     async (params = {}) => {
@@ -65,8 +85,13 @@ export const useAddFoodItem = () => {
           limit: 10,
         });
         dispatch(setFoodItems(data));
-      } catch {
-        toast.error('Lỗi', 'Không thể tải danh sách món ăn.');
+      } catch (err) {
+        const errMsg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Không thể tải danh sách món ăn.";
+        dispatch(setFoodItemsError(errMsg));
+        toast.error("Lỗi", errMsg);
       } finally {
         dispatch(setFoodItemsLoading(false));
       }
@@ -76,13 +101,17 @@ export const useAddFoodItem = () => {
 
   // Fetch on mount or search / category / page change
   useEffect(() => {
-    fetchItems();
+    const timer = setTimeout(() => {
+      fetchItems();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [fetchItems]);
 
-  // Clear food items from Redux on unmount
+  // Clear food items and categories from Redux on unmount
   useEffect(() => {
     return () => {
       dispatch(clearFoodItems());
+      dispatch(clearCategories());
     };
   }, [dispatch]);
 
@@ -101,4 +130,3 @@ export const useAddFoodItem = () => {
 };
 
 export default useAddFoodItem;
-

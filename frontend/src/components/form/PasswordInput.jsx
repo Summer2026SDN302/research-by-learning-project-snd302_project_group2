@@ -55,7 +55,7 @@ const PasswordInput = ({
 
         <button
           type="button"
-          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-outline hover:bg-surface-container hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-outline hover:bg-surface-container hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center"
           onClick={() => setIsVisible((prev) => !prev)}
           disabled={disabled}
           aria-label={isVisible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}

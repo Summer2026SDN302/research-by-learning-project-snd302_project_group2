@@ -6,6 +6,7 @@ import {
   setMenu,
   setMutating,
   selectDailyMenuMutating,
+  selectIsConfigured,
 } from "../../redux/dailyMenuSlice";
 import useAppToast from "../../../../hooks/useAppToast";
 import { getApiErrorMsg } from "../../../../utils/errorUtils";
@@ -20,6 +21,7 @@ const useDailyMenuItem = () => {
   const dispatch = useDispatch();
   const { toast } = useAppToast();
   const isMutating = useSelector(selectDailyMenuMutating);
+  const isConfigured = useSelector(selectIsConfigured);
 
   // ── Modal states ───────────────────────────────────────────────────────────
   const [updateModal, setUpdateModal] = useState({ open: false, item: null });
@@ -32,6 +34,9 @@ const useDailyMenuItem = () => {
   const [confirmRemove, setConfirmRemove] = useState({
     open: false,
     item: null,
+  });
+  const [confirmPublish, setConfirmPublish] = useState({
+    open: false,
   });
 
   // ── Update item ────────────────────────────────────────────────────────────
@@ -46,10 +51,13 @@ const useDailyMenuItem = () => {
         );
         dispatch(setMenu(data));
         toast.success("Cập nhật thành công", "Đã cập nhật món ăn.");
-        setUpdateModal({ open: false, item: null });
       } catch (err) {
-        toast.error("Cập nhật thất bại", getApiErrorMsg(DAILY_MENU_ERROR_MAP, err));
+        toast.error(
+          "Cập nhật thất bại",
+          getApiErrorMsg(DAILY_MENU_ERROR_MAP, err),
+        );
       } finally {
+        setUpdateModal({ open: false, item: null });
         dispatch(setMutating(false));
       }
     },
@@ -67,10 +75,13 @@ const useDailyMenuItem = () => {
         );
         dispatch(setMenu(data));
         toast.success("Thêm món thành công", "Đã thêm món ăn vào thực đơn.");
-        setAddItemModal(false);
       } catch (err) {
-        toast.error("Thêm món thất bại", getApiErrorMsg(DAILY_MENU_ERROR_MAP, err));
+        toast.error(
+          "Thêm món thất bại",
+          getApiErrorMsg(DAILY_MENU_ERROR_MAP, err),
+        );
       } finally {
+        setAddItemModal(false);
         dispatch(setMutating(false));
       }
     },
@@ -88,10 +99,34 @@ const useDailyMenuItem = () => {
         );
         dispatch(setMenu(data));
         toast.success("Xóa thành công", "Đã xóa món ăn khỏi thực đơn.");
-        setConfirmRemove({ open: false, item: null });
       } catch (err) {
         toast.error("Xóa thất bại", getApiErrorMsg(DAILY_MENU_ERROR_MAP, err));
       } finally {
+        setConfirmRemove({ open: false, item: null });
+        dispatch(setMutating(false));
+      }
+    },
+    [dispatch, toast],
+  );
+
+  // ── Publish daily menu ──────────────────────────────────────────────────────
+  const handlePublish = useCallback(
+    async (menuId) => {
+      dispatch(setMutating(true));
+      try {
+        const data = await dailyMenuApi.publishDailyMenu(menuId);
+        dispatch(setMenu(data));
+        toast.success(
+          "Công bố thành công",
+          "Thực đơn đã được công bố tới nhân viên.",
+        );
+      } catch (err) {
+        toast.error(
+          "Công bố thất bại",
+          getApiErrorMsg(DAILY_MENU_ERROR_MAP, err),
+        );
+      } finally {
+        setConfirmPublish({ open: false });
         dispatch(setMutating(false));
       }
     },
@@ -132,18 +167,30 @@ const useDailyMenuItem = () => {
     [],
   );
 
+  const openConfirmPublish = useCallback(
+    () => setConfirmPublish({ open: true }),
+    [],
+  );
+  const closeConfirmPublish = useCallback(
+    () => setConfirmPublish({ open: false }),
+    [],
+  );
+
   return {
     isMutating,
+    isConfigured,
     // modal states
     updateModal,
     priceHistoryModal,
     addItemModal,
     generateModal,
     confirmRemove,
+    confirmPublish,
     // handlers
     handleUpdateItem,
     handleAddFoodItem,
     handleRemoveItem,
+    handlePublish,
     // modal open/close
     openUpdate,
     closeUpdate,
@@ -155,6 +202,8 @@ const useDailyMenuItem = () => {
     closeGenerate,
     openConfirmRemove,
     closeConfirmRemove,
+    openConfirmPublish,
+    closeConfirmPublish,
   };
 };
 

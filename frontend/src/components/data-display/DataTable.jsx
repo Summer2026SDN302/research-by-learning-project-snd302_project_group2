@@ -74,7 +74,7 @@ const DataTable = ({
               <th
                 key={col.key}
                 onClick={() => col.sortable && handleSort(col.key)}
-                className={`px-5 py-3.5 text-label-md text-on-surface-variant uppercase tracking-wider select-none ${
+                className={`px-3 py-3.5 text-label-md text-on-surface-variant uppercase tracking-wider select-none ${
                   col.sortable
                     ? "cursor-pointer hover:text-on-surface transition-colors"
                     : ""
@@ -119,7 +119,7 @@ const DataTable = ({
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className="px-5 py-3.5 text-body-sm text-on-surface"
+                    className="px-3 py-3.5 text-body-sm text-on-surface"
                   >
                     {renderCell
                       ? renderCell(col.key, row[col.key], row)

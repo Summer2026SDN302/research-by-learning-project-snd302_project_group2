@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   items: [],
@@ -8,7 +8,7 @@ const initialState = {
 };
 
 const foodItemSlice = createSlice({
-  name: 'foodItems',
+  name: "foodItems",
   initialState,
   reducers: {
     setFoodItems(state, action) {
@@ -31,12 +31,16 @@ const foodItemSlice = createSlice({
   },
 });
 
-export const { setFoodItems, setFoodItemsLoading, setFoodItemsError, clearFoodItems } =
-  foodItemSlice.actions;
+export const {
+  setFoodItems,
+  setFoodItemsLoading,
+  setFoodItemsError,
+  clearFoodItems,
+} = foodItemSlice.actions;
 
-export const selectFoodItems          = (s) => s.foodItems.items;
+export const selectFoodItems = (s) => s.foodItems.items;
 export const selectFoodItemsPagination = (s) => s.foodItems.pagination;
-export const selectFoodItemsLoading   = (s) => s.foodItems.isLoading;
-export const selectFoodItemsError     = (s) => s.foodItems.error;
+export const selectFoodItemsLoading = (s) => s.foodItems.isLoading;
+export const selectFoodItemsError = (s) => s.foodItems.error;
 
 export default foodItemSlice.reducer;

@@ -1,7 +1,9 @@
 import useDailyMenu from "../../hooks/daily-menu/useDailyMenu";
 import useDailyMenuItem from "../../hooks/daily-menu/useDailyMenuItem";
 import { useSelector } from "react-redux";
+import dayjs from "dayjs";
 import ConfirmDialog from "../../../../components/feedback/ConfirmDialog";
+import PageHeader from "../../../../components/layout/PageHeader";
 import DailyMenuStats from "../../components/daily-menu/DailyMenuStats";
 import DailyMenuToolbar from "../../components/daily-menu/DailyMenuToolbar";
 import DailyMenuTable from "../../components/daily-menu/DailyMenuTable";
@@ -9,6 +11,7 @@ import UpdateItemModal from "../../components/daily-menu/UpdateItemModal";
 import PriceHistoryModal from "../../components/daily-menu/PriceHistoryModal";
 import AddFoodItemModal from "../../components/daily-menu/AddFoodItemModal";
 import GenerateMenuModal from "../../components/daily-menu/GenerateMenuModal";
+import Spinner from "../../../../components/feedback/Spinner";
 
 /**
  * DailyMenuPage
@@ -43,9 +46,12 @@ const DailyMenuPage = () => {
     addItemModal,
     generateModal,
     confirmRemove,
+    confirmPublish,
+    isConfigured,
     handleUpdateItem,
     handleAddFoodItem,
     handleRemoveItem,
+    handlePublish,
     openUpdate,
     closeUpdate,
     openPriceHistory,
@@ -56,13 +62,16 @@ const DailyMenuPage = () => {
     closeGenerate,
     openConfirmRemove,
     closeConfirmRemove,
+    openConfirmPublish,
+    closeConfirmPublish,
   } = useDailyMenuItem();
 
   const userRole = useSelector((s) => s.auth.user?.role);
-  const isAdmin = userRole === "admin";
-
+  const isAdmin = userRole === "Admin";
   const hasMenu = !!menu;
   const menuId = menu?._id;
+
+  const isToday = !dayjs(selectedDate).isBefore(dayjs().startOf("day"));
 
   // IDs of food items already in today's menu (for AddFoodItemModal)
   const existingItemIds = (menu?.items ?? [])
@@ -70,72 +79,106 @@ const DailyMenuPage = () => {
     .filter(Boolean);
 
   return (
-    <div className="space-y-6">
+    <section className="space-y-6">
       {/* Page header */}
-      <div>
-        <h1 className="text-headline-md font-bold text-on-surface">
-          Thực đơn ngày
-        </h1>
-        <p className="text-body-sm text-on-surface-variant mt-1">
-          Quản lý thực đơn, số lượng và giá món ăn theo ngày.
-        </p>
-      </div>
-
-      {/* Statistics */}
-      {hasMenu && <DailyMenuStats stats={stats} />}
-
-      {/* Toolbar */}
-      <DailyMenuToolbar
-        date={selectedDate}
-        onDateChange={handleDateChange}
-        searchTerm={searchTerm}
-        onSearch={handleSearch}
-        statusFilter={statusFilter}
-        onFilterChange={handleFilterChange}
-        onResetFilters={handleResetFilters}
-        onGenerate={openGenerate}
-        onAddItem={openAddItem}
-        hasMenu={hasMenu}
-        isLoading={isLoading}
+      <PageHeader
+        breadcrumbs={[
+          { label: "Quản lý thực đơn" },
+          { label: "Thực đơn ngày" },
+        ]}
+        title="Thực đơn ngày"
+        subtitle="Quản lý thực đơn, số lượng và giá món ăn theo ngày."
+        action={
+          hasMenu && isToday ? (
+            <div className="flex items-center gap-3">
+              {!isConfigured && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-label-md text-label-md text-on-primary shadow-sm hover:opacity-90 transition-opacity"
+                  onClick={openConfirmPublish}
+                  disabled={isMutating}
+                >
+                  <span className="material-symbols-outlined">publish</span>
+                  Công bố thực đơn
+                </button>
+              )}
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/25 px-5 py-3 font-label-md text-label-md text-primary hover:bg-primary/20 shadow-sm transition-colors"
+                onClick={openAddItem}
+                disabled={isLoading || isMutating}
+              >
+                <span className="material-symbols-outlined">add_circle</span>
+                Thêm món
+              </button>
+            </div>
+          ) : null
+        }
       />
 
-      {/* Table */}
-      {hasMenu ? (
-        <DailyMenuTable
-          items={paginatedItems}
+      {/* Statistics */}
+      <DailyMenuStats stats={stats} />
+
+      {/* Toolbar + Table card */}
+      <div className="space-y-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-soft">
+        {/* Toolbar: Date + Search + Filter */}
+        <DailyMenuToolbar
+          date={selectedDate}
+          onDateChange={handleDateChange}
+          searchTerm={searchTerm}
+          onSearch={handleSearch}
+          statusFilter={statusFilter}
+          onFilterChange={handleFilterChange}
+          onResetFilters={handleResetFilters}
+          hasMenu={hasMenu}
           isLoading={isLoading}
-          onEdit={openUpdate}
-          onViewHistory={openPriceHistory}
-          onRemove={openConfirmRemove}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
         />
-      ) : (
-        !isLoading && (
-          <div className="flex flex-col items-center justify-center py-20 bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-soft">
-            <span className="material-symbols-outlined text-[64px] text-outline/40 mb-4">
-              restaurant
-            </span>
-            <p className="text-headline-sm font-bold text-on-surface mb-2">
-              Chưa có thực đơn
+
+        {/* Table or Empty state */}
+        {hasMenu ? (
+          <DailyMenuTable
+            items={paginatedItems}
+            isLoading={isLoading}
+            onEdit={openUpdate}
+            onViewHistory={openPriceHistory}
+            onRemove={openConfirmRemove}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={menu?.items?.length ?? 0}
+            onPageChange={handlePageChange}
+            isToday={isToday}
+          />
+        ) : isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Spinner size="lg" />
+            <p className="text-body-sm text-on-surface-variant">
+              Đang tải thực đơn...
             </p>
-            <p className="text-body-sm text-on-surface-variant mb-6 text-center max-w-sm">
-              Thực đơn ngày <strong>{selectedDate}</strong> chưa được tạo. Nhấn
-              "Tạo thực đơn" để tạo từ lịch thực đơn.
-            </p>
-            <button
-              onClick={openGenerate}
-              className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-primary text-on-primary text-body-sm font-semibold hover:opacity-90 transition-opacity"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                auto_awesome
-              </span>
-              Tạo thực đơn
-            </button>
           </div>
-        )
-      )}
+        ) : (
+          !isLoading && (
+            <div className="flex flex-col items-center justify-center py-20">
+              <span className="material-symbols-outlined text-[64px] text-outline/40 mb-4">
+                restaurant
+              </span>
+              <p className="text-headline-sm font-bold text-on-surface mb-2">
+                Chưa có thực đơn
+              </p>
+              <p className="text-body-sm text-on-surface-variant mb-6 text-center max-w-sm">
+                Thực đơn ngày <strong>{selectedDate}</strong> chưa được tạo.
+                Nhấn &quot;Tạo thực đơn&quot; để tạo từ lịch thực đơn.
+              </p>
+              <button
+                onClick={openGenerate}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-label-md text-label-md text-on-primary shadow-sm hover:opacity-90 transition-opacity"
+              >
+                <span className="material-symbols-outlined">auto_awesome</span>
+                Tạo thực đơn
+              </button>
+            </div>
+          )
+        )}
+      </div>
 
       {/* ── Modals ─────────────────────────────────────────────────────────────── */}
 
@@ -170,15 +213,18 @@ const DailyMenuPage = () => {
       )}
 
       {/* Generate Menu */}
-      <GenerateMenuModal
-        open={generateModal}
-        onGenerate={(date) => {
-          handleGenerate(date);
-          closeGenerate();
-        }}
-        onClose={closeGenerate}
-        isLoading={isLoading}
-      />
+      {generateModal && (
+        <GenerateMenuModal
+          open={generateModal}
+          defaultDate={selectedDate}
+          onGenerate={(date) => {
+            handleGenerate(date);
+            closeGenerate();
+          }}
+          onClose={closeGenerate}
+          isLoading={isLoading}
+        />
+      )}
 
       {/* Confirm Remove */}
       <ConfirmDialog
@@ -194,7 +240,20 @@ const DailyMenuPage = () => {
         onCancel={closeConfirmRemove}
         isLoading={isMutating}
       />
-    </div>
+
+      {/* Confirm Publish */}
+      <ConfirmDialog
+        open={confirmPublish.open}
+        title="Công bố thực đơn"
+        description="Bạn có chắc chắn muốn công bố thực đơn này? Sau khi công bố, nhân viên có thể xem thực đơn này và bắt đầu xử lí đơn."
+        confirmLabel="Công bố"
+        cancelLabel="Hủy"
+        variant="info"
+        onConfirm={() => handlePublish(menuId)}
+        onCancel={closeConfirmPublish}
+        isLoading={isMutating}
+      />
+    </section>
   );
 };
 

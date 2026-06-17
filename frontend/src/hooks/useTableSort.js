@@ -19,14 +19,23 @@ const useTableSort = (rows) => {
   const [sortDir, setSortDir] = useState("asc");
 
   /**
-   * Toggle sort direction if same column clicked,
-   * otherwise switch to new column and reset to 'asc'.
+   * Click a new column      -> start with 'asc'
+   * Click the same column (asc)  -> switch to 'desc'
+   * Click the same column (desc) -> clear sorting (null, null)
    */
   const handleSort = (key) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
+    if (sortKey !== key) {
       setSortKey(key);
+      setSortDir("asc");
+      return;
+    }
+
+    if (sortDir === "asc") {
+      setSortDir("desc");
+    } else if (sortDir === "desc") {
+      setSortKey(null);
+      setSortDir(null);
+    } else {
       setSortDir("asc");
     }
   };
