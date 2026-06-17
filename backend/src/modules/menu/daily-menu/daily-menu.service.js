@@ -8,14 +8,8 @@ import {
   DAILY_MENU_ITEM_STATUS,
   PRICE_SOURCE,
 } from "./daily-menu.constants.js";
-
-const getTodayDateString = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const date = String(today.getDate()).padStart(2, "0");
-  return `${year}-${month}-${date}`;
-};
+import { USER_ROLES } from "../../user/user.constants.js";
+import { getTodayVNDateString } from "../../../shared/helpers/date.helper.js";
 
 const validateDateFormat = (date) => {
   if (!DATE_FORMAT_REGEX.test(date)) {
@@ -33,9 +27,42 @@ const getDayOfWeek = (dateString) => {
   return DAYS_OF_WEEK[date.getDay()];
 };
 
-export const getTodayMenu = async () => {
-  const todayDate = getTodayDateString();
+const normalizeExpiredMenuStatus = async (menu) => {
+  if (!menu) return menu;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const menuDate = new Date(menu.date);
+  menuDate.setHours(0, 0, 0, 0);
+
+  if (menuDate.getTime() >= today.getTime()) {
+    return menu;
+  }
+
+  const hasAvailableItems = menu.items.some(
+    (item) => item.status === DAILY_MENU_ITEM_STATUS.AVAILABLE,
+  );
+
+  if (hasAvailableItems) {
+    await dailyMenuRepository.expireMenuStatus(menu._id);
+    menu.items = menu.items.map((item) => {
+      if (item.status === DAILY_MENU_ITEM_STATUS.AVAILABLE) {
+        item.status = DAILY_MENU_ITEM_STATUS.UNAVAILABLE;
+      }
+      return item;
+    });
+  }
+
+  return menu;
+};
+
+export const getTodayMenu = async (role) => {
+  const todayDate = getTodayVNDateString();
   const menu = await dailyMenuRepository.findMenuByDate(todayDate);
+  if (role === USER_ROLES.STAFF && !menu.isConfigured) {
+    throw new AppError("Daily menu not found", 404, "DAILY_MENU_NOT_FOUND");
+  }
   return menu;
 };
 
@@ -48,10 +75,10 @@ export const getMenuByDate = async (date) => {
     throw new AppError("Daily menu not found", 404, "DAILY_MENU_NOT_FOUND");
   }
 
-  return menu;
+  return await normalizeExpiredMenuStatus(menu);
 };
 
-export const generateDailyMenu = async (date, createdBy) => {
+export const generateDailyMenu = async (date, createdBy = null) => {
   validateDateFormat(date);
 
   // Check if menu already exists
@@ -147,7 +174,24 @@ export const generateDailyMenu = async (date, createdBy) => {
     createdBy,
   });
 
-  return newMenu;
+  return await dailyMenuRepository.findMenuById(newMenu._id);
+};
+
+export const publishDailyMenu = async (menuId) => {
+  const menu = await dailyMenuRepository.findMenuById(menuId);
+  if (!menu) {
+    throw new AppError("Daily menu not found", 404, "DAILY_MENU_NOT_FOUND");
+  }
+
+  if (menu.isConfigured) {
+    throw new AppError(
+      "Daily menu is already published",
+      409,
+      "DAILY_MENU_ALREADY_PUBLISHED",
+    );
+  }
+
+  return await dailyMenuRepository.updateMenuIsConfigured(menuId);
 };
 
 export const updateDailyMenuItem = async (menuId, itemId, payload, userId) => {
@@ -251,12 +295,6 @@ export const updateDailyMenuItem = async (menuId, itemId, payload, userId) => {
       itemId,
       fieldsToUpdate,
     );
-
-    // Set isConfigured to true if quantity was updated
-    if (payload.preparedQuantity !== undefined) {
-      await dailyMenuRepository.updateMenuIsConfigured(menuId);
-    }
-
     return updatedMenu;
   } catch (error) {
     if (error.message === "UPDATE_FAILED") {
@@ -313,10 +351,6 @@ export const applyAiQuantity = async (
         adjustedAt: new Date(),
       },
     );
-
-    // Set isConfigured to true
-    await dailyMenuRepository.updateMenuIsConfigured(menuId);
-
     return updatedMenu;
   } catch (error) {
     if (error.message === "UPDATE_FAILED") {
@@ -401,43 +435,65 @@ export const addFoodItemToDailyMenu = async (menuId, foodItemId, userId) => {
     throw new AppError("Daily menu not found", 404, "DAILY_MENU_NOT_FOUND");
   }
 
-  // Check item already in menu
-  const existing = menu.items.find(
-    (i) => i.foodItemId._id.toString() === foodItemId,
-  );
-  if (existing) {
-    throw new AppError(
-      "Food item already exists in daily menu",
-      409,
-      "DAILY_MENU_ITEM_ALREADY_EXISTS",
+  const ids = Array.isArray(foodItemId) ? foodItemId : [foodItemId];
+  const newItems = [];
+
+  for (const id of ids) {
+    // Check item already in menu
+    const existing = menu.items.find(
+      (i) =>
+        i.foodItemId?._id?.toString() === id || i.foodItemId?.toString() === id,
     );
+    if (existing) {
+      if (!Array.isArray(foodItemId)) {
+        throw new AppError(
+          "Food item already exists in daily menu",
+          409,
+          "DAILY_MENU_ITEM_ALREADY_EXISTS",
+        );
+      }
+      continue;
+    }
+
+    // Validate food item exists and active
+    const foodItem = await foodItemRepository.findFoodItemById(id);
+    if (!foodItem) {
+      if (!Array.isArray(foodItemId)) {
+        throw new AppError(
+          "Food item not found or is archived",
+          404,
+          "FOOD_ITEM_NOT_FOUND",
+        );
+      }
+      continue;
+    }
+
+    newItems.push({
+      foodItemId: foodItem._id,
+      originalPrice: foodItem.basePrice,
+      currentPrice: foodItem.basePrice,
+      preparedQuantity: 0,
+      soldQuantity: 0,
+      remainingQuantity: 0,
+      status: DAILY_MENU_ITEM_STATUS.AVAILABLE,
+      priceHistory: [],
+      quantityAdjustedBy: null,
+      adjustedAt: null,
+    });
   }
 
-  // Validate food item exists and active
-  const foodItem = await foodItemRepository.findFoodItemById(foodItemId);
-  if (!foodItem) {
-    throw new AppError(
-      "Food item not found or is archived",
-      404,
-      "FOOD_ITEM_NOT_FOUND",
-    );
+  if (newItems.length === 0) {
+    if (Array.isArray(foodItemId)) {
+      return menu;
+    }
+    throw new AppError("No items to add", 400, "NO_ITEMS_TO_ADD");
   }
-
-  const newItem = {
-    foodItemId: foodItem._id,
-    originalPrice: foodItem.basePrice,
-    currentPrice: foodItem.basePrice,
-    preparedQuantity: 0,
-    soldQuantity: 0,
-    remainingQuantity: 0,
-    status: DAILY_MENU_ITEM_STATUS.AVAILABLE,
-    priceHistory: [],
-    quantityAdjustedBy: null,
-    adjustedAt: null,
-  };
 
   try {
-    return await dailyMenuRepository.addMenuItem(menuId, newItem);
+    return await dailyMenuRepository.addMenuItem(
+      menuId,
+      Array.isArray(foodItemId) ? newItems : newItems[0],
+    );
   } catch (error) {
     if (error.message === "UPDATE_FAILED") {
       throw new AppError("Daily menu not found", 404, "DAILY_MENU_NOT_FOUND");

@@ -99,6 +99,17 @@ export const addFoodItemToDailyMenuValidation = [
     return true;
   }),
   body("foodItemId").custom((value) => {
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        throw new Error("Food item ids cannot be empty");
+      }
+      for (const id of value) {
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+          throw new Error("Invalid food item id in array");
+        }
+      }
+      return true;
+    }
     if (!mongoose.Types.ObjectId.isValid(value)) {
       throw new Error("Invalid food item id");
     }
