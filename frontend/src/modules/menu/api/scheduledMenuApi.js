@@ -15,6 +15,26 @@ export const getFoodItems = async (params) => {
   return res.data.data;
 };
 
+export const fetchAllFoodItems = async (params = {}) => {
+  const allItems = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const data = await getFoodItems({
+      ...params,
+      page,
+      limit: 50,
+      isArchived: "false",
+    });
+    allItems.push(...(data?.items || []));
+    totalPages = data?.pagination?.totalPages || 1;
+    page += 1;
+  }
+
+  return allItems;
+};
+
 export const getCategories = async () => {
   const res = await apiClient.get("/categories");
   return res.data.data;

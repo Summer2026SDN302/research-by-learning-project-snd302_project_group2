@@ -1,7 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+import { buildSavedSnapshot } from "../utils/scheduleSnapshot";
+
 const initialState = {
   schedule: [],
+  savedSnapshot: {},
   isLoading: false,
   isSaving: false,
   error: null,
@@ -13,15 +16,29 @@ const scheduledMenuSlice = createSlice({
   reducers: {
     setSchedule: (state, action) => {
       state.schedule = action.payload || [];
+      state.savedSnapshot = buildSavedSnapshot(state.schedule);
       state.isLoading = false;
       state.error = null;
     },
 
     updateDayItems: (state, action) => {
       const { dayOfWeek, menuItems } = action.payload;
-      const day = state.schedule.find((d) => d.dayOfWeek === dayOfWeek);
+      const day = state.schedule.find((entry) => entry.dayOfWeek === dayOfWeek);
       if (day) {
         day.menuItems = menuItems;
+      }
+    },
+
+    markDaysSaved: (state, action) => {
+      const dayOfWeeks = action.payload || [];
+
+      for (const dayOfWeek of dayOfWeeks) {
+        const day = state.schedule.find((entry) => entry.dayOfWeek === dayOfWeek);
+        if (day) {
+          state.savedSnapshot[dayOfWeek] = day.menuItems.map((item) =>
+            String(item.foodItemId?._id || item.foodItemId),
+          );
+        }
       }
     },
 
@@ -49,6 +66,7 @@ const scheduledMenuSlice = createSlice({
 export const {
   setSchedule,
   updateDayItems,
+  markDaysSaved,
   setLoading,
   setSaving,
   setError,
