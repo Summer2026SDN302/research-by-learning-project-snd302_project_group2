@@ -35,11 +35,7 @@ const AppRoutes = () => {
 
   if (!isBootstrapped) {
     return (
-      <LoadingOverlay
-        show
-        fullPage
-        message="Đang khởi tạo phiên làm việc..."
-      />
+      <LoadingOverlay show fullPage message="Đang khởi tạo phiên làm việc..." />
     );
   }
 
