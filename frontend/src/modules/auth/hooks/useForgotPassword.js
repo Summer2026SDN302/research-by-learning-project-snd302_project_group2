@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import useAppToast from "../../../hooks/useAppToast";
-import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
+import { getApiErrorMsg } from "../../../utils/errorUtils";
+import { AUTH_ERROR_MAP } from "../constants/authConstants";
 import * as authApi from "../api/authApi";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,7 +33,10 @@ const useForgotPassword = () => {
   const normalizedEmail = email.trim().toLowerCase();
 
   const handleChange = (event) => {
-    const nextValue = event.target.value;
+    let nextValue = event.target.value;
+    if (typeof nextValue === "string") {
+      nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
+    }
 
     setEmail(nextValue);
     setFormError("");
@@ -55,16 +59,13 @@ const useForgotPassword = () => {
     event.preventDefault();
 
     if (isLoading) return;
-
     const message = validateEmail(email);
     if (message) {
       setFieldError(message);
       return;
     }
-
     setIsLoading(true);
     setFormError("");
-
     try {
       await authApi.forgotPassword({ email: normalizedEmail });
       setIsSubmitted(true);
@@ -74,10 +75,12 @@ const useForgotPassword = () => {
         4500,
       );
     } catch (error) {
-      const friendlyMessage = getApiErrorMessage(
+      const rawMsg = getApiErrorMsg(
+        AUTH_ERROR_MAP,
         error,
         "Không thể gửi mã OTP. Vui lòng thử lại sau.",
       );
+      const friendlyMessage = AUTH_ERROR_MAP[rawMsg] || rawMsg;
       setFormError(friendlyMessage);
       toast.error("Gửi OTP thất bại", friendlyMessage);
     } finally {
@@ -98,5 +101,4 @@ const useForgotPassword = () => {
     goToResetPassword,
   };
 };
-
 export default useForgotPassword;

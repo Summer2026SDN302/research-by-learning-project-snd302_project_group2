@@ -3,10 +3,13 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 import useAppToast from "../../../hooks/useAppToast";
-import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
+import { getApiErrorMsg } from "../../../utils/errorUtils";
+import { USER_ERROR_MAP } from "../constants/userConstants";
 import { clearAccessToken } from "../../../services/apiClient";
 import { clearAuth } from "../../auth/redux/authSlice";
 import * as userApi from "../api/userApi";
+
+const PASSWORD_ALLOWED_REGEX = /^[\x21-\x7E]+$/;
 
 const initialForm = {
   currentPassword: "",
@@ -36,6 +39,8 @@ const useChangePassword = () => {
       nextErrors.newPassword = "Vui lòng nhập mật khẩu mới.";
     } else if (formData.newPassword.length < 6 || formData.newPassword.trim().length < 6) {
       nextErrors.newPassword = "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+    } else if (!PASSWORD_ALLOWED_REGEX.test(formData.newPassword)) {
+      nextErrors.newPassword = "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
     }
 
     if (formData.confirmPassword !== formData.newPassword) {
@@ -52,10 +57,17 @@ const useChangePassword = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    let nextValue = value;
+
+    if (typeof nextValue === "string") {
+      if (name === "currentPassword" || name === "newPassword" || name === "confirmPassword") {
+        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
+      }
+    }
 
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: nextValue,
     }));
 
     setFieldErrors((prev) => ({
@@ -89,10 +101,13 @@ const useChangePassword = () => {
       dispatch(clearAuth());
       navigate("/login", { replace: true });
     } catch (error) {
-      const message = getApiErrorMessage(
+      if (error?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(
+        USER_ERROR_MAP,
         error,
         "Không thể đổi mật khẩu. Vui lòng thử lại.",
       );
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
       setFormError(message);
       toast.error("Đổi mật khẩu thất bại", message);
     } finally {

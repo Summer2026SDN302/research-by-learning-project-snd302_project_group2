@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import useAppToast from "../../../hooks/useAppToast";
-import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
+import { getApiErrorMsg } from "../../../utils/errorUtils";
+import { USER_ERROR_MAP } from "../constants/userConstants";
 import { updateAuthUser } from "../../auth/redux/authSlice";
 import * as userApi from "../api/userApi";
 
@@ -52,11 +53,17 @@ const useProfile = () => {
         dispatch(updateAuthUser(data));
       } catch (loadError) {
         if (isCancelled) return;
+        if (loadError?.response?.status === 401) return;
 
+<<<<<<< HEAD
         const message = getApiErrorMessage(
           loadError,
           "Không thể tải hồ sơ cá nhân.",
         );
+=======
+        const rawMsg = getApiErrorMsg(USER_ERROR_MAP, loadError, "Không thể tải hồ sơ cá nhân.");
+        const message = USER_ERROR_MAP[rawMsg] || rawMsg;
+>>>>>>> 2cd518f (Fix lỗi UI auth)
         setError(message);
         toast.error("Tải hồ sơ thất bại", message);
       } finally {
@@ -99,10 +106,19 @@ const useProfile = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    let nextValue = value;
+
+    if (typeof nextValue === "string") {
+      if (name === "email") {
+        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
+      } else if (name === "phone") {
+        nextValue = nextValue.replace(/[^0-9+\-()\s]/g, "");
+      }
+    }
 
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: nextValue,
     }));
 
     setFieldErrors((prev) => ({
@@ -133,10 +149,13 @@ const useProfile = () => {
       dispatch(updateAuthUser(data));
       toast.success("Đã cập nhật hồ sơ", "Thông tin cá nhân đã được lưu.");
     } catch (submitError) {
-      const message = getApiErrorMessage(
+      if (submitError?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(
+        USER_ERROR_MAP,
         submitError,
         "Không thể cập nhật hồ sơ. Vui lòng thử lại.",
       );
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
       setError(message);
       toast.error("Cập nhật thất bại", message);
     } finally {

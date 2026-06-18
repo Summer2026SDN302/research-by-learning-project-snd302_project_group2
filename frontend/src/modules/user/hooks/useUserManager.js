@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 
 import useAppToast from "../../../hooks/useAppToast";
-import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
-import * as userApi from "../api/userApi";
+import { getApiErrorMsg } from "../../../utils/errorUtils";
 import {
   DEFAULT_RESET_PASSWORD_FORM,
   DEFAULT_USER_FORM,
+  USER_ERROR_MAP,
 } from "../constants/userConstants";
+import * as userApi from "../api/userApi";
 
 const DEFAULT_PAGINATION = {
   page: 1,
@@ -24,6 +25,7 @@ const DEFAULT_STATS = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^[0-9+()\s.-]{8,20}$/;
+const PASSWORD_ALLOWED_REGEX = /^[\x21-\x7E]+$/;
 
 const toUserForm = (user) => ({
   username: user?.username || "",
@@ -125,10 +127,16 @@ const useUserManager = () => {
         ...(data?.pagination || {}),
       });
     } catch (error) {
+<<<<<<< HEAD
       const message = getApiErrorMessage(
         error,
         "Không thể tải danh sách người dùng.",
       );
+=======
+      if (error?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể tải danh sách người dùng.");
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
+>>>>>>> 2cd518f (Fix lỗi UI auth)
       setUsersError(message);
       toast.error("Tải người dùng thất bại", message);
     } finally {
@@ -207,6 +215,7 @@ const useUserManager = () => {
     setSelectedUser(null);
     setFormData(DEFAULT_USER_FORM);
     setFieldErrors({});
+    setUsersError("");
     setIsFormOpen(true);
   };
 
@@ -215,6 +224,7 @@ const useUserManager = () => {
     setSelectedUser(user);
     setFormData(toUserForm(user));
     setFieldErrors({});
+    setUsersError("");
     setIsFormOpen(true);
   };
 
@@ -223,12 +233,26 @@ const useUserManager = () => {
     setIsFormOpen(false);
     setSelectedUser(null);
     setFieldErrors({});
+    setUsersError("");
   };
 
   const handleFormChange = (event) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let nextValue = value;
+
+    if (typeof nextValue === "string") {
+      if (name === "username") {
+        nextValue = nextValue.replace(/[^a-zA-Z0-9._-]/g, "");
+      } else if (name === "password" || name === "email") {
+        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
+      } else if (name === "phone") {
+        nextValue = nextValue.replace(/[^0-9+\-()\s]/g, "");
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
     setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    setUsersError("");
   };
 
   const validateUserForm = () => {
@@ -246,12 +270,19 @@ const useUserManager = () => {
     if (formMode === "create") {
       if (!formData.password) {
         nextErrors.password = "Vui lòng nhập mật khẩu.";
+<<<<<<< HEAD
       } else if (
         formData.password.length < 6 ||
         formData.password.trim().length < 6
       ) {
         nextErrors.password =
           "Mật khẩu phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+=======
+      } else if (formData.password.length < 6 || formData.password.trim().length < 6) {
+        nextErrors.password = "Mật khẩu phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+      } else if (!PASSWORD_ALLOWED_REGEX.test(formData.password)) {
+        nextErrors.password = "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
+>>>>>>> 2cd518f (Fix lỗi UI auth)
       }
     }
 
@@ -303,12 +334,15 @@ const useUserManager = () => {
       await fetchUsers();
       await fetchStats();
     } catch (error) {
-      const message = getApiErrorMessage(
+      if (error?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(
+        USER_ERROR_MAP,
         error,
         formMode === "create"
           ? "Không thể tạo người dùng."
           : "Không thể cập nhật người dùng.",
       );
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
       setUsersError(message);
       toast.error("Lưu người dùng thất bại", message);
     } finally {
@@ -316,12 +350,20 @@ const useUserManager = () => {
     }
   };
 
+<<<<<<< HEAD
   const openStatusAction = (user) =>
     setStatusAction({ user, nextActive: !user.isActive });
+=======
+  const openStatusAction = (user) => {
+    setUsersError("");
+    setStatusAction({ user, nextActive: !user.isActive });
+  };
+>>>>>>> 2cd518f (Fix lỗi UI auth)
 
   const closeStatusAction = () => {
     if (usersSaving) return;
     setStatusAction(null);
+    setUsersError("");
   };
 
   const confirmStatusAction = async () => {
@@ -338,21 +380,32 @@ const useUserManager = () => {
           "Người dùng có thể đăng nhập lại.",
         );
       } else {
+<<<<<<< HEAD
         await userApi.disableUser(statusAction.user._id);
         toast.success(
           "Đã tạm khóa tài khoản",
           "Refresh token của người dùng đã bị thu hồi.",
         );
+=======
+        await userApi.disableUser(statusAction.user._id, authUser?._id);
+        toast.success("Đã tạm khóa tài khoản", "Refresh token của người dùng đã bị thu hồi.");
+>>>>>>> 2cd518f (Fix lỗi UI auth)
       }
 
       setStatusAction(null);
       await fetchUsers();
       await fetchStats();
     } catch (error) {
+<<<<<<< HEAD
       const message = getApiErrorMessage(
         error,
         "Không thể cập nhật trạng thái người dùng.",
       );
+=======
+      if (error?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể cập nhật trạng thái người dùng.");
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
+>>>>>>> 2cd518f (Fix lỗi UI auth)
       setUsersError(message);
       toast.error("Cập nhật trạng thái thất bại", message);
     } finally {
@@ -364,18 +417,29 @@ const useUserManager = () => {
     setResetUser(user);
     setResetPasswordForm(DEFAULT_RESET_PASSWORD_FORM);
     setResetPasswordErrors({});
+    setUsersError("");
   };
 
   const closeResetPassword = () => {
     if (usersSaving) return;
     setResetUser(null);
     setResetPasswordErrors({});
+    setUsersError("");
   };
 
   const handleResetPasswordChange = (event) => {
     const { name, value } = event.target;
-    setResetPasswordForm((prev) => ({ ...prev, [name]: value }));
+    let nextValue = value;
+
+    if (typeof nextValue === "string") {
+      if (name === "newPassword" || name === "confirmPassword") {
+        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
+      }
+    }
+
+    setResetPasswordForm((prev) => ({ ...prev, [name]: nextValue }));
     setResetPasswordErrors((prev) => ({ ...prev, [name]: "" }));
+    setUsersError("");
   };
 
   const validateResetPassword = () => {
@@ -387,8 +451,14 @@ const useUserManager = () => {
       resetPasswordForm.newPassword.length < 6 ||
       resetPasswordForm.newPassword.trim().length < 6
     ) {
+<<<<<<< HEAD
       nextErrors.newPassword =
         "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+=======
+      nextErrors.newPassword = "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+    } else if (!PASSWORD_ALLOWED_REGEX.test(resetPasswordForm.newPassword)) {
+      nextErrors.newPassword = "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
+>>>>>>> 2cd518f (Fix lỗi UI auth)
     }
 
     if (resetPasswordForm.confirmPassword !== resetPasswordForm.newPassword) {
@@ -415,10 +485,16 @@ const useUserManager = () => {
       setResetUser(null);
       await fetchUsers();
     } catch (error) {
+<<<<<<< HEAD
       const message = getApiErrorMessage(
         error,
         "Không thể đặt lại mật khẩu người dùng.",
       );
+=======
+      if (error?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể đặt lại mật khẩu người dùng.");
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
+>>>>>>> 2cd518f (Fix lỗi UI auth)
       setUsersError(message);
       toast.error("Đặt lại mật khẩu thất bại", message);
     } finally {

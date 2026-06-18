@@ -25,6 +25,7 @@ const UserFormModal = ({
   onChange,
   onSubmit,
   onClose,
+  error,
 }) => {
   useEffect(() => {
     if (!open) return undefined;
@@ -181,6 +182,12 @@ const UserFormModal = ({
               <FieldError message={fieldErrors.phone} helper="Tùy chọn. Có thể nhập số điện thoại kèm mã vùng." />
             </div>
           </div>
+
+          {error && (
+            <div className="rounded-lg border border-error/20 bg-error-container/40 px-4 py-3 text-body-sm text-on-error-container" role="alert">
+              {error}
+            </div>
+          )}
 
           <div className="flex flex-col-reverse gap-3 border-t border-outline-variant pt-5 sm:flex-row sm:justify-end">
             <button

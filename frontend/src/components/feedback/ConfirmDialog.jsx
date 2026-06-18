@@ -28,8 +28,8 @@ const ConfirmDialog = ({
   confirmLabel = "Xác nhận",
   cancelLabel = "Hủy",
   variant = "danger",
-  onConfirm = () => {},
-  onCancel = () => {},
+  onConfirm = () => { },
+  onCancel = () => { },
   isLoading = false,
 }) => {
   const config = VARIANT_CONFIG[variant] ?? VARIANT_CONFIG.danger;

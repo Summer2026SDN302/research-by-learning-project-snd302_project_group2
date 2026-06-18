@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import useAppToast from "../../../hooks/useAppToast";
-import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
+import { getApiErrorMsg } from "../../../utils/errorUtils";
+import { AUTH_ERROR_MAP } from "../constants/authConstants";
 import * as authApi from "../api/authApi";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -26,10 +27,15 @@ const validateOtp = (otp) => {
   return "";
 };
 
+const PASSWORD_ALLOWED_REGEX = /^[\x21-\x7E]+$/;
+
 const validatePassword = (password) => {
   if (!password) return "Vui lòng nhập mật khẩu mới.";
   if (password.length < 6 || password.trim().length < 6) {
     return "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+  }
+  if (!PASSWORD_ALLOWED_REGEX.test(password)) {
+    return "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
   }
 
   return "";
@@ -83,8 +89,16 @@ const useResetPassword = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    const nextValue =
+    let nextValue =
       name === "otp" ? value.replace(/\D/g, "").slice(0, 6) : value;
+
+    if (typeof nextValue === "string") {
+      if (name === "newPassword" || name === "confirmPassword") {
+        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
+      } else if (name === "email") {
+        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
+      }
+    }
 
     setFormData((prev) => ({ ...prev, [name]: nextValue }));
     setFieldErrors((prev) => ({ ...prev, [name]: "" }));
@@ -115,10 +129,12 @@ const useResetPassword = () => {
         4500,
       );
     } catch (error) {
-      const message = getApiErrorMessage(
+      const rawMsg = getApiErrorMsg(
+        AUTH_ERROR_MAP,
         error,
         "Không thể đặt lại mật khẩu. Vui lòng thử lại sau.",
       );
+      const message = AUTH_ERROR_MAP[rawMsg] || rawMsg;
       setFormError(message);
       toast.error("Đặt lại mật khẩu thất bại", message);
     } finally {

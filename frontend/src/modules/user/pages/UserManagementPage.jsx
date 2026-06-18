@@ -232,6 +232,7 @@ const UserManagementPage = () => {
         onChange={manager.handleFormChange}
         onSubmit={manager.handleSubmitUser}
         onClose={manager.closeForm}
+        error={manager.usersError}
       />
 
       <ResetPasswordModal
@@ -242,6 +243,7 @@ const UserManagementPage = () => {
         onChange={manager.handleResetPasswordChange}
         onSubmit={manager.submitResetPassword}
         onClose={manager.closeResetPassword}
+        error={manager.usersError}
       />
 
       <ConfirmDialog
@@ -254,6 +256,7 @@ const UserManagementPage = () => {
         isLoading={manager.usersSaving}
         onConfirm={manager.confirmStatusAction}
         onCancel={manager.closeStatusAction}
+        error={manager.usersError}
       />
     </section>
   );

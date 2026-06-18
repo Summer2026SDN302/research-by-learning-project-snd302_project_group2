@@ -65,11 +65,10 @@ const LoginPage = () => {
                   </span>
 
                   <input
-                    className={`${loginInputClass} ${
-                      fieldErrors.identifier
+                    className={`${loginInputClass} ${fieldErrors.identifier
                         ? "border-error"
                         : "border-outline-variant"
-                    }`}
+                      }`}
                     id="identifier"
                     name="identifier"
                     placeholder="Nhập mã nhân viên hoặc email"
@@ -101,7 +100,7 @@ const LoginPage = () => {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 error={fieldErrors.password}
-                helper="Mật khẩu phân biệt chữ hoa/thường, không nhập toàn khoảng trắng."
+                helper="Mật khẩu phân biệt chữ hoa/thường, không nhập khoảng trắng hoặc ký tự tiếng Việt có dấu."
                 placeholder="••••••••"
                 autoComplete="current-password"
                 disabled={isLoading}
