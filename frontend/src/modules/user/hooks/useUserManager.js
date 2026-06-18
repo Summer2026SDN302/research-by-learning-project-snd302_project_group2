@@ -127,16 +127,9 @@ const useUserManager = () => {
         ...(data?.pagination || {}),
       });
     } catch (error) {
-<<<<<<< HEAD
-      const message = getApiErrorMessage(
-        error,
-        "Không thể tải danh sách người dùng.",
-      );
-=======
       if (error?.response?.status === 401) return;
       const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể tải danh sách người dùng.");
       const message = USER_ERROR_MAP[rawMsg] || rawMsg;
->>>>>>> 2cd518f (Fix lỗi UI auth)
       setUsersError(message);
       toast.error("Tải người dùng thất bại", message);
     } finally {
@@ -270,19 +263,10 @@ const useUserManager = () => {
     if (formMode === "create") {
       if (!formData.password) {
         nextErrors.password = "Vui lòng nhập mật khẩu.";
-<<<<<<< HEAD
-      } else if (
-        formData.password.length < 6 ||
-        formData.password.trim().length < 6
-      ) {
-        nextErrors.password =
-          "Mật khẩu phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
-=======
       } else if (formData.password.length < 6 || formData.password.trim().length < 6) {
         nextErrors.password = "Mật khẩu phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
       } else if (!PASSWORD_ALLOWED_REGEX.test(formData.password)) {
         nextErrors.password = "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
->>>>>>> 2cd518f (Fix lỗi UI auth)
       }
     }
 
@@ -350,15 +334,10 @@ const useUserManager = () => {
     }
   };
 
-<<<<<<< HEAD
-  const openStatusAction = (user) =>
-    setStatusAction({ user, nextActive: !user.isActive });
-=======
   const openStatusAction = (user) => {
     setUsersError("");
     setStatusAction({ user, nextActive: !user.isActive });
   };
->>>>>>> 2cd518f (Fix lỗi UI auth)
 
   const closeStatusAction = () => {
     if (usersSaving) return;
@@ -380,32 +359,17 @@ const useUserManager = () => {
           "Người dùng có thể đăng nhập lại.",
         );
       } else {
-<<<<<<< HEAD
-        await userApi.disableUser(statusAction.user._id);
-        toast.success(
-          "Đã tạm khóa tài khoản",
-          "Refresh token của người dùng đã bị thu hồi.",
-        );
-=======
         await userApi.disableUser(statusAction.user._id, authUser?._id);
         toast.success("Đã tạm khóa tài khoản", "Refresh token của người dùng đã bị thu hồi.");
->>>>>>> 2cd518f (Fix lỗi UI auth)
       }
 
       setStatusAction(null);
       await fetchUsers();
       await fetchStats();
     } catch (error) {
-<<<<<<< HEAD
-      const message = getApiErrorMessage(
-        error,
-        "Không thể cập nhật trạng thái người dùng.",
-      );
-=======
       if (error?.response?.status === 401) return;
       const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể cập nhật trạng thái người dùng.");
       const message = USER_ERROR_MAP[rawMsg] || rawMsg;
->>>>>>> 2cd518f (Fix lỗi UI auth)
       setUsersError(message);
       toast.error("Cập nhật trạng thái thất bại", message);
     } finally {
@@ -451,14 +415,9 @@ const useUserManager = () => {
       resetPasswordForm.newPassword.length < 6 ||
       resetPasswordForm.newPassword.trim().length < 6
     ) {
-<<<<<<< HEAD
-      nextErrors.newPassword =
-        "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
-=======
       nextErrors.newPassword = "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
     } else if (!PASSWORD_ALLOWED_REGEX.test(resetPasswordForm.newPassword)) {
       nextErrors.newPassword = "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
->>>>>>> 2cd518f (Fix lỗi UI auth)
     }
 
     if (resetPasswordForm.confirmPassword !== resetPasswordForm.newPassword) {
@@ -485,16 +444,9 @@ const useUserManager = () => {
       setResetUser(null);
       await fetchUsers();
     } catch (error) {
-<<<<<<< HEAD
-      const message = getApiErrorMessage(
-        error,
-        "Không thể đặt lại mật khẩu người dùng.",
-      );
-=======
       if (error?.response?.status === 401) return;
       const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể đặt lại mật khẩu người dùng.");
       const message = USER_ERROR_MAP[rawMsg] || rawMsg;
->>>>>>> 2cd518f (Fix lỗi UI auth)
       setUsersError(message);
       toast.error("Đặt lại mật khẩu thất bại", message);
     } finally {

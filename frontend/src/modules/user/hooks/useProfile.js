@@ -55,15 +55,8 @@ const useProfile = () => {
         if (isCancelled) return;
         if (loadError?.response?.status === 401) return;
 
-<<<<<<< HEAD
-        const message = getApiErrorMessage(
-          loadError,
-          "Không thể tải hồ sơ cá nhân.",
-        );
-=======
         const rawMsg = getApiErrorMsg(USER_ERROR_MAP, loadError, "Không thể tải hồ sơ cá nhân.");
         const message = USER_ERROR_MAP[rawMsg] || rawMsg;
->>>>>>> 2cd518f (Fix lỗi UI auth)
         setError(message);
         toast.error("Tải hồ sơ thất bại", message);
       } finally {
