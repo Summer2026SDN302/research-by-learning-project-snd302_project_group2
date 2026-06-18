@@ -40,7 +40,7 @@ const buildFoodItemPayload = (body) => ({
   description: body.description?.trim() || null,
   basePrice: Number(body.basePrice),
   cost: Number(body.cost),
-  isArchived: body.isArchived,
+  isArchived: false,
 });
 
 const getFoodItemOrThrow = async (id) => {
@@ -53,11 +53,17 @@ const getFoodItemOrThrow = async (id) => {
   return foodItem;
 };
 
-const toFoodItemResponseFromDocument = (foodItem, categoryName) =>
-  toFoodItemResponse({
-    ...foodItem.toObject(),
-    categoryName,
+const toPlainFoodItem = (foodItem) =>
+  foodItem?.toObject ? foodItem.toObject() : foodItem;
+
+const toFoodItemResponseFromDocument = (foodItem, categoryName) => {
+  const plainFoodItem = toPlainFoodItem(foodItem);
+
+  return toFoodItemResponse({
+    ...plainFoodItem,
+    categoryName: categoryName ?? plainFoodItem.categoryName,
   });
+};
 
 const assertFoodItemNotReferenced = async (foodItemId) => {
   const [dailyMenuCount, scheduledMenuCount, orderCount] = await Promise.all([
@@ -86,6 +92,14 @@ const getCategoryOrThrow = async (categoryId) => {
 
   if (!category) {
     throw categoryNotFoundError();
+  }
+
+  if (!category.isActive || category.deletedAt) {
+    throw new AppError(
+      "Category is inactive",
+      400,
+      "CATEGORY_INACTIVE",
+    );
   }
 
   return category;
@@ -160,10 +174,11 @@ const foodItemService = {
   async updateFoodItemArchive(id, isArchived, userId) {
     const foodItem = await getFoodItemOrThrow(id);
     const patch = { isArchived };
+    const today = new Date().toISOString().slice(0, 10);
 
     if (isArchived) {
       const [dailyMenuCount, scheduledMenuCount] = await Promise.all([
-        dailyMenuRepository.countActiveByFoodItemId(id, new Date()),
+        dailyMenuRepository.countActiveByFoodItemId(id, today),
         scheduledMenuRepository.countByFoodItemId(id),
       ]);
 
