@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { DAY_OF_WEEK } from "./scheduled_menu.constants.js";
 
 const { Schema } = mongoose;
 
@@ -8,15 +9,7 @@ const scheduledMenuSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      enum: [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
-      ],
+      enum: DAY_OF_WEEK,
     },
 
     menuItems: [
