@@ -1,14 +1,16 @@
+import { createPortal } from "react-dom";
 import PageHeader from "@/components/layout/PageHeader";
 import EmptyState from "@/components/data-display/EmptyState";
 import LoadingOverlay from "@/components/feedback/LoadingOverlay";
 import ConfirmDialog from "@/components/feedback/ConfirmDialog";
 import FilterBar from "@/components/search/FilterBar";
 import { useSelector } from "react-redux";
-import FoodItemSearchBar from "../components/FoodItemSearchBar";
-import FoodItemTable from "../components/FoodItemTable";
-import FoodItemFormModal from "../components/FoodItemFormModal";
-import useFoodItem from "../hooks/useFoodItem";
-import FoodItemDetailDialog from "../components/FoodItemDetailDialog";
+import SearchBar from "@/components/search/SearchBar";
+import PaginationControl from "@/components/navigation/PaginationControl";
+import FoodItemTable from "../components/food-item/FoodItemTable";
+import FoodItemFormModal from "../components/food-item/FoodItemFormModal";
+import useFoodItem from "../hooks/food-item/useFoodItem";
+import FoodItemDetailDialog from "../components/food-item/FoodItemDetailDialog";
 
 const FoodItemListPage = () => {
   const user = useSelector((state) => state.auth.user);
@@ -24,7 +26,8 @@ const FoodItemListPage = () => {
     searchKeyword,
     isLoading,
     isSubmitting,
-    listError,
+    errorMsg,
+    errorTitle,
     modalMode,
     showUnsavedDialog,
     serverFieldErrors,
@@ -46,6 +49,9 @@ const FoodItemListPage = () => {
     cancelDiscardChanges,
     submitForm,
     handleToggleArchive,
+    archiveConfirmTarget,
+    handleConfirmToggleArchive,
+    handleCancelToggleArchive,
     handleExport,
     detailTarget,
     openDetailDialog,
@@ -91,19 +97,25 @@ const FoodItemListPage = () => {
         }
       />
 
-      {listError && (
+      {errorMsg && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-error/30 bg-error-container/20 text-error text-body-sm">
           <span className="material-symbols-outlined text-[20px] shrink-0">
             error
           </span>
           <div>
-            <p className="font-semibold">Không tải được danh sách món ăn</p>
-            <p className="mt-1 opacity-90">{listError.message}</p>
+            <p className="font-semibold">{errorTitle}</p>
+            <p className="mt-1 opacity-90">{errorMsg}</p>
           </div>
         </div>
       )}
 
-      <FoodItemSearchBar value={searchKeyword} onChange={handleSearchChange} />
+      <div className="w-full max-w-md">
+        <SearchBar
+          placeholder="Tìm kiếm món ăn..."
+          value={searchKeyword}
+          onChange={handleSearchChange}
+        />
+      </div>
 
       <div className="bg-surface rounded-xl p-4 border border-outline-variant shadow-sm flex flex-wrap gap-4 items-center justify-between">
         <FilterBar
@@ -162,18 +174,32 @@ const FoodItemListPage = () => {
           />
         </div>
       ) : (
-        <FoodItemTable
-          items={items}
-          isLoading={isLoading}
-          emptyMessage={emptyMessage}
-          pagination={pagination}
-          onPageChange={handlePageChange}
-          onViewDetail={openDetailDialog}
-          onEdit={openEditModal}
-          onToggleArchive={handleToggleArchive}
-          canViewDetail={isAdmin || isManager}
-          canManageActions={isAdmin}
-        />
+        <>
+          <FoodItemTable
+            items={items}
+            isLoading={isLoading}
+            emptyMessage={emptyMessage}
+            onViewDetail={openDetailDialog}
+            onEdit={openEditModal}
+            onToggleArchive={handleToggleArchive}
+            canViewDetail={isAdmin || isManager}
+            canManageActions={isAdmin}
+          />
+          {pagination && pagination.total > 0 && handlePageChange && (
+            <div className="mt-4 px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant flex flex-col sm:flex-row justify-between items-center gap-3 text-body-sm">
+              <span className="text-on-surface-variant">
+                Hiển thị {(pagination.page - 1) * pagination.limit + 1}-
+                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
+                trên {pagination.total} món ăn
+              </span>
+              <PaginationControl
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
+        </>
       )}
 
       <LoadingOverlay
@@ -200,16 +226,41 @@ const FoodItemListPage = () => {
         onClose={closeDetailDialog}
       />
 
-      <ConfirmDialog
-        open={showUnsavedDialog}
-        title="Thoát không lưu?"
-        description="Bạn có thay đổi chưa lưu. Bạn có chắc muốn thoát?"
-        confirmLabel="Thoát"
-        cancelLabel="Ở lại"
-        variant="warning"
-        onConfirm={confirmDiscardChanges}
-        onCancel={cancelDiscardChanges}
-      />
+      {createPortal(
+        <ConfirmDialog
+          open={showUnsavedDialog}
+          title="Thoát không lưu?"
+          description="Bạn có thay đổi chưa lưu. Bạn có chắc muốn thoát?"
+          confirmLabel="Thoát"
+          cancelLabel="Ở lại"
+          variant="warning"
+          onConfirm={confirmDiscardChanges}
+          onCancel={cancelDiscardChanges}
+        />,
+        document.body
+      )}
+
+      {createPortal(
+        <ConfirmDialog
+          open={Boolean(archiveConfirmTarget)}
+          title={
+            archiveConfirmTarget?.isArchived
+              ? "Mở bán lại món ăn?"
+              : "Ngừng bán món ăn?"
+          }
+          description={
+            archiveConfirmTarget?.isArchived
+              ? `Bạn có chắc chắn muốn mở bán lại món ăn "${archiveConfirmTarget?.name}"?`
+              : `Bạn có chắc chắn muốn ngừng bán món ăn "${archiveConfirmTarget?.name}"?`
+          }
+          confirmLabel="Xác nhận"
+          cancelLabel="Hủy"
+          variant={archiveConfirmTarget?.isArchived ? "info" : "danger"}
+          onConfirm={handleConfirmToggleArchive}
+          onCancel={handleCancelToggleArchive}
+        />,
+        document.body
+      )}
     </div>
   );
 };

@@ -1,7 +1,8 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { foodItemFormSchema } from "../validation/foodItemSchema";
+import { foodItemFormSchema } from "../../validation/foodItemSchema";
 import Spinner from "@/components/feedback/Spinner";
 
 const MODAL_CONFIG = {
@@ -93,7 +94,7 @@ const FoodItemFormModal = ({
 
   const handleClose = () => onClose(isDirty);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
         className="absolute inset-0 bg-on-surface/30 backdrop-blur-[3px]"
@@ -121,7 +122,7 @@ const FoodItemFormModal = ({
           <button
             type="button"
             onClick={handleClose}
-            className="p-2 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors shrink-0"
+            className="p-2 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors shrink-0 flex items-center justify-center"
             aria-label="Đóng"
           >
             <span className="material-symbols-outlined">close</span>
@@ -129,23 +130,31 @@ const FoodItemFormModal = ({
         </div>
 
         <form
+          id="food-item-form"
           onSubmit={handleSubmit(onSubmit)}
           className="p-6 sm:px-8 sm:pb-8 space-y-5 overflow-y-auto flex-1"
         >
           <div>
             <label className={labelClass}>Danh mục *</label>
-            <select
-              {...register("categoryId")}
-              disabled={categoryOptionsLoading || categoryOptions.length === 0}
-              className={`${inputClass} disabled:opacity-60 disabled:cursor-not-allowed`}
-            >
-              <option value="">Chọn danh mục...</option>
-              {categoryOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                {...register("categoryId")}
+                disabled={
+                  categoryOptionsLoading || categoryOptions.length === 0
+                }
+                className={`${inputClass} appearance-none pr-10 disabled:opacity-60 disabled:cursor-not-allowed`}
+              >
+                <option value="">Chọn danh mục...</option>
+                {categoryOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">
+                expand_more
+              </span>
+            </div>
             {categoryOptionsError && (
               <p className="text-tertiary text-body-sm mt-1.5">
                 {categoryOptionsError}
@@ -229,28 +238,29 @@ const FoodItemFormModal = ({
               )}
             </div>
           </div>
-
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isSubmitting}
-              className="px-6 py-3 rounded-xl text-body-sm font-bold text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-3 rounded-xl text-body-sm font-bold bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSubmitting && <Spinner size="sm" />}
-              {config.submitLabel}
-            </button>
-          </div>
         </form>
+        <div className="px-6 sm:px-8 py-4 border-t border-outline-variant/60 bg-gradient-to-r from-surface-container-lowest to-surface-container-low/30 flex flex-col-reverse sm:flex-row justify-end gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="px-6 py-3 rounded-xl text-body-sm font-bold text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"
+          >
+            Hủy bỏ
+          </button>
+          <button
+            type="submit"
+            form="food-item-form"
+            disabled={isSubmitting}
+            className="px-6 py-3 rounded-xl text-body-sm font-bold bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isSubmitting && <Spinner size="sm" />}
+            {config.submitLabel}
+          </button>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

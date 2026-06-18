@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import useDebouncedValue from "@/hooks/useDebouncedValue";
 import useAppToast from "@/hooks/useAppToast";
+import { getApiErrorMsg } from "@/utils/errorUtils";
 import {
   CATEGORY_ERROR_MESSAGES,
   DEFAULT_PAGE_SIZE,
-} from "../constants/categoryConstants";
+} from "../../constants/categoryConstants";
 import {
   clearError,
   clearSelectedCategory,
@@ -16,7 +17,7 @@ import {
   setFilters,
   toggleCategoryStatus,
   updateCategory,
-} from "../redux/categorySlice";
+} from "../../redux/categorySlice";
 
 const buildPayload = (data) => ({
   name: data.name.trim(),
@@ -42,6 +43,7 @@ export const useCategory = () => {
   const [modalMode, setModalMode] = useState(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [serverFieldError, setServerFieldError] = useState(null);
+  const [statusConfirmTarget, setStatusConfirmTarget] = useState(null);
 
   const pendingCloseRef = useRef(false);
   const debouncedSearch = useDebouncedValue(searchKeyword);
@@ -107,6 +109,7 @@ export const useCategory = () => {
     setModalMode(null);
     dispatch(clearSelectedCategory());
     dispatch(resetMutationStatus());
+    dispatch(clearError());
     setServerFieldError(null);
   };
 
@@ -116,6 +119,7 @@ export const useCategory = () => {
     setModalMode(null);
     dispatch(clearSelectedCategory());
     dispatch(resetMutationStatus());
+    dispatch(clearError());
     setServerFieldError(null);
   };
 
@@ -151,11 +155,19 @@ export const useCategory = () => {
           message: CATEGORY_ERROR_MESSAGES.CATEGORY_NAME_EXISTS,
         });
       }
-      toast.error("Lỗi", err?.message ?? "Đã xảy ra lỗi");
+      toast.error("Lỗi", getApiErrorMsg(CATEGORY_ERROR_MESSAGES, { response: { data: { error: { code: err?.code }, message: err?.message } } }, "Đã xảy ra lỗi"));
     }
   };
 
-  const handleToggleStatus = async (category) => {
+  const handleToggleStatus = (category) => {
+    setStatusConfirmTarget(category);
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    if (!statusConfirmTarget) return;
+    const category = statusConfirmTarget;
+    setStatusConfirmTarget(null);
+    dispatch(clearError());
     try {
       await dispatch(
         toggleCategoryStatus({
@@ -165,27 +177,94 @@ export const useCategory = () => {
       ).unwrap();
       toast.success("Thành công", "Cập nhật trạng thái thành công");
     } catch (err) {
-      toast.error("Lỗi", err?.message ?? "Không thể cập nhật trạng thái");
+      toast.error("Lỗi", getApiErrorMsg(CATEGORY_ERROR_MESSAGES, { response: { data: { error: { code: err?.code }, message: err?.message } } }, "Không thể cập nhật trạng thái"));
     }
   };
+
+  const handleCancelToggleStatus = () => {
+    setStatusConfirmTarget(null);
+  };
+
+  const filterBarConfig = useMemo(
+    () => [
+      {
+        key: "isActive",
+        label: "Trạng thái",
+        options: [
+          { value: "", label: "Tất cả trạng thái" },
+          { value: "true", label: "Đang hoạt động" },
+          { value: "false", label: "Ngừng hoạt động" },
+        ],
+      },
+    ],
+    [],
+  );
+
+  const filterValues = useMemo(
+    () => ({
+      isActive: filters.isActive === null ? "" : String(filters.isActive),
+    }),
+    [filters.isActive],
+  );
+
+  const handleFilterChange = useCallback(
+    (key, value) => {
+      if (key === "isActive") {
+        const isActive = value === "" ? null : value === "true";
+        dispatch(setFilters({ isActive }));
+      }
+    },
+    [dispatch],
+  );
+
+  const handleFilterReset = useCallback(() => {
+    dispatch(setFilters({ isActive: null }));
+  }, [dispatch]);
+
+  const hasActiveFilters = useMemo(
+    () => Boolean(searchKeyword.trim()) || filters.isActive !== null,
+    [filters.isActive, searchKeyword],
+  );
 
   const isEmpty = useMemo(
     () => !isLoading && !error && pagination.total === 0 && !searchKeyword.trim(),
     [isLoading, error, pagination.total, searchKeyword],
   );
 
+  const isEmptyState = useMemo(
+    () => !isLoading && !error && pagination.total === 0 && !hasActiveFilters,
+    [hasActiveFilters, isLoading, error, pagination.total],
+  );
+
   const emptyTitle = useMemo(
-    () => (searchKeyword.trim() ? "Không tìm thấy danh mục" : "Chưa có danh mục nào"),
-    [searchKeyword],
+    () => (hasActiveFilters ? "Không tìm thấy danh mục" : "Chưa có danh mục nào"),
+    [hasActiveFilters],
   );
 
   const emptyMessage = useMemo(
     () =>
-      searchKeyword.trim()
+      hasActiveFilters
         ? "Không tìm thấy danh mục phù hợp."
         : "Chưa có danh mục nào.",
-    [searchKeyword],
+    [hasActiveFilters],
   );
+
+  const errorMsg = useMemo(() => {
+    if (!error) return null;
+    return getApiErrorMsg(
+      CATEGORY_ERROR_MESSAGES,
+      { response: { data: { error: { code: error?.code }, message: error?.message } } },
+      "Đã xảy ra lỗi"
+    );
+  }, [error]);
+
+  const errorTitle = useMemo(() => {
+    if (!error) return null;
+    if (listStatus === "failed") {
+      return "Không tải được danh sách danh mục";
+    }
+    return "Lỗi thực hiện thao tác";
+  }, [listStatus, error]);
 
   return {
     categories: items,
@@ -198,7 +277,15 @@ export const useCategory = () => {
     showUnsavedDialog,
     serverFieldError,
     error,
+    errorMsg,
+    errorTitle,
     isEmpty,
+    isEmptyState,
+    hasActiveFilters,
+    filterBarConfig,
+    filterValues,
+    handleFilterChange,
+    handleFilterReset,
     emptyTitle,
     emptyMessage,
     handleSearchChange,
@@ -210,6 +297,9 @@ export const useCategory = () => {
     cancelDiscardChanges,
     submitForm,
     handleToggleStatus,
+    statusConfirmTarget,
+    handleConfirmToggleStatus,
+    handleCancelToggleStatus,
   };
 };
 

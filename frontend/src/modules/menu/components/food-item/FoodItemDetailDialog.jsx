@@ -1,4 +1,6 @@
-import { formatCurrency } from "../utils/foodItemUtils";
+import { createPortal } from "react-dom";
+import { formatCurrency } from "../../../../utils/formatters";
+import StatusBadge from "@/components/data-display/StatusBadge";
 
 const formatDateTime = (value) => {
   if (!value) return "—";
@@ -41,23 +43,10 @@ const DetailRow = ({ label, value }) => (
   </div>
 );
 
-const StatusPill = ({ isArchived }) =>
-  isArchived ? (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-variant text-on-surface-variant text-label-sm font-bold">
-      <span className="material-symbols-outlined text-[16px]">inventory_2</span>
-      Ngừng bán
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-sm font-bold">
-      <span className="material-symbols-outlined text-[16px]">storefront</span>
-      Đang bán
-    </span>
-  );
-
 const FoodItemDetailDialog = ({ open, item, onClose }) => {
   if (!open || !item) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
         className="absolute inset-0 bg-on-surface/30 backdrop-blur-[3px]"
@@ -82,7 +71,10 @@ const FoodItemDetailDialog = ({ open, item, onClose }) => {
                 {item.name}
               </h3>
               <div className="mt-2">
-                <StatusPill isArchived={item.isArchived} />
+                <StatusBadge
+                  status={item.isArchived ? "inactive" : "active"}
+                  label={item.isArchived ? "Ngừng bán" : "Đang bán"}
+                />
               </div>
             </div>
           </div>
@@ -90,7 +82,7 @@ const FoodItemDetailDialog = ({ open, item, onClose }) => {
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors shrink-0"
+            className="p-2 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors shrink-0 flex items-center justify-center"
             aria-label="Đóng"
           >
             <span className="material-symbols-outlined">close</span>
@@ -100,7 +92,6 @@ const FoodItemDetailDialog = ({ open, item, onClose }) => {
         <div className="p-6 sm:px-8 sm:pb-8 overflow-y-auto flex-1">
           <div className="rounded-xl border border-outline-variant/60 bg-surface overflow-hidden">
             <div className="p-4 sm:p-5">
-              <DetailRow label="ID" value={item._id} />
               <DetailRow label="Tên món" value={item.name} />
               <DetailRow
                 label="Danh mục"
@@ -141,19 +132,10 @@ const FoodItemDetailDialog = ({ open, item, onClose }) => {
               />
             </div>
           </div>
-
-          <div className="flex justify-end pt-5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 rounded-xl text-body-sm font-bold bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all"
-            >
-              Đóng
-            </button>
-          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

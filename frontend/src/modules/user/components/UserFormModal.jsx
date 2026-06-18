@@ -6,7 +6,10 @@ const inputClass =
 
 const FieldError = ({ message, helper }) => {
   if (message) return <p className="mt-1 text-body-sm text-error">{message}</p>;
-  if (helper) return <p className="mt-1 text-body-sm text-on-surface-variant/70">{helper}</p>;
+  if (helper)
+    return (
+      <p className="mt-1 text-body-sm text-on-surface-variant/70">{helper}</p>
+    );
   return null;
 };
 
@@ -26,7 +29,10 @@ const UserFormModal = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       <section className="relative w-full max-w-2xl rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-elevated">
         <div className="flex items-start justify-between border-b border-outline-variant px-6 py-5">
@@ -53,7 +59,10 @@ const UserFormModal = ({
         <form className="space-y-5 px-6 py-6" onSubmit={onSubmit}>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="username">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="username"
+              >
                 Tên đăng nhập
               </label>
               <input
@@ -66,11 +75,17 @@ const UserFormModal = ({
                 disabled={isSaving}
                 placeholder="staff01"
               />
-              <FieldError message={fieldErrors.username} helper="Ít nhất 4 ký tự, chỉ dùng chữ, số, dấu chấm, gạch dưới hoặc gạch ngang." />
+              <FieldError
+                message={fieldErrors.username}
+                helper="Ít nhất 4 ký tự, chỉ dùng chữ, số, dấu chấm, gạch dưới hoặc gạch ngang."
+              />
             </div>
 
             <div>
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="role">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="role"
+              >
                 Vai trò
               </label>
               <select
@@ -87,12 +102,18 @@ const UserFormModal = ({
                   </option>
                 ))}
               </select>
-              <FieldError message={fieldErrors.role} helper="Chọn quyền phù hợp với tài khoản này." />
+              <FieldError
+                message={fieldErrors.role}
+                helper="Chọn quyền phù hợp với tài khoản này."
+              />
             </div>
 
             {isCreate && (
               <div className="md:col-span-2">
-                <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="password">
+                <label
+                  className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                  htmlFor="password"
+                >
                   Mật khẩu tạm thời
                 </label>
                 <input
@@ -106,12 +127,18 @@ const UserFormModal = ({
                   disabled={isSaving}
                   placeholder="Ít nhất 6 ký tự"
                 />
-                <FieldError message={fieldErrors.password} helper="Ít nhất 6 ký tự và không được chỉ gồm khoảng trắng." />
+                <FieldError
+                  message={fieldErrors.password}
+                  helper="Ít nhất 6 ký tự và không được chỉ gồm khoảng trắng."
+                />
               </div>
             )}
 
             <div>
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="fullName">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="fullName"
+              >
                 Họ tên
               </label>
               <input
@@ -124,11 +151,17 @@ const UserFormModal = ({
                 disabled={isSaving}
                 placeholder="Nguyễn Văn An"
               />
-              <FieldError message={fieldErrors.fullName} helper="Tên hiển thị của người dùng trong hệ thống." />
+              <FieldError
+                message={fieldErrors.fullName}
+                helper="Tên hiển thị của người dùng trong hệ thống."
+              />
             </div>
 
             <div>
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="email">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="email"
+              >
                 Email
               </label>
               <input
@@ -141,11 +174,17 @@ const UserFormModal = ({
                 disabled={isSaving}
                 placeholder="user@stallbox.com"
               />
-              <FieldError message={fieldErrors.email} helper="Email hợp lệ, ví dụ: user@stallbox.com." />
+              <FieldError
+                message={fieldErrors.email}
+                helper="Email hợp lệ, ví dụ: user@stallbox.com."
+              />
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="phone">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="phone"
+              >
                 Số điện thoại
               </label>
               <input
@@ -158,7 +197,10 @@ const UserFormModal = ({
                 disabled={isSaving}
                 placeholder="Tùy chọn"
               />
-              <FieldError message={fieldErrors.phone} helper="Tùy chọn. Có thể nhập số điện thoại kèm mã vùng." />
+              <FieldError
+                message={fieldErrors.phone}
+                helper="Tùy chọn. Có thể nhập số điện thoại kèm mã vùng."
+              />
             </div>
           </div>
 

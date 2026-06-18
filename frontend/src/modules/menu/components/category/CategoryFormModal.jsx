@@ -1,10 +1,11 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { createPortal } from "react-dom";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { categoryFormSchema } from "../validation/categorySchema";
-import { DEFAULT_CATEGORY_ICON } from "../constants/categoryConstants";
+import { categoryFormSchema } from "../../validation/categorySchema";
+import { DEFAULT_CATEGORY_ICON } from "../../constants/categoryConstants";
 import CategoryIconPicker from "./CategoryIconPicker";
-import Spinner from "../../../components/feedback/Spinner";
+import Spinner from "@/components/feedback/Spinner";
 
 const MODAL_CONFIG = {
   create: {
@@ -38,7 +39,7 @@ const CategoryFormModal = ({
     register,
     handleSubmit,
     reset,
-    watch,
+    control,
     setValue,
     setError,
     formState: { errors, isDirty },
@@ -47,7 +48,10 @@ const CategoryFormModal = ({
     defaultValues,
   });
 
-  const selectedIcon = watch("icon");
+  const selectedIcon = useWatch({
+    control,
+    name: "icon",
+  });
   const config = MODAL_CONFIG[mode] ?? MODAL_CONFIG.create;
 
   useEffect(() => {
@@ -74,7 +78,7 @@ const CategoryFormModal = ({
 
   const handleClose = () => onClose(isDirty);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -95,14 +99,18 @@ const CategoryFormModal = ({
           <button
             type="button"
             onClick={handleClose}
-            className="p-2 rounded-full hover:bg-surface-container transition-colors shrink-0"
+            className="p-2 rounded-full hover:bg-surface-container transition-colors shrink-0 flex items-center justify-center"
             aria-label="Đóng"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5 overflow-y-auto flex-1">
+        <form
+          id="category-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="p-6 space-y-5 overflow-y-auto flex-1"
+        >
           <div>
             <label className="block text-label-md font-semibold text-on-surface-variant mb-1.5">
               Tên danh mục *
@@ -151,28 +159,29 @@ const CategoryFormModal = ({
               </p>
             )}
           </div>
-
-          <div className="flex justify-end gap-3 pt-2 border-t border-outline-variant">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-lg text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-lg text-body-sm font-semibold bg-primary text-on-primary hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
-            >
-              {isSubmitting && <Spinner size="sm" />}
-              {config.submitLabel}
-            </button>
-          </div>
         </form>
+        <div className="px-6 sm:px-8 py-4 border-t border-outline-variant/60 bg-gradient-to-r from-surface-container-lowest to-surface-container-low/30 flex flex-col-reverse sm:flex-row justify-end gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="px-5 py-2.5 rounded-lg text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container transition-colors disabled:opacity-50"
+          >
+            Hủy bỏ
+          </button>
+          <button
+            type="submit"
+            form="category-form"
+            disabled={isSubmitting}
+            className="px-5 py-2.5 rounded-lg text-body-sm font-semibold bg-primary text-on-primary hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+          >
+            {isSubmitting && <Spinner size="sm" />}
+            {config.submitLabel}
+          </button>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

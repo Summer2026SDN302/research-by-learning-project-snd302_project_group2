@@ -1,12 +1,6 @@
 import DataTable from "@/components/data-display/DataTable";
 import StatusBadge from "@/components/data-display/StatusBadge";
-
-const BASE_COLUMNS = [
-  { key: "name", label: "Tên danh mục", sortable: true },
-  { key: "icon", label: "Biểu tượng", sortable: false },
-  { key: "foodItemCount", label: "Số lượng món", sortable: true },
-  { key: "isActive", label: "Trạng thái", sortable: false },
-];
+import { BASE_COLUMNS } from "../../constants/categoryConstants";
 
 const CategoryTable = ({
   categories,
@@ -35,29 +29,32 @@ const CategoryTable = ({
 
       case "icon":
         return (
-          <div className="flex justify-center">
-            <span className="material-symbols-outlined text-primary p-2 bg-primary/10 rounded-lg">
-              {row.icon ?? "restaurant_menu"}
-            </span>
-          </div>
+          <span className="material-symbols-outlined text-primary p-2 bg-primary/10 rounded-lg">
+            {row.icon ?? "restaurant_menu"}
+          </span>
         );
 
       case "foodItemCount":
         return <span>{row.foodItemCount ?? 0} món</span>;
 
       case "isActive":
-        return <StatusBadge status={row.isActive ? "active" : "inactive"} />;
+        return (
+          <StatusBadge
+            status={row.isActive ? "active" : "inactive"}
+            label={row.isActive ? "Đang hoạt động" : "Ngừng hoạt động"}
+          />
+        );
 
       case "actions":
         return (
-          <div className="flex justify-end gap-1">
+          <div className="flex gap-1">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(row);
               }}
-              className="p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors"
+              className="p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors flex items-center justify-center"
               title="Chỉnh sửa"
             >
               <span className="material-symbols-outlined text-[20px]">
@@ -71,7 +68,7 @@ const CategoryTable = ({
                 e.stopPropagation();
                 onToggleStatus(row);
               }}
-              className="p-2 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
+              className="p-2 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors flex items-center justify-center"
               title={row.isActive ? "Vô hiệu hóa" : "Kích hoạt"}
             >
               <span className="material-symbols-outlined text-[20px]">

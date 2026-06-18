@@ -1,4 +1,4 @@
-import { CATEGORY_PRESETS } from "../constants/categoryConstants";
+import { CATEGORY_PRESETS } from "../../constants/categoryConstants";
 
 const CategoryIconPicker = ({ value, onChange }) => (
   <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 p-3 bg-surface-container-low rounded-lg border border-outline-variant">

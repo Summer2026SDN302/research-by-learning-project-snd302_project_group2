@@ -7,3 +7,10 @@ export const FOOD_ITEM_ERROR_MESSAGES = {
   FOODITEM_IN_USE: 'Không thể xóa món đang được sử dụng',
   CATEGORY_NOT_FOUND: 'Danh mục không tồn tại',
 };
+
+export const FOOD_ITEM_COLUMNS = [
+  { key: "name", label: "Tên Món", sortable: true },
+  { key: "category", label: "Danh Mục", sortable: false },
+  { key: "basePrice", label: "Giá Bán", sortable: true },
+  { key: "status", label: "Trạng Thái", sortable: false },
+];

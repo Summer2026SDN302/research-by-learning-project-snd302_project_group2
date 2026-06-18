@@ -46,3 +46,10 @@ export const CATEGORY_ERROR_MESSAGES = {
   CATEGORY_HAS_FOOD_ITEMS:
     "Không thể xóa danh mục đang có món ăn. Vui lòng chuyển hoặc xóa các món trước.",
 };
+
+export const BASE_COLUMNS = [
+  { key: "name", label: "Tên danh mục", sortable: true },
+  { key: "icon", label: "Biểu tượng", sortable: false },
+  { key: "foodItemCount", label: "Số lượng món", sortable: true },
+  { key: "isActive", label: "Trạng thái", sortable: false },
+];
