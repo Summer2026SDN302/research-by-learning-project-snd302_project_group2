@@ -1,8 +1,11 @@
 import AppError from "../../../shared/exceptions/AppError.js";
-import { toObjectId } from "../../../shared/helpers/mongo.helper.js";
-import FoodItem from "../food_item/food_item.model.js";
+import foodItemRepository from "../food_item/food_item.repository.js";
 import scheduledMenuRepository from "./scheduled_menu.repository.js";
 import { DAY_OF_WEEK } from "./scheduled_menu.constants.js";
+import {
+  toEmptyScheduledMenuDayResponse,
+  toScheduledMenuDayResponse,
+} from "./scheduled_menu.dto.js";
 
 const scheduledMenuService = {
   async getWeeklySchedule() {
@@ -14,7 +17,9 @@ const scheduledMenuService = {
     });
 
     return DAY_OF_WEEK.map((day) =>
-      docMap[day] ?? { dayOfWeek: day, menuItems: [] },
+      docMap[day]
+        ? toScheduledMenuDayResponse(docMap[day])
+        : toEmptyScheduledMenuDayResponse(day),
     );
   },
 
@@ -33,10 +38,7 @@ const scheduledMenuService = {
     }
 
     if (foodItemIds.length > 0) {
-      const existingCount = await FoodItem.countDocuments({
-        _id: { $in: foodItemIds.map(toObjectId) },
-        deletedAt: null,
-      });
+      const existingCount = await foodItemRepository.countActiveByIds(foodItemIds);
 
       if (existingCount !== foodItemIds.length) {
         throw new AppError(
@@ -48,8 +50,9 @@ const scheduledMenuService = {
     }
 
     const menuItems = foodItemIds.map((id) => ({ foodItemId: id }));
+    const savedDoc = await scheduledMenuRepository.upsertByDay(day, menuItems, userId);
 
-    return scheduledMenuRepository.upsertByDay(day, menuItems, userId);
+    return toScheduledMenuDayResponse(savedDoc);
   },
 };
 
