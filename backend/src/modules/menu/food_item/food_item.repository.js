@@ -21,7 +21,7 @@ const buildListFilter = ({ search, categoryId, isArchived }) => {
 };
 
 // Cross-collection read: $lookup into `categories` (no Category model import).
-const categoryLookupStages = [
+const foodItemLookupStages = [
   {
     $lookup: {
       from: "categories",
@@ -31,15 +31,30 @@ const categoryLookupStages = [
     },
   },
   {
+    $lookup: {
+      from: "users",
+      localField: "deletedBy",
+      foreignField: "_id",
+      as: "deletedByUser",
+    },
+  },
+  {
     $addFields: {
       categoryName: {
         $ifNull: [{ $arrayElemAt: ["$category.name", 0] }, null],
+      },
+      deletedByName: {
+        $ifNull: [{ $arrayElemAt: ["$deletedByUser.fullName", 0] }, null],
+      },
+      deletedByEmail: {
+        $ifNull: [{ $arrayElemAt: ["$deletedByUser.email", 0] }, null],
       },
     },
   },
   {
     $project: {
       category: 0,
+      deletedByUser: 0,
     },
   },
 ];
@@ -53,7 +68,7 @@ const foodItemRepository = {
       FoodItem.aggregate([
         { $match: filter },
         { $sort: { createdAt: -1 } },
-        ...categoryLookupStages,
+        ...foodItemLookupStages,
         { $skip: skip },
         { $limit: limit },
       ]),
@@ -70,7 +85,7 @@ const foodItemRepository = {
   async findByIdWithCategory(id) {
     const [foodItem] = await FoodItem.aggregate([
       { $match: { _id: toObjectId(id) } },
-      ...categoryLookupStages,
+      ...foodItemLookupStages,
     ]);
 
     return foodItem ?? null;
@@ -97,12 +112,16 @@ const foodItemRepository = {
   },
 
   async patchById(id, data) {
-    return FoodItem.findOneAndUpdate(
-      { _id: toObjectId(id) },
-      { $set: data },
-      { new: true, runValidators: true },
-    );
-  },
+  const updated = await FoodItem.findOneAndUpdate(
+    { _id: toObjectId(id) },
+    { $set: data },
+    { new: true, runValidators: true },
+  );
+
+  if (!updated) return null;
+
+  return this.findByIdWithCategory(id);
+},
 };
 
 export default foodItemRepository;
