@@ -77,3 +77,4 @@ dump/
 docker-compose.override.yml
 
 docs/
+structure-clean.txt
