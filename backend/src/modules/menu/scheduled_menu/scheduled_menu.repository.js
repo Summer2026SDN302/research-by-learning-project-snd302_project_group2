@@ -18,6 +18,10 @@ const scheduledMenuRepository = {
     return ScheduledMenu.find().populate(FOOD_ITEM_POPULATE).lean();
   },
 
+  async findByDay(day) {
+    return ScheduledMenu.findOne({ dayOfWeek: day }).populate(FOOD_ITEM_POPULATE).lean();
+  },
+
   async upsertByDay(day, menuItems, userId) {
     const existing = await ScheduledMenu.findOne({ dayOfWeek: day });
 
