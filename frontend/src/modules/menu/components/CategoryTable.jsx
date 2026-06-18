@@ -1,29 +1,26 @@
 import DataTable from "@/components/data-display/DataTable";
 import StatusBadge from "@/components/data-display/StatusBadge";
 
-const formatShortId = (id) => {
-  if (!id) return "—";
-  const str = String(id);
-  return str.slice(-6).toUpperCase();
-};
-
-const COLUMNS = [
-  { key: "id", label: "ID", sortable: false },
+const BASE_COLUMNS = [
   { key: "name", label: "Tên danh mục", sortable: true },
   { key: "icon", label: "Biểu tượng", sortable: false },
   { key: "foodItemCount", label: "Số lượng món", sortable: true },
   { key: "isActive", label: "Trạng thái", sortable: false },
-  { key: "actions", label: "Thao tác", sortable: false },
 ];
 
 const CategoryTable = ({
   categories,
   isLoading,
+  emptyTitle,
   emptyMessage,
   onEdit,
-  onDelete,
   onToggleStatus,
+  canManageActions = false,
 }) => {
+  const columns = canManageActions
+    ? [...BASE_COLUMNS, { key: "actions", label: "Thao tác", sortable: false }]
+    : BASE_COLUMNS;
+
   const rows = categories.map((cat) => ({
     ...cat,
     id: cat._id,
@@ -31,14 +28,11 @@ const CategoryTable = ({
 
   const renderCell = (key, value, row) => {
     switch (key) {
-      case "id":
-        return (
-          <span className="text-on-surface-variant font-mono text-body-sm">
-            {formatShortId(row._id)}
-          </span>
-        );
       case "name":
-        return <span className="font-semibold text-on-surface">{row.name}</span>;
+        return (
+          <span className="font-semibold text-on-surface">{row.name}</span>
+        );
+
       case "icon":
         return (
           <div className="flex justify-center">
@@ -47,12 +41,13 @@ const CategoryTable = ({
             </span>
           </div>
         );
+
       case "foodItemCount":
         return <span>{row.foodItemCount ?? 0} món</span>;
+
       case "isActive":
-        return (
-          <StatusBadge status={row.isActive ? "active" : "inactive"} />
-        );
+        return <StatusBadge status={row.isActive ? "active" : "inactive"} />;
+
       case "actions":
         return (
           <div className="flex justify-end gap-1">
@@ -65,19 +60,11 @@ const CategoryTable = ({
               className="p-2 rounded-full text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors"
               title="Chỉnh sửa"
             >
-              <span className="material-symbols-outlined text-[20px]">edit</span>
+              <span className="material-symbols-outlined text-[20px]">
+                edit
+              </span>
             </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(row);
-              }}
-              className="p-2 rounded-full text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-colors"
-              title="Xóa"
-            >
-              <span className="material-symbols-outlined text-[20px]">delete</span>
-            </button>
+
             <button
               type="button"
               onClick={(e) => {
@@ -93,6 +80,7 @@ const CategoryTable = ({
             </button>
           </div>
         );
+
       default:
         return String(value ?? "—");
     }
@@ -100,9 +88,10 @@ const CategoryTable = ({
 
   return (
     <DataTable
-      columns={COLUMNS}
+      columns={columns}
       rows={rows}
       isLoading={isLoading}
+      emptyTitle={emptyTitle}
       emptyMessage={emptyMessage}
       renderCell={renderCell}
     />

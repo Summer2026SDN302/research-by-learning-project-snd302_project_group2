@@ -20,7 +20,6 @@ export const normalizeFoodItemPayload = (data) => ({
   description: data.description?.trim() || undefined,
   basePrice: Number(data.basePrice),
   cost: Number(data.cost),
-  isArchived: Boolean(data.isArchived),
 });
 
 export const mapApiValidationErrors = (details = []) =>

@@ -61,8 +61,7 @@ export const deleteFoodItem = createAsyncThunk(
   'foodItem/deleteFoodItem',
   async (id, { rejectWithValue }) => {
     try {
-      await foodItemApi.deleteFoodItem(id);
-      return id;
+      return await foodItemApi.deleteFoodItem(id);
     } catch (error) {
       return rejectWithValue(error);
     }
@@ -180,9 +179,17 @@ const foodItemSlice = createSlice({
         state.mutationStatus = 'loading';
         state.mutationError = null;
       })
-      .addCase(deleteFoodItem.fulfilled, (state) => {
-        state.mutationStatus = 'succeeded';
-      })
+      .addCase(deleteFoodItem.fulfilled, (state, action) => {
+  state.mutationStatus = 'succeeded';
+
+  const index = state.items.findIndex(
+    (item) => item._id === action.payload?._id,
+  );
+
+  if (index !== -1) {
+    state.items[index] = action.payload;
+  }
+})
       .addCase(deleteFoodItem.rejected, (state, action) => {
         state.mutationStatus = 'failed';
         state.mutationError = action.payload;

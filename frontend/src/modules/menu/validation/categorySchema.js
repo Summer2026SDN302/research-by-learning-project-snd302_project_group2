@@ -19,5 +19,4 @@ export const categoryFormSchema = z.object({
       message: "Biểu tượng không hợp lệ",
     })
     .optional(),
-  isActive: z.boolean().default(true),
 });

@@ -1,0 +1,99 @@
+import Spinner from "../../../components/feedback/Spinner";
+
+const inputClass =
+  "w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2.5 text-body-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15";
+
+const FieldError = ({ message, helper }) => {
+  if (message) return <p className="mt-1 text-body-sm text-error">{message}</p>;
+  if (helper) return <p className="mt-1 text-body-sm text-on-surface-variant/70">{helper}</p>;
+  return null;
+};
+
+const ResetPasswordModal = ({
+  user,
+  formData,
+  fieldErrors,
+  isSaving,
+  onChange,
+  onSubmit,
+  onClose,
+}) => {
+  if (!user) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+
+      <section className="relative w-full max-w-md rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 shadow-elevated">
+        <div className="mb-5 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <span className="material-symbols-outlined text-[32px]">lock_reset</span>
+          </div>
+          <h2 className="text-headline-sm font-bold text-on-surface">Đặt lại mật khẩu</h2>
+          <p className="mt-2 text-body-sm text-on-surface-variant">
+            Cập nhật mật khẩu cho {user.fullName || user.username}. Người dùng sẽ cần đăng nhập lại.
+          </p>
+        </div>
+
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <div>
+            <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="newPassword">
+              Mật khẩu mới
+            </label>
+            <input
+              id="newPassword"
+              name="newPassword"
+              className={inputClass}
+              type="password"
+              value={formData.newPassword}
+              onChange={onChange}
+              autoComplete="new-password"
+              disabled={isSaving}
+              placeholder="Ít nhất 6 ký tự"
+            />
+            <FieldError message={fieldErrors.newPassword} helper="Ít nhất 6 ký tự và không được chỉ gồm khoảng trắng." />
+          </div>
+
+          <div>
+            <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="confirmPassword">
+              Xác nhận mật khẩu
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              className={inputClass}
+              type="password"
+              value={formData.confirmPassword}
+              onChange={onChange}
+              autoComplete="new-password"
+              disabled={isSaving}
+              placeholder="Nhập lại mật khẩu mới"
+            />
+            <FieldError message={fieldErrors.confirmPassword} helper="Nhập lại đúng mật khẩu mới để tránh nhầm lẫn." />
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              className="rounded-lg border border-outline-variant px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hover:bg-surface-container disabled:opacity-50"
+              onClick={onClose}
+              disabled={isSaving}
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-label-md text-label-md text-on-primary shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isSaving}
+            >
+              {isSaving && <Spinner size="sm" />}
+              Đặt lại
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+};
+
+export default ResetPasswordModal;

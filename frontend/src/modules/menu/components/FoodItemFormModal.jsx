@@ -1,41 +1,41 @@
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { foodItemFormSchema } from '../validation/foodItemSchema';
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { foodItemFormSchema } from "../validation/foodItemSchema";
+import Spinner from "@/components/feedback/Spinner";
 
 const MODAL_CONFIG = {
   create: {
-    title: 'Thêm món ăn mới',
-    subtitle: 'Tạo món ăn mới để quản lý trong thực đơn.',
-    submitLabel: 'Tạo món ăn',
-    icon: 'add_circle',
+    title: "Thêm món ăn mới",
+    subtitle: "Tạo món ăn mới để quản lý trong thực đơn.",
+    submitLabel: "Tạo món ăn",
+    icon: "add_circle",
   },
   edit: {
-    title: 'Cập nhật món ăn',
-    subtitle: 'Chỉnh sửa thông tin và trạng thái của món ăn.',
-    submitLabel: 'Lưu thay đổi',
-    icon: 'edit_note',
+    title: "Cập nhật món ăn",
+    subtitle: "Chỉnh sửa thông tin món ăn",
+    submitLabel: "Lưu thay đổi",
+    icon: "edit_note",
   },
 };
 
 const defaultValues = {
-  categoryId: '',
-  name: '',
-  description: '',
-  basePrice: '',
-  cost: '',
-  isArchived: false,
+  categoryId: "",
+  name: "",
+  description: "",
+  basePrice: "",
+  cost: "",
 };
 
 const parseMoneyValue = (value) => {
-  if (value === '' || value === null || value === undefined) return undefined;
+  if (value === "" || value === null || value === undefined) return undefined;
   return Number(value);
 };
 
 const inputClass =
-  'w-full px-4 py-3 rounded-xl border border-outline-variant/80 bg-surface-container-lowest text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all';
+  "w-full px-4 py-3 rounded-xl border border-outline-variant/80 bg-surface-container-lowest text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all";
 
-const labelClass = 'block text-label-md font-bold text-on-surface-variant mb-2';
+const labelClass = "block text-label-md font-bold text-on-surface-variant mb-2";
 
 const FoodItemFormModal = ({
   open,
@@ -53,8 +53,6 @@ const FoodItemFormModal = ({
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
     setError,
     clearErrors,
     formState: { errors, isDirty },
@@ -63,20 +61,18 @@ const FoodItemFormModal = ({
     defaultValues,
   });
 
-  const isArchived = watch('isArchived');
   const config = MODAL_CONFIG[mode] ?? MODAL_CONFIG.create;
 
   useEffect(() => {
     if (!open) return;
 
-    if (mode === 'edit' && foodItem) {
+    if (mode === "edit" && foodItem) {
       reset({
-        categoryId: foodItem.categoryId ?? foodItem.category?._id ?? '',
-        name: foodItem.name ?? '',
-        description: foodItem.description ?? '',
-        basePrice: foodItem.basePrice ?? '',
-        cost: foodItem.cost ?? '',
-        isArchived: foodItem.isArchived ?? false,
+        categoryId: foodItem.categoryId ?? foodItem.category?._id ?? "",
+        name: foodItem.name ?? "",
+        description: foodItem.description ?? "",
+        basePrice: foodItem.basePrice ?? "",
+        cost: foodItem.cost ?? "",
       });
     } else {
       reset(defaultValues);
@@ -105,15 +101,21 @@ const FoodItemFormModal = ({
         aria-hidden="true"
       />
 
-      <div className="relative bg-surface-container-lowest w-full max-w-2xl rounded-2xl shadow-elevated border border-outline-variant/60 overflow-hidden">
+      <div className="relative bg-surface-container-lowest w-full max-w-2xl max-h-[80vh] rounded-3xl shadow-elevated border border-outline-variant/60 overflow-hidden flex flex-col">
         <div className="px-6 sm:px-8 py-6 border-b border-outline-variant/60 flex justify-between items-start gap-4 bg-gradient-to-r from-surface-container-lowest to-surface-container-low/50">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[26px]">{config.icon}</span>
+              <span className="material-symbols-outlined text-[26px]">
+                {config.icon}
+              </span>
             </div>
             <div>
-              <h3 className="text-headline-sm font-bold text-on-surface">{config.title}</h3>
-              <p className="text-body-sm text-on-surface-variant mt-1">{config.subtitle}</p>
+              <h3 className="text-headline-sm font-bold text-on-surface">
+                {config.title}
+              </h3>
+              <p className="text-body-sm text-on-surface-variant mt-1">
+                {config.subtitle}
+              </p>
             </div>
           </div>
           <button
@@ -126,11 +128,14 @@ const FoodItemFormModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 sm:px-8 sm:pb-8 space-y-5">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="p-6 sm:px-8 sm:pb-8 space-y-5 overflow-y-auto flex-1"
+        >
           <div>
             <label className={labelClass}>Danh mục *</label>
             <select
-              {...register('categoryId')}
+              {...register("categoryId")}
               disabled={categoryOptionsLoading || categoryOptions.length === 0}
               className={`${inputClass} disabled:opacity-60 disabled:cursor-not-allowed`}
             >
@@ -142,39 +147,51 @@ const FoodItemFormModal = ({
               ))}
             </select>
             {categoryOptionsError && (
-              <p className="text-tertiary text-body-sm mt-1.5">{categoryOptionsError}</p>
-            )}
-            {!categoryOptionsLoading && categoryOptions.length === 0 && !categoryOptionsError && (
-              <p className="text-on-surface-variant text-body-sm mt-1.5">
-                Chưa có danh mục để gán món ăn.
+              <p className="text-tertiary text-body-sm mt-1.5">
+                {categoryOptionsError}
               </p>
             )}
+            {!categoryOptionsLoading &&
+              categoryOptions.length === 0 &&
+              !categoryOptionsError && (
+                <p className="text-on-surface-variant text-body-sm mt-1.5">
+                  Chưa có danh mục để gán món ăn.
+                </p>
+              )}
             {errors.categoryId && (
-              <p className="text-error text-body-sm mt-1.5">{errors.categoryId.message}</p>
+              <p className="text-error text-body-sm mt-1.5">
+                {errors.categoryId.message}
+              </p>
             )}
           </div>
 
           <div>
             <label className={labelClass}>Tên món ăn *</label>
             <input
-              {...register('name')}
+              {...register("name")}
               type="text"
               placeholder="Ví dụ: Cơm gà xối mỡ..."
               className={inputClass}
             />
-            {errors.name && <p className="text-error text-body-sm mt-1.5">{errors.name.message}</p>}
+            {errors.name && (
+              <p className="text-error text-body-sm mt-1.5">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           <div>
             <label className={labelClass}>Mô tả món ăn</label>
             <textarea
-              {...register('description')}
+              {...register("description")}
               rows={3}
               placeholder="Thêm mô tả ngắn gọn..."
               className={`${inputClass} resize-none`}
             />
             {errors.description && (
-              <p className="text-error text-body-sm mt-1.5">{errors.description.message}</p>
+              <p className="text-error text-body-sm mt-1.5">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
@@ -182,7 +199,7 @@ const FoodItemFormModal = ({
             <div>
               <label className={labelClass}>Giá bán *</label>
               <input
-                {...register('basePrice', { setValueAs: parseMoneyValue })}
+                {...register("basePrice", { setValueAs: parseMoneyValue })}
                 type="number"
                 min="0"
                 step="1000"
@@ -190,50 +207,27 @@ const FoodItemFormModal = ({
                 className={inputClass}
               />
               {errors.basePrice && (
-                <p className="text-error text-body-sm mt-1.5">{errors.basePrice.message}</p>
+                <p className="text-error text-body-sm mt-1.5">
+                  {errors.basePrice.message}
+                </p>
               )}
             </div>
             <div>
               <label className={labelClass}>Giá vốn *</label>
               <input
-                {...register('cost', { setValueAs: parseMoneyValue })}
+                {...register("cost", { setValueAs: parseMoneyValue })}
                 type="number"
                 min="0"
                 step="1000"
                 placeholder="0"
                 className={inputClass}
               />
-              {errors.cost && <p className="text-error text-body-sm mt-1.5">{errors.cost.message}</p>}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-4 p-4 sm:p-5 bg-surface-container-low rounded-xl border border-outline-variant/50">
-            <div className="flex items-start gap-3">
-              <span
-                className={`material-symbols-outlined text-[22px] mt-0.5 ${
-                  isArchived ? 'text-outline' : 'text-secondary'
-                }`}
-              >
-                {isArchived ? 'inventory_2' : 'storefront'}
-              </span>
-              <div>
-                <p className="text-label-md font-bold text-on-surface">Ngừng bán</p>
-                <p className="text-body-sm text-on-surface-variant mt-0.5">
-                  {isArchived
-                    ? 'Món ăn sẽ không hiển thị trong danh sách đang bán.'
-                    : 'Món ăn đang được bán trong thực đơn.'}
+              {errors.cost && (
+                <p className="text-error text-body-sm mt-1.5">
+                  {errors.cost.message}
                 </p>
-              </div>
+              )}
             </div>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={isArchived}
-                onChange={(e) => setValue('isArchived', e.target.checked, { shouldDirty: true })}
-              />
-              <div className="w-12 h-7 bg-outline-variant/80 rounded-full peer peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/30 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-[22px] after:w-[22px] after:shadow-sm after:transition-all peer-checked:after:translate-x-5" />
-            </label>
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2">
@@ -250,11 +244,7 @@ const FoodItemFormModal = ({
               disabled={isSubmitting}
               className="px-6 py-3 rounded-xl text-body-sm font-bold bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isSubmitting && (
-                <span className="material-symbols-outlined animate-spin text-[18px]">
-                  progress_activity
-                </span>
-              )}
+              {isSubmitting && <Spinner size="sm" />}
               {config.submitLabel}
             </button>
           </div>

@@ -2,25 +2,15 @@ import { Outlet } from "react-router-dom";
 import useMainLayout from "../hooks/useMainLayout";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
-import ToastContainer from "../components/feedback/ToastContainer";
+import useLogout from "../modules/auth/hooks/useLogout";
 
-/**
- * MainLayout
- *
- * Shared layout for Admin, Manager and Staff roles.
- * Structure: collapsible Sidebar (left) + Navbar (top right) + main content.
- * ToastContainer is mounted here — reads from Redux, renders at top-right.
- *
- * Props:
- *   role  {string}  – 'admin' | 'manager' | 'staff'  passed from route definition
- */
-
-/** Placeholder — replace with actual Redux actions when auth module is ready */
 const noop = () => {};
 
 const MainLayout = ({ role }) => {
   const { activePath, navigate, user, collapsed, toggle, sidebarWidth } =
     useMainLayout();
+
+  const { logout } = useLogout();
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -46,10 +36,10 @@ const MainLayout = ({ role }) => {
           notificationItems={[]}
           onReadNotification={noop}
           onReadAllNotifications={noop}
-          onProfile={noop}
-          onChangePassword={noop}
+          onProfile={() => navigate(`/${role}/profile`)}
+          onChangePassword={() => navigate(`/${role}/change-password`)}
           onSettings={noop}
-          onLogout={noop}
+          onLogout={logout}
         />
 
         {/* Page content */}
@@ -57,9 +47,6 @@ const MainLayout = ({ role }) => {
           <Outlet />
         </main>
       </div>
-
-      {/* Toast – fixed top-right, reads from Redux store */}
-      <ToastContainer />
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import useDebouncedValue from '@/hooks/useDebouncedValue';
-import useNotify from '@/hooks/useNotify';
+import useAppToast from '@/hooks/useAppToast';
 import { FOOD_ITEM_ERROR_MESSAGES, DEFAULT_FOOD_ITEM_PAGE_SIZE } from '../constants/foodItemConstants';
 import { fetchCategories } from '../redux/categorySlice';
 import {
@@ -9,7 +9,6 @@ import {
   clearMutationError,
   clearSelectedItem,
   createFoodItem,
-  deleteFoodItem,
   fetchFoodItemById,
   fetchFoodItems,
   resetMutationState,
@@ -25,7 +24,7 @@ import { mapApiValidationErrors, normalizeFoodItemPayload } from '../utils/foodI
 
 const useFoodItem = () => {
   const dispatch = useDispatch();
-  const { notify } = useNotify();
+  const { toast } = useAppToast();
 
   const {
     items,
@@ -46,8 +45,7 @@ const useFoodItem = () => {
 
   const [searchKeyword, setSearchKeyword] = useState(filters.search ?? '');
   const [modalMode, setModalMode] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteError, setDeleteError] = useState(null);
+  const [detailTarget, setDetailTarget] = useState(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [serverFieldErrors, setServerFieldErrors] = useState({});
 
@@ -79,8 +77,8 @@ const useFoodItem = () => {
   }, [debouncedSearch, dispatch, loadFoodItems]);
 
   useEffect(() => {
-    dispatch(fetchCategories({ limit: 50, page: 1 }));
-  }, [dispatch]);
+  dispatch(fetchCategories({ limit: 50, page: 1, isActive: true }));
+}, [dispatch]);
 
   const categoryOptions = useMemo(
     () =>
@@ -137,6 +135,14 @@ const useFoodItem = () => {
     setModalMode('create');
   };
 
+  const openDetailDialog = (foodItem) => {
+  setDetailTarget(foodItem);
+};
+
+const closeDetailDialog = () => {
+  setDetailTarget(null);
+};
+
   const openEditModal = async (foodItem) => {
     dispatch(clearListError());
     dispatch(resetMutationState());
@@ -148,7 +154,7 @@ const useFoodItem = () => {
       try {
         await dispatch(fetchFoodItemById(foodItem._id)).unwrap();
       } catch (error) {
-        notify(error?.message ?? 'Không thể tải chi tiết món ăn', 'error');
+        toast.error('Lỗi', error?.message ?? 'Không thể tải chi tiết món ăn');
       }
     }
   };
@@ -203,10 +209,10 @@ const useFoodItem = () => {
     try {
       if (modalMode === 'create') {
         await dispatch(createFoodItem(payload)).unwrap();
-        notify('Tạo món ăn thành công');
+        toast.success('Thành công', 'Tạo món ăn thành công');
       } else if (modalMode === 'edit' && selectedItem?._id) {
         await dispatch(updateFoodItem({ id: selectedItem._id, body: payload })).unwrap();
-        notify('Cập nhật món ăn thành công');
+        toast.success('Thành công', 'Cập nhật món ăn thành công');
       }
 
       setModalMode(null);
@@ -221,7 +227,7 @@ const useFoodItem = () => {
         setServerFieldErrors({ categoryId: FOOD_ITEM_ERROR_MESSAGES.CATEGORY_NOT_FOUND });
       }
 
-      notify(error?.message ?? 'Đã xảy ra lỗi', 'error');
+      toast.error('Lỗi', error?.message ?? 'Đã xảy ra lỗi');
     }
   };
 
@@ -233,41 +239,19 @@ const useFoodItem = () => {
           isArchived: !foodItem.isArchived,
         }),
       ).unwrap();
-      notify(foodItem.isArchived ? 'Đã huỷ lưu trữ món ăn' : 'Đã lưu trữ món ăn');
+      toast.success('Thành công', foodItem.isArchived ? 'Đã bật bán lại món ăn' : 'Đã ngừng bán món ăn');
       refreshList();
     } catch (error) {
-      notify(error?.message ?? 'Không thể cập nhật trạng thái', 'error');
+      toast.error('Lỗi', error?.message ?? 'Không thể cập nhật trạng thái');
     }
   };
 
-  const handleDeleteClick = (foodItem) => {
-    setDeleteTarget(foodItem);
-    setDeleteError(null);
-  };
-
-  const cancelDelete = () => {
-    setDeleteTarget(null);
-    setDeleteError(null);
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-
-    try {
-      await dispatch(deleteFoodItem(deleteTarget._id)).unwrap();
-      notify('Xóa món ăn thành công');
-      setDeleteTarget(null);
-      setDeleteError(null);
-      refreshList();
-    } catch (error) {
-      const message =
-        error?.code === 'FOODITEM_IN_USE'
-          ? FOOD_ITEM_ERROR_MESSAGES.FOODITEM_IN_USE
-          : error?.message ?? 'Không thể xóa món ăn';
-      setDeleteError(message);
-      notify(message, 'error');
+  const emptyTitle = useMemo(() => {
+    if (searchKeyword.trim() || filters.categoryId || filters.isArchived !== '') {
+      return 'Không tìm thấy món ăn';
     }
-  };
+    return 'Chưa có món ăn nào';
+  }, [filters.categoryId, filters.isArchived, searchKeyword]);
 
   const emptyMessage = useMemo(() => {
     if (searchKeyword.trim() || filters.categoryId || filters.isArchived !== '') {
@@ -276,9 +260,66 @@ const useFoodItem = () => {
     return 'Chưa có món ăn nào.';
   }, [filters.categoryId, filters.isArchived, searchKeyword]);
 
+  const hasActiveFilters = useMemo(
+    () =>
+      Boolean(searchKeyword.trim()) ||
+      Boolean(filters.categoryId) ||
+      filters.isArchived !== '',
+    [filters.categoryId, filters.isArchived, searchKeyword],
+  );
+
+  const isEmptyState = useMemo(
+    () => !isLoading && !listError && pagination.total === 0 && !hasActiveFilters,
+    [hasActiveFilters, isLoading, listError, pagination.total],
+  );
+
+  const filterBarConfig = useMemo(
+    () => [
+      {
+        key: 'categoryId',
+        label: 'Danh mục',
+        options: [
+          { value: '', label: 'Tất cả danh mục' },
+          ...categoryOptions,
+        ],
+      },
+      {
+        key: 'isArchived',
+        label: 'Trạng thái',
+        options: [
+          { value: '', label: 'Tất cả' },
+          { value: 'false', label: 'Đang bán' },
+          { value: 'true', label: 'Ngừng bán' },
+        ],
+      },
+    ],
+    [categoryOptions],
+  );
+
+  const filterValues = useMemo(
+    () => ({
+      categoryId: filters.categoryId ?? '',
+      isArchived: filters.isArchived ?? '',
+    }),
+    [filters.categoryId, filters.isArchived],
+  );
+
+  const handleFilterChange = useCallback(
+    (key, value) => {
+      if (key === 'categoryId') handleCategoryChange(value);
+      else if (key === 'isArchived') handleArchivedFilterChange(value);
+    },
+    [handleCategoryChange, handleArchivedFilterChange],
+  );
+
+  const handleFilterReset = useCallback(() => {
+    handleCategoryChange('');
+    handleArchivedFilterChange('');
+  }, [handleCategoryChange, handleArchivedFilterChange]);
+
   const handleExport = useCallback(() => {
-    notify('Tính năng xuất file đang phát triển', 'info');
-  }, [notify]);
+    toast.info('Thông tin', 'Tính năng xuất file đang phát triển');
+  }, [toast]);
 
   return {
     items,
@@ -291,28 +332,31 @@ const useFoodItem = () => {
     listError,
     mutationError,
     modalMode,
-    deleteTarget,
-    deleteError,
+    detailTarget,
     showUnsavedDialog,
     serverFieldErrors,
     categoryOptions,
     categoryOptionsLoading,
     categoryOptionsError,
+    emptyTitle,
     emptyMessage,
+    hasActiveFilters,
+    isEmptyState,
+    filterBarConfig,
+    filterValues,
     handleSearchChange,
-    handleCategoryChange,
-    handleArchivedFilterChange,
+    handleFilterChange,
+    handleFilterReset,
     handlePageChange,
     openCreateModal,
+openDetailDialog,
+closeDetailDialog,
     openEditModal,
     closeModal,
     confirmDiscardChanges,
     cancelDiscardChanges,
     submitForm,
     handleToggleArchive,
-    handleDeleteClick,
-    cancelDelete,
-    confirmDelete,
     handleExport,
   };
 };

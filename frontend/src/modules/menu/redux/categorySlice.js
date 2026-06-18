@@ -61,8 +61,7 @@ export const deleteCategory = createAsyncThunk(
   "category/deleteCategory",
   async (id, { rejectWithValue }) => {
     try {
-      await categoryApi.deleteCategory(id);
-      return id;
+      return await categoryApi.deleteCategory(id);
     } catch (error) {
       return rejectWithValue(error);
     }
@@ -166,9 +165,17 @@ const categorySlice = createSlice({
         state.mutationStatus = "loading";
         state.error = null;
       })
-      .addCase(deleteCategory.fulfilled, (state) => {
-        state.mutationStatus = "succeeded";
-      })
+      .addCase(deleteCategory.fulfilled, (state, action) => {
+  state.mutationStatus = "succeeded";
+
+  const index = state.items.findIndex(
+    (item) => item._id === action.payload._id,
+  );
+
+  if (index !== -1) {
+    state.items[index] = action.payload;
+  }
+})
       .addCase(deleteCategory.rejected, (state, action) => {
         state.mutationStatus = "failed";
         state.error = action.payload;

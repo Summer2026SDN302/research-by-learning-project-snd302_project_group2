@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { addToast } from "@/app/toastSlice";
+import { addToast } from "../app/toastSlice";
 
 /**
  * useAppToast

@@ -2,6 +2,18 @@ import apiClient from '@/services/apiClient';
 
 const BASE_PATH = '/food-items';
 
+const normalizeApiError = (error) => {
+  if (error?.response?.data) {
+    return formatApiError(error.response.data);
+  }
+
+  return {
+    code: "NETWORK_ERROR",
+    message: "Không thể kết nối server",
+    details: [],
+  };
+};
+
 const formatApiError = (responseData) => {
   const error = responseData?.error ?? {};
   return {
@@ -30,31 +42,57 @@ export const getFoodItems = async (params = {}) => {
   if (params.page) query.page = params.page;
   if (params.limit) query.limit = params.limit;
 
-  const response = await apiClient.get(BASE_PATH, { params: query });
-  return unwrapResponse(response);
+  try {
+    const response = await apiClient.get(BASE_PATH, { params: query });
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
 };
 
 export const getFoodItemById = async (id) => {
-  const response = await apiClient.get(`${BASE_PATH}/${id}`);
-  return unwrapResponse(response);
+  try {
+    const response = await apiClient.get(`${BASE_PATH}/${id}`);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
 };
 
 export const createFoodItem = async (body) => {
-  const response = await apiClient.post(BASE_PATH, body);
-  return unwrapResponse(response);
+  try {
+    const response = await apiClient.post(BASE_PATH, body);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
 };
 
 export const updateFoodItem = async (id, body) => {
-  const response = await apiClient.put(`${BASE_PATH}/${id}`, body);
-  return unwrapResponse(response);
+  try {
+    const response = await apiClient.put(`${BASE_PATH}/${id}`, body);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
 };
 
 export const updateFoodItemArchive = async (id, isArchived) => {
-  const response = await apiClient.patch(`${BASE_PATH}/${id}/archive`, { isArchived });
-  return unwrapResponse(response);
+  try {
+    const response = await apiClient.patch(`${BASE_PATH}/${id}/archive`, { isArchived });
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
 };
 
 export const deleteFoodItem = async (id) => {
-  const response = await apiClient.delete(`${BASE_PATH}/${id}`);
-  return unwrapResponse(response);
+  try {
+    const response = await apiClient.patch(`${BASE_PATH}/${id}/archive`, {
+      isArchived: true,
+    });
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
 };

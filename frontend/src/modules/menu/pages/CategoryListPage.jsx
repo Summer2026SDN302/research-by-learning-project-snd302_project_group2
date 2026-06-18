@@ -2,6 +2,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import EmptyState from "@/components/data-display/EmptyState";
 import LoadingOverlay from "@/components/feedback/LoadingOverlay";
 import ConfirmDialog from "@/components/feedback/ConfirmDialog";
+import { useSelector } from "react-redux";
 import useCategory from "../hooks/useCategory";
 import CategorySearchBar from "../components/CategorySearchBar";
 import CategoryTable from "../components/CategoryTable";
@@ -9,6 +10,10 @@ import CategoryPagination from "../components/CategoryPagination";
 import CategoryFormModal from "../components/CategoryFormModal";
 
 const CategoryListPage = () => {
+  const user = useSelector((state) => state.auth.user);
+  const currentRole = String(user?.role ?? "").toLowerCase();
+  const isAdmin = currentRole === "admin";
+  const roleLabel = isAdmin ? "Admin" : "Manager";
   const {
     categories,
     pagination,
@@ -17,11 +22,12 @@ const CategoryListPage = () => {
     searchKeyword,
     modalMode,
     selectedCategory,
-    deleteTarget,
-    deleteError,
     showUnsavedDialog,
     serverFieldError,
     error,
+    isEmpty,
+    emptyTitle,
+    emptyMessage,
     handleSearchChange,
     handlePageChange,
     openCreateModal,
@@ -31,39 +37,37 @@ const CategoryListPage = () => {
     cancelDiscardChanges,
     submitForm,
     handleToggleStatus,
-    handleDeleteClick,
-    cancelDelete,
-    confirmDelete,
   } = useCategory();
-
-  const isEmpty =
-    !isLoading && !error && pagination.total === 0 && !searchKeyword.trim();
-
-  const emptyMessage = searchKeyword.trim()
-    ? "Không tìm thấy danh mục phù hợp."
-    : "Chưa có danh mục nào.";
 
   return (
     <div className="relative min-h-[400px]">
       <PageHeader
-        breadcrumbs={[{ label: "Admin" }, { label: "Danh mục món ăn" }]}
-        title="Quản lý danh mục"
-        subtitle="Phân loại theo loại món: cơm, phở–bún–mì, canh, món kèm, đồ uống, ăn vặt..."
+        breadcrumbs={[{ label: roleLabel }, { label: "Danh mục món ăn" }]}
+        title={isAdmin ? "Quản lý danh mục" : "Danh sách danh mục"}
+        subtitle={
+          isAdmin
+            ? "Phân loại theo loại món: cơm, phở–bún–mì, canh, món kèm, đồ uống, ăn vặt..."
+            : "Xem danh sách danh mục món ăn trong hệ thống."
+        }
         action={
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-on-primary text-body-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
-          >
-            <span className="material-symbols-outlined text-[20px]">add</span>
-            Thêm danh mục
-          </button>
+          isAdmin ? (
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-on-primary text-body-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[20px]">add</span>
+              Thêm danh mục
+            </button>
+          ) : null
         }
       />
 
       {error && (
         <div className="mb-6 flex items-start gap-3 p-4 rounded-xl border border-error/30 bg-error-container/20 text-error text-body-sm">
-          <span className="material-symbols-outlined text-[20px] shrink-0">error</span>
+          <span className="material-symbols-outlined text-[20px] shrink-0">
+            error
+          </span>
           <div>
             <p className="font-semibold">Không tải được danh sách danh mục</p>
             <p className="mt-1 opacity-90">{error.message}</p>
@@ -72,7 +76,10 @@ const CategoryListPage = () => {
       )}
 
       {!isEmpty && (
-        <CategorySearchBar value={searchKeyword} onChange={handleSearchChange} />
+        <CategorySearchBar
+          value={searchKeyword}
+          onChange={handleSearchChange}
+        />
       )}
 
       {isEmpty ? (
@@ -82,14 +89,18 @@ const CategoryListPage = () => {
             title="Chưa có danh mục nào"
             message="Tạo danh mục đầu tiên để bắt đầu quản lý thực đơn."
             action={
-              <button
-                type="button"
-                onClick={openCreateModal}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-on-primary text-body-sm font-semibold hover:opacity-90 transition-opacity"
-              >
-                <span className="material-symbols-outlined text-[20px]">add</span>
-                Thêm danh mục
-              </button>
+              isAdmin ? (
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-on-primary text-body-sm font-semibold hover:opacity-90 transition-opacity"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    add
+                  </span>
+                  Thêm danh mục
+                </button>
+              ) : null
             }
           />
         </div>
@@ -98,16 +109,23 @@ const CategoryListPage = () => {
           <CategoryTable
             categories={categories}
             isLoading={isLoading}
+            emptyTitle={emptyTitle}
             emptyMessage={emptyMessage}
             onEdit={openEditModal}
-            onDelete={handleDeleteClick}
             onToggleStatus={handleToggleStatus}
+            canManageActions={isAdmin}
           />
-          <CategoryPagination pagination={pagination} onPageChange={handlePageChange} />
+          <CategoryPagination
+            pagination={pagination}
+            onPageChange={handlePageChange}
+          />
         </>
       )}
 
-      <LoadingOverlay show={isLoading && categories.length === 0} message="Đang tải danh mục..." />
+      <LoadingOverlay
+        show={isLoading && categories.length === 0}
+        message="Đang tải danh mục..."
+      />
 
       <CategoryFormModal
         open={modalMode !== null}
@@ -117,21 +135,6 @@ const CategoryListPage = () => {
         serverFieldError={serverFieldError}
         onClose={closeModal}
         onSubmit={submitForm}
-      />
-
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        title="Xóa danh mục"
-        description={
-          deleteError ??
-          `Bạn có chắc muốn xóa danh mục "${deleteTarget?.name}"? Hành động này không thể hoàn tác.`
-        }
-        confirmLabel="Xóa"
-        cancelLabel="Hủy"
-        variant="danger"
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-        isLoading={isMutating}
       />
 
       <ConfirmDialog

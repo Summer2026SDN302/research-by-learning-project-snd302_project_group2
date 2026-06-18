@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import useDebouncedValue from "@/hooks/useDebouncedValue";
-import useNotify from "@/hooks/useNotify";
+import useAppToast from "@/hooks/useAppToast";
 import {
   CATEGORY_ERROR_MESSAGES,
   DEFAULT_PAGE_SIZE,
@@ -10,7 +10,6 @@ import {
   clearError,
   clearSelectedCategory,
   createCategory,
-  deleteCategory,
   fetchCategories,
   fetchCategoryById,
   resetMutationStatus,
@@ -23,12 +22,11 @@ const buildPayload = (data) => ({
   name: data.name.trim(),
   description: data.description?.trim() || undefined,
   icon: data.icon,
-  isActive: data.isActive,
 });
 
 export const useCategory = () => {
   const dispatch = useDispatch();
-  const { notify } = useNotify();
+  const { toast } = useAppToast();
 
   const {
     items,
@@ -42,8 +40,6 @@ export const useCategory = () => {
 
   const [searchKeyword, setSearchKeyword] = useState(filters.search ?? "");
   const [modalMode, setModalMode] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteError, setDeleteError] = useState(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [serverFieldError, setServerFieldError] = useState(null);
 
@@ -137,12 +133,12 @@ export const useCategory = () => {
     try {
       if (modalMode === "create") {
         await dispatch(createCategory(payload)).unwrap();
-        notify("Tạo danh mục thành công");
+        toast.success("Thành công", "Tạo danh mục thành công");
       } else if (modalMode === "edit" && selectedCategory?._id) {
         await dispatch(
           updateCategory({ id: selectedCategory._id, body: payload }),
         ).unwrap();
-        notify("Cập nhật danh mục thành công");
+        toast.success("Thành công", "Cập nhật danh mục thành công");
       }
 
       setModalMode(null);
@@ -155,7 +151,7 @@ export const useCategory = () => {
           message: CATEGORY_ERROR_MESSAGES.CATEGORY_NAME_EXISTS,
         });
       }
-      notify(err?.message ?? "Đã xảy ra lỗi", "error");
+      toast.error("Lỗi", err?.message ?? "Đã xảy ra lỗi");
     }
   };
 
@@ -167,39 +163,29 @@ export const useCategory = () => {
           isActive: !category.isActive,
         }),
       ).unwrap();
-      notify("Cập nhật trạng thái thành công");
+      toast.success("Thành công", "Cập nhật trạng thái thành công");
     } catch (err) {
-      notify(err?.message ?? "Không thể cập nhật trạng thái", "error");
+      toast.error("Lỗi", err?.message ?? "Không thể cập nhật trạng thái");
     }
   };
 
-  const handleDeleteClick = (category) => {
-    setDeleteError(null);
-    setDeleteTarget(category);
-  };
+  const isEmpty = useMemo(
+    () => !isLoading && !error && pagination.total === 0 && !searchKeyword.trim(),
+    [isLoading, error, pagination.total, searchKeyword],
+  );
 
-  const cancelDelete = () => {
-    setDeleteTarget(null);
-    setDeleteError(null);
-  };
+  const emptyTitle = useMemo(
+    () => (searchKeyword.trim() ? "Không tìm thấy danh mục" : "Chưa có danh mục nào"),
+    [searchKeyword],
+  );
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-
-    try {
-      await dispatch(deleteCategory(deleteTarget._id)).unwrap();
-      notify("Xóa danh mục thành công");
-      setDeleteTarget(null);
-      setDeleteError(null);
-      loadCategories({ search: debouncedSearch, page: pagination.page });
-    } catch (err) {
-      const message =
-        err?.code === "CATEGORY_HAS_FOOD_ITEMS"
-          ? CATEGORY_ERROR_MESSAGES.CATEGORY_HAS_FOOD_ITEMS
-          : err?.message ?? "Không thể xóa danh mục";
-      setDeleteError(message);
-    }
-  };
+  const emptyMessage = useMemo(
+    () =>
+      searchKeyword.trim()
+        ? "Không tìm thấy danh mục phù hợp."
+        : "Chưa có danh mục nào.",
+    [searchKeyword],
+  );
 
   return {
     categories: items,
@@ -209,11 +195,12 @@ export const useCategory = () => {
     searchKeyword,
     modalMode,
     selectedCategory,
-    deleteTarget,
-    deleteError,
     showUnsavedDialog,
     serverFieldError,
     error,
+    isEmpty,
+    emptyTitle,
+    emptyMessage,
     handleSearchChange,
     handlePageChange,
     openCreateModal,
@@ -223,9 +210,6 @@ export const useCategory = () => {
     cancelDiscardChanges,
     submitForm,
     handleToggleStatus,
-    handleDeleteClick,
-    cancelDelete,
-    confirmDelete,
   };
 };
 

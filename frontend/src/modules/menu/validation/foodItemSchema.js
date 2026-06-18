@@ -24,5 +24,4 @@ export const foodItemFormSchema = z.object({
     .or(z.literal('')),
   basePrice: requiredMoney('Giá bán không hợp lệ'),
   cost: requiredMoney('Giá vốn không hợp lệ'),
-  isArchived: z.boolean().default(false),
 });

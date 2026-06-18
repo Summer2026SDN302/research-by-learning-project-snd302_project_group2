@@ -19,6 +19,8 @@ export const NAV_CONFIG = {
         { label: 'Tối ưu hóa AI', icon: 'auto_awesome', path: '/manager/ai' },
         { label: 'Đơn hàng', icon: 'receipt_long', path: '/manager/orders' },
         { label: 'Thanh toán', icon: 'payments', path: '/manager/payments' },
+        { label: 'Danh mục món ăn', icon: 'category', path: '/manager/categories' },
+        { label: 'Món ăn', icon: 'restaurant_menu', path: '/manager/food-items' },
     ],
     staff: [
         { label: 'Tổng quan', icon: 'dashboard', path: '/staff/dashboard' },
