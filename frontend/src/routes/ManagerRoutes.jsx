@@ -3,7 +3,6 @@ import { Navigate, Route } from "react-router-dom";
 
 import PlaceholderPage from "../components/feedback/PlaceholderPage";
 import MainLayout from "../layouts/MainLayout";
-
 const ProfilePage = lazy(() => import("../modules/user/pages/ProfilePage"));
 const ChangePasswordPage = lazy(
   () => import("../modules/user/pages/ChangePasswordPage"),
