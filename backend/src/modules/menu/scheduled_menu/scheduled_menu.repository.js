@@ -13,13 +13,21 @@ const scheduledMenuRepository = {
       "menuItems.foodItemId": toObjectId(foodItemId),
     });
   },
+  async findByDayOfWeek(dayOfWeek) {
+    return ScheduledMenu.findOne({ dayOfWeek })
+      .populate("menuItems.foodItemId")
+      .populate("createdBy", "-passwordHash")
+      .populate("updatedBy", "-passwordHash");
+  },
 
   async findAll() {
     return ScheduledMenu.find().populate(FOOD_ITEM_POPULATE).lean();
   },
 
   async findByDay(day) {
-    return ScheduledMenu.findOne({ dayOfWeek: day }).populate(FOOD_ITEM_POPULATE).lean();
+    return ScheduledMenu.findOne({ dayOfWeek: day })
+      .populate(FOOD_ITEM_POPULATE)
+      .lean();
   },
 
   async upsertByDay(day, menuItems, userId) {
@@ -34,7 +42,7 @@ const scheduledMenuRepository = {
           createdBy: toObjectId(userId),
         },
       },
-      { upsert: true, returnDocument: "after", runValidators: true }
+      { upsert: true, returnDocument: "after", runValidators: true },
     )
       .populate(FOOD_ITEM_POPULATE)
       .lean();
