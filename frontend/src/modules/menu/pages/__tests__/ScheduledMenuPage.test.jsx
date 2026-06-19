@@ -21,15 +21,19 @@ const mockHook = {
   categories: [],
   openPicker: vi.fn(),
   closePicker: vi.fn(),
-  addItemToDay: vi.fn(),
+  addItemsToDay: vi.fn(),
   removeItemFromDay: vi.fn(),
+  saveDaySchedule: vi.fn(),
   saveAllSchedule: vi.fn().mockResolvedValue(true),
-  setPickerSearch: vi.fn(),
-  setPickerCategory: vi.fn(),
+  updatePickerFilters: vi.fn(),
 };
 
-vi.mock("../../hooks/useScheduledMenu", () => ({
+vi.mock("../../hooks/scheduled-menu/useScheduledMenu", () => ({
   default: () => mockHook,
+}));
+
+vi.mock("react-redux", () => ({
+  useSelector: vi.fn(() => ({ role: "admin" })),
 }));
 
 describe("ScheduledMenuPage", () => {
@@ -52,6 +56,21 @@ describe("ScheduledMenuPage", () => {
     await user.click(confirmButtons[confirmButtons.length - 1]);
 
     expect(mockHook.saveAllSchedule).toHaveBeenCalled();
+  });
+
+  it("opens single-day confirm dialog and saves when confirmed", async () => {
+    const user = userEvent.setup();
+    render(<ScheduledMenuPage />);
+
+    const saveMondayButton = screen.getByRole("button", { name: "Lưu Thứ 2" });
+    await user.click(saveMondayButton);
+
+    expect(screen.getByText("Lưu thay đổi lịch Thứ 2?")).toBeInTheDocument();
+
+    const confirmButtons = screen.getAllByRole("button", { name: "Lưu thay đổi" });
+    await user.click(confirmButtons[confirmButtons.length - 1]);
+
+    expect(mockHook.saveDaySchedule).toHaveBeenCalledWith("Monday");
   });
 
   it("disables save button when there are no unsaved changes", () => {

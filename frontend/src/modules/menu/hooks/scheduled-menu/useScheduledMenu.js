@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import useAppToast from "../../../hooks/useAppToast";
-import * as scheduledMenuApi from "../api/scheduledMenuApi";
-import { DAY_LABEL } from "../constants/scheduledMenuConstants";
+import useAppToast from "../../../../hooks/useAppToast";
+import * as scheduledMenuApi from "../../api/scheduledMenuApi";
+import { fetchAllFoodItems } from "../../api/foodItemApi";
+import { getCategories } from "../../api/categoryApi";
+import { DAY_LABEL, SCHEDULED_MENU_ERROR_MAP } from "../../constants/scheduledMenuConstants";
 import {
   markDaysSaved,
+  revertDayItems,
   setError,
   setLoading,
   setSchedule,
   setSaving,
   updateDayItems,
-} from "../redux/scheduledMenuSlice";
-import { getDirtyDays } from "../utils/scheduleSnapshot";
-
-const getApiErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
+} from "../../redux/scheduledMenuSlice";
+import { getDirtyDays } from "../../utils/scheduleSnapshot";
+import { getApiErrorMsg } from "../../../../utils/errorUtils";
 
 const useScheduledMenu = () => {
   const dispatch = useDispatch();
@@ -46,7 +47,7 @@ const useScheduledMenu = () => {
         const data = await scheduledMenuApi.getWeeklySchedule();
         dispatch(setSchedule(data));
       } catch (err) {
-        const message = getApiErrorMessage(err, "Không thể tải lịch thực đơn.");
+        const message = getApiErrorMsg(SCHEDULED_MENU_ERROR_MAP, err, "Không thể tải lịch thực đơn.");
         dispatch(setError(message));
         toast.error("Lỗi", message);
       }
@@ -57,8 +58,8 @@ const useScheduledMenu = () => {
   const fetchPickerData = useCallback(async () => {
     try {
       const [items, categoriesData] = await Promise.all([
-        scheduledMenuApi.fetchAllFoodItems(),
-        scheduledMenuApi.getCategories(),
+        fetchAllFoodItems(),
+        getCategories({ limit: 50 }),
       ]);
       setFoodItems(items);
       setCategories(categoriesData?.items || categoriesData || []);
@@ -68,8 +69,21 @@ const useScheduledMenu = () => {
   }, []);
 
   useEffect(() => {
-    fetchSchedule();
-    fetchPickerData();
+    let active = true;
+
+    const loadData = async () => {
+      // Defer execution to avoid calling setState synchronously within the effect body
+      await Promise.resolve();
+      if (!active) return;
+      fetchSchedule();
+      fetchPickerData();
+    };
+
+    loadData();
+
+    return () => {
+      active = false;
+    };
   }, [fetchSchedule, fetchPickerData]);
 
   const openPicker = useCallback((day) => {
@@ -84,22 +98,31 @@ const useScheduledMenu = () => {
     setPickerDay(null);
   }, []);
 
-  const addItemToDay = useCallback(
-    (dayOfWeek, foodItem) => {
+  const addItemsToDay = useCallback(
+    (dayOfWeek, foodItemsList) => {
       const day = schedule.find((entry) => entry.dayOfWeek === dayOfWeek);
       if (!day) return;
 
-      const alreadyAdded = day.menuItems.some(
-        (item) => (item.foodItemId?._id || item.foodItemId) === foodItem._id,
-      );
-      if (alreadyAdded) return;
+      const newMenuItems = [...day.menuItems];
+      let added = false;
+      for (const foodItem of foodItemsList) {
+        const alreadyAdded = day.menuItems.some(
+          (item) => (item.foodItemId?._id || item.foodItemId) === foodItem._id,
+        );
+        if (!alreadyAdded) {
+          newMenuItems.push({ foodItemId: foodItem });
+          added = true;
+        }
+      }
 
-      dispatch(
-        updateDayItems({
-          dayOfWeek,
-          menuItems: [...day.menuItems, { foodItemId: foodItem }],
-        }),
-      );
+      if (added) {
+        dispatch(
+          updateDayItems({
+            dayOfWeek,
+            menuItems: newMenuItems,
+          }),
+        );
+      }
     },
     [dispatch, schedule],
   );
@@ -145,7 +168,8 @@ const useScheduledMenu = () => {
         await fetchSchedule(true);
         return true;
       } catch (err) {
-        const message = getApiErrorMessage(
+        const message = getApiErrorMsg(
+          SCHEDULED_MENU_ERROR_MAP,
           err,
           `Không thể lưu ${DAY_LABEL[dayOfWeek] || dayOfWeek}.`,
         );
@@ -168,54 +192,73 @@ const useScheduledMenu = () => {
     const savedDays = [];
     let hasError = false;
 
-    for (const dayOfWeek of dirtyDays) {
-      const day = schedule.find((entry) => entry.dayOfWeek === dayOfWeek);
-      if (!day) continue;
+    try {
+      for (const dayOfWeek of dirtyDays) {
+        const day = schedule.find((entry) => entry.dayOfWeek === dayOfWeek);
+        if (!day) continue;
 
-      const foodItemIds = day.menuItems.map(
-        (item) => item.foodItemId?._id || item.foodItemId,
-      );
-
-      try {
-        await scheduledMenuApi.updateDaySchedule(dayOfWeek, foodItemIds);
-        savedDays.push(dayOfWeek);
-      } catch (err) {
-        hasError = true;
-        const message = getApiErrorMessage(
-          err,
-          `Không thể lưu ${DAY_LABEL[dayOfWeek] || dayOfWeek}.`,
+        const foodItemIds = day.menuItems.map(
+          (item) => item.foodItemId?._id || item.foodItemId,
         );
-        toast.error("Lưu thất bại", message);
-        break;
+
+        try {
+          await scheduledMenuApi.updateDaySchedule(dayOfWeek, foodItemIds);
+          savedDays.push(dayOfWeek);
+        } catch (err) {
+          hasError = true;
+          const message = getApiErrorMsg(
+            SCHEDULED_MENU_ERROR_MAP,
+            err,
+            `Không thể lưu ${DAY_LABEL[dayOfWeek] || dayOfWeek}.`,
+          );
+          toast.error("Lưu thất bại", message);
+          break;
+        }
       }
+
+      if (savedDays.length > 0) {
+        dispatch(markDaysSaved(savedDays));
+        if (!hasError) {
+          toast.success("Đã lưu", "Lịch thực đơn tuần đã được cập nhật.");
+        }
+        await fetchSchedule(true);
+      }
+
+      return !hasError;
+    } finally {
+      dispatch(setSaving(false));
     }
-
-    dispatch(setSaving(false));
-
-    if (!hasError) {
-      dispatch(markDaysSaved(savedDays));
-      toast.success("Đã lưu", "Lịch thực đơn tuần đã được cập nhật.");
-      await fetchSchedule(true);
-      return true;
-    }
-
-    if (savedDays.length > 0) {
-      dispatch(markDaysSaved(savedDays));
-      await fetchSchedule(true);
-    }
-
-    return false;
   }, [dirtyDays, dispatch, fetchSchedule, schedule, toast]);
 
-  const filteredPickerItems = foodItems.filter((item) => {
-    const matchSearch = pickerSearch
-      ? item.name.toLowerCase().includes(pickerSearch.toLowerCase())
-      : true;
-    const matchCategory = pickerCategory
-      ? (item.categoryId?._id || item.categoryId) === pickerCategory
-      : true;
-    return matchSearch && matchCategory;
-  });
+  const cancelDayEdits = useCallback(
+    (dayOfWeek) => {
+      dispatch(revertDayItems(dayOfWeek));
+    },
+    [dispatch],
+  );
+
+  const cancelAllEdits = useCallback(() => {
+    for (const dayOfWeek of dirtyDays) {
+      dispatch(revertDayItems(dayOfWeek));
+    }
+  }, [dispatch, dirtyDays]);
+
+  const updatePickerFilters = useCallback((filters = {}) => {
+    if (filters.search !== undefined) setPickerSearch(filters.search);
+    if (filters.category !== undefined) setPickerCategory(filters.category);
+  }, []);
+
+  const filteredPickerItems = useMemo(() => {
+    return foodItems.filter((item) => {
+      const matchSearch = pickerSearch
+        ? item.name.toLowerCase().includes(pickerSearch.toLowerCase())
+        : true;
+      const matchCategory = pickerCategory
+        ? (item.categoryId?._id || item.categoryId) === pickerCategory
+        : true;
+      return matchSearch && matchCategory;
+    });
+  }, [foodItems, pickerSearch, pickerCategory]);
 
   return {
     schedule,
@@ -232,12 +275,13 @@ const useScheduledMenu = () => {
     categories,
     openPicker,
     closePicker,
-    addItemToDay,
+    addItemsToDay,
     removeItemFromDay,
     saveDaySchedule,
     saveAllSchedule,
-    setPickerSearch,
-    setPickerCategory,
+    cancelDayEdits,
+    cancelAllEdits,
+    updatePickerFilters,
   };
 };
 

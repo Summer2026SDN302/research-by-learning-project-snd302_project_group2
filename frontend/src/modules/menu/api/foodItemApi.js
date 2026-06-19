@@ -50,6 +50,26 @@ export const getFoodItems = async (params = {}) => {
   }
 };
 
+export const fetchAllFoodItems = async (params = {}) => {
+  const allItems = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const data = await getFoodItems({
+      ...params,
+      page,
+      limit: 50,
+      isArchived: "false",
+    });
+    allItems.push(...(data?.items || []));
+    totalPages = data?.pagination?.totalPages || 1;
+    page += 1;
+  }
+
+  return allItems;
+};
+
 export const getFoodItemById = async (id) => {
   try {
     const response = await apiClient.get(`${BASE_PATH}/${id}`);

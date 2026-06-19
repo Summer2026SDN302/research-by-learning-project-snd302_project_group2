@@ -3,14 +3,22 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import scheduledMenuReducer from "../../redux/scheduledMenuSlice";
+import scheduledMenuReducer from "../../../redux/scheduledMenuSlice";
 import useScheduledMenu from "../useScheduledMenu";
-import * as scheduledMenuApi from "../../api/scheduledMenuApi";
+import * as scheduledMenuApi from "../../../api/scheduledMenuApi";
+import * as foodItemApi from "../../../api/foodItemApi";
+import * as categoryApi from "../../../api/categoryApi";
 
-vi.mock("../../api/scheduledMenuApi", () => ({
+vi.mock("../../../api/scheduledMenuApi", () => ({
   getWeeklySchedule: vi.fn(),
   updateDaySchedule: vi.fn(),
+}));
+
+vi.mock("../../../api/foodItemApi", () => ({
   fetchAllFoodItems: vi.fn(),
+}));
+
+vi.mock("../../../api/categoryApi", () => ({
   getCategories: vi.fn(),
 }));
 
@@ -20,7 +28,7 @@ const toastMock = {
   info: vi.fn(),
 };
 
-vi.mock("../../../../hooks/useAppToast", () => ({
+vi.mock("../../../../../hooks/useAppToast", () => ({
   default: () => ({ toast: toastMock }),
 }));
 
@@ -50,8 +58,8 @@ describe("useScheduledMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     scheduledMenuApi.getWeeklySchedule.mockResolvedValue(weeklySchedule);
-    scheduledMenuApi.fetchAllFoodItems.mockResolvedValue(foodItems);
-    scheduledMenuApi.getCategories.mockResolvedValue({ items: [{ _id: "cat1", name: "Ăn sáng" }] });
+    foodItemApi.fetchAllFoodItems.mockResolvedValue(foodItems);
+    categoryApi.getCategories.mockResolvedValue({ items: [{ _id: "cat1", name: "Ăn sáng" }] });
     scheduledMenuApi.updateDaySchedule.mockResolvedValue({});
   });
 
@@ -65,11 +73,11 @@ describe("useScheduledMenu", () => {
     });
 
     expect(scheduledMenuApi.getWeeklySchedule).toHaveBeenCalled();
-    expect(scheduledMenuApi.fetchAllFoodItems).toHaveBeenCalled();
+    expect(foodItemApi.fetchAllFoodItems).toHaveBeenCalled();
     expect(result.current.isLoading).toBe(false);
   });
 
-  it("adds item to day locally without duplicates", async () => {
+  it("adds items to day locally without duplicates", async () => {
     const { result } = renderHook(() => useScheduledMenu(), {
       wrapper: createWrapper(),
     });
@@ -77,7 +85,7 @@ describe("useScheduledMenu", () => {
     await waitFor(() => expect(result.current.schedule).toHaveLength(2));
 
     act(() => {
-      result.current.addItemToDay("Tuesday", foodItems[1]);
+      result.current.addItemsToDay("Tuesday", [foodItems[1]]);
     });
 
     expect(result.current.schedule[1].menuItems).toHaveLength(1);
@@ -85,7 +93,7 @@ describe("useScheduledMenu", () => {
     expect(result.current.dirtyDays).toContain("Tuesday");
 
     act(() => {
-      result.current.addItemToDay("Tuesday", foodItems[1]);
+      result.current.addItemsToDay("Tuesday", [foodItems[1]]);
     });
 
     expect(result.current.schedule[1].menuItems).toHaveLength(1);
@@ -114,14 +122,13 @@ describe("useScheduledMenu", () => {
     await waitFor(() => expect(result.current.filteredPickerItems).toHaveLength(2));
 
     act(() => {
-      result.current.setPickerSearch("cơm");
+      result.current.updatePickerFilters({ search: "cơm" });
     });
     expect(result.current.filteredPickerItems).toHaveLength(1);
     expect(result.current.filteredPickerItems[0].name).toBe("Cơm gà");
 
     act(() => {
-      result.current.setPickerSearch("");
-      result.current.setPickerCategory("cat1");
+      result.current.updatePickerFilters({ search: "", category: "cat1" });
     });
     expect(result.current.filteredPickerItems).toHaveLength(1);
     expect(result.current.filteredPickerItems[0].name).toBe("Phở Bò");
@@ -135,7 +142,7 @@ describe("useScheduledMenu", () => {
     await waitFor(() => expect(result.current.schedule).toHaveLength(2));
 
     act(() => {
-      result.current.addItemToDay("Tuesday", foodItems[1]);
+      result.current.addItemsToDay("Tuesday", [foodItems[1]]);
     });
 
     await act(async () => {
@@ -167,6 +174,29 @@ describe("useScheduledMenu", () => {
       "Thông báo",
       "Không có thay đổi cần lưu.",
     );
+  });
+
+  it("cancelAllEdits reverts all local edits to saved snapshot", async () => {
+    const { result } = renderHook(() => useScheduledMenu(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.schedule).toHaveLength(2));
+
+    act(() => {
+      result.current.addItemsToDay("Tuesday", [foodItems[1]]);
+      result.current.removeItemFromDay("Monday", FOOD_ID_1);
+    });
+
+    expect(result.current.hasUnsavedChanges).toBe(true);
+
+    act(() => {
+      result.current.cancelAllEdits();
+    });
+
+    expect(result.current.hasUnsavedChanges).toBe(false);
+    expect(result.current.schedule[0].menuItems).toHaveLength(1);
+    expect(result.current.schedule[1].menuItems).toHaveLength(0);
   });
 
   it("shows error toast when initial fetch fails", async () => {

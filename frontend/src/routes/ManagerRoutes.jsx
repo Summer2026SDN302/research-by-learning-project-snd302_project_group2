@@ -3,12 +3,19 @@ import { Navigate, Route } from "react-router-dom";
 
 import PlaceholderPage from "../components/feedback/PlaceholderPage";
 import MainLayout from "../layouts/MainLayout";
-import CategoryListPage from "../modules/menu/pages/CategoryListPage";
-import FoodItemListPage from "../modules/menu/pages/FoodItemListPage";
 
 const ProfilePage = lazy(() => import("../modules/user/pages/ProfilePage"));
 const ChangePasswordPage = lazy(
   () => import("../modules/user/pages/ChangePasswordPage"),
+);
+const ScheduledMenuPage = lazy(
+  () => import("../modules/menu/pages/ScheduledMenuPage"),
+);
+const CategoryListPage = lazy(
+  () => import("../modules/menu/pages/CategoryListPage"),
+);
+const FoodItemListPage = lazy(
+  () => import("../modules/menu/pages/FoodItemListPage"),
 );
 
 const ManagerRoutes = () => (
@@ -29,7 +36,7 @@ const ManagerRoutes = () => (
     />
     <Route
       path="scheduled-menu"
-      element={<PlaceholderPage title="Thực đơn theo lịch" />}
+      element={<ScheduledMenuPage title="Thực đơn theo lịch" />}
     />
     <Route
       path="pricing"

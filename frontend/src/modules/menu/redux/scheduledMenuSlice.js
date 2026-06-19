@@ -5,6 +5,7 @@ import { buildSavedSnapshot } from "../utils/scheduleSnapshot";
 const initialState = {
   schedule: [],
   savedSnapshot: {},
+  savedItemsSnapshot: {},
   isLoading: false,
   isSaving: false,
   error: null,
@@ -17,6 +18,10 @@ const scheduledMenuSlice = createSlice({
     setSchedule: (state, action) => {
       state.schedule = action.payload || [];
       state.savedSnapshot = buildSavedSnapshot(state.schedule);
+      state.savedItemsSnapshot = {};
+      for (const day of state.schedule) {
+        state.savedItemsSnapshot[day.dayOfWeek] = [...day.menuItems];
+      }
       state.isLoading = false;
       state.error = null;
     },
@@ -29,6 +34,15 @@ const scheduledMenuSlice = createSlice({
       }
     },
 
+    revertDayItems: (state, action) => {
+      const dayOfWeek = action.payload;
+      const day = state.schedule.find((entry) => entry.dayOfWeek === dayOfWeek);
+      const originalItems = state.savedItemsSnapshot[dayOfWeek];
+      if (day && originalItems) {
+        day.menuItems = [...originalItems];
+      }
+    },
+
     markDaysSaved: (state, action) => {
       const dayOfWeeks = action.payload || [];
 
@@ -38,6 +52,7 @@ const scheduledMenuSlice = createSlice({
           state.savedSnapshot[dayOfWeek] = day.menuItems.map((item) =>
             String(item.foodItemId?._id || item.foodItemId),
           );
+          state.savedItemsSnapshot[dayOfWeek] = [...day.menuItems];
         }
       }
     },
@@ -66,6 +81,7 @@ const scheduledMenuSlice = createSlice({
 export const {
   setSchedule,
   updateDayItems,
+  revertDayItems,
   markDaysSaved,
   setLoading,
   setSaving,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import reducer, {
   markDaysSaved,
+  revertDayItems,
   resetError,
   setError,
   setLoading,
@@ -25,6 +26,7 @@ describe("scheduledMenuSlice", () => {
     expect(state).toEqual({
       schedule: [],
       savedSnapshot: {},
+      savedItemsSnapshot: {},
       isLoading: false,
       isSaving: false,
       error: null,
@@ -58,6 +60,23 @@ describe("scheduledMenuSlice", () => {
     expect(state.schedule[0].menuItems).toEqual(updatedItems);
     expect(state.schedule[1].menuItems).toEqual([]);
     expect(state.savedSnapshot.Monday).toEqual([FOOD_ID_1]);
+  });
+
+  it("revertDayItems restores day items to savedItemsSnapshot", () => {
+    const withSchedule = reducer(undefined, setSchedule(initialSchedule));
+    const changed = reducer(
+      withSchedule,
+      updateDayItems({
+        dayOfWeek: "Monday",
+        menuItems: [{ foodItemId: { _id: FOOD_ID_2 } }],
+      }),
+    );
+
+    expect(changed.schedule[0].menuItems).toEqual([{ foodItemId: { _id: FOOD_ID_2 } }]);
+
+    const state = reducer(changed, revertDayItems("Monday"));
+
+    expect(state.schedule[0].menuItems).toEqual(initialSchedule[0].menuItems);
   });
 
   it("markDaysSaved updates snapshot for saved days", () => {

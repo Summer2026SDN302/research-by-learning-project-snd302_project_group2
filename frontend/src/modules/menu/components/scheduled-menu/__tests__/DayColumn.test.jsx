@@ -15,7 +15,9 @@ describe("DayColumn", () => {
   it("renders weekday label and item count", () => {
     render(
       <DayColumn
-        day={makeDay("Monday", [{ foodItemId: { _id: FOOD_ID, name: "Phở Bò" } }])}
+        day={makeDay("Monday", [
+          { foodItemId: { _id: FOOD_ID, name: "Phở Bò", basePrice: 35000 } },
+        ])}
         onAddItem={vi.fn()}
         onRemoveItem={vi.fn()}
       />,
@@ -24,22 +26,33 @@ describe("DayColumn", () => {
     expect(screen.getByText("Thứ 2")).toBeInTheDocument();
     expect(screen.getByText("1 món")).toBeInTheDocument();
     expect(screen.getByText("Phở Bò")).toBeInTheDocument();
+    expect(screen.getByText(/35\.000/)).toBeInTheDocument();
   });
 
   it("shows empty state for weekday without items", () => {
     render(
-      <DayColumn day={makeDay("Wednesday")} onAddItem={vi.fn()} onRemoveItem={vi.fn()} />,
+      <DayColumn
+        day={makeDay("Wednesday")}
+        onAddItem={vi.fn()}
+        onRemoveItem={vi.fn()}
+      />,
     );
 
     expect(screen.getByText("Chưa có món")).toBeInTheDocument();
   });
 
-  it("shows weekend message for Saturday without items", () => {
+  it("does not show weekend message for Saturday without items", () => {
     render(
-      <DayColumn day={makeDay("Saturday")} onAddItem={vi.fn()} onRemoveItem={vi.fn()} />,
+      <DayColumn
+        day={makeDay("Saturday")}
+        isAdmin
+        onAddItem={vi.fn()}
+        onRemoveItem={vi.fn()}
+      />,
     );
 
-    expect(screen.getByText("Nghỉ cuối tuần")).toBeInTheDocument();
+    expect(screen.queryByText("Nghỉ cuối tuần")).not.toBeInTheDocument();
+    expect(screen.getByText("Chưa có món")).toBeInTheDocument();
   });
 
   it("calls onSaveDay when dirty save button is clicked", async () => {
@@ -50,6 +63,7 @@ describe("DayColumn", () => {
       <DayColumn
         day={makeDay("Friday")}
         isDirty
+        isAdmin
         onAddItem={vi.fn()}
         onRemoveItem={vi.fn()}
         onSaveDay={onSaveDay}
@@ -66,7 +80,12 @@ describe("DayColumn", () => {
     const onAddItem = vi.fn();
 
     render(
-      <DayColumn day={makeDay("Friday")} onAddItem={onAddItem} onRemoveItem={vi.fn()} />,
+      <DayColumn
+        day={makeDay("Friday")}
+        isAdmin
+        onAddItem={onAddItem}
+        onRemoveItem={vi.fn()}
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: /Thêm món/i }));
@@ -89,6 +108,7 @@ describe("DayColumn", () => {
             },
           },
         ])}
+        isAdmin
         onAddItem={vi.fn()}
         onRemoveItem={onRemoveItem}
       />,

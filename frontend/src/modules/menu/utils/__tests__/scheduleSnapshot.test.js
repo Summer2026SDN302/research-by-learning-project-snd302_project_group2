@@ -69,6 +69,19 @@ describe("isDayDirty", () => {
     expect(isDayDirty("Monday", changed, savedSnapshot)).toBe(true);
   });
 
+  it("returns false when items are in a different order but have the same set of IDs", () => {
+    const scheduleWithMultiple = makeSchedule(
+      [{ foodItemId: { _id: FOOD_ID_1 } }, { foodItemId: { _id: FOOD_ID_2 } }],
+      []
+    );
+    const snapshotWithMultiple = buildSavedSnapshot(scheduleWithMultiple);
+    const reorderedSchedule = makeSchedule(
+      [{ foodItemId: { _id: FOOD_ID_2 } }, { foodItemId: { _id: FOOD_ID_1 } }],
+      []
+    );
+    expect(isDayDirty("Monday", reorderedSchedule, snapshotWithMultiple)).toBe(false);
+  });
+
   it("returns false for unknown day", () => {
     expect(isDayDirty("Sunday", schedule, savedSnapshot)).toBe(false);
   });

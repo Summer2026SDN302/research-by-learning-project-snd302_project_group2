@@ -27,9 +27,10 @@ const defaultProps = {
   category: "",
   categories,
   items,
+  initialSelectedIds: [],
   onSearch: vi.fn(),
   onCategory: vi.fn(),
-  onSelect: vi.fn(),
+  onAdd: vi.fn(),
   onClose: vi.fn(),
 };
 
@@ -53,18 +54,52 @@ describe("FoodItemPickerModal", () => {
     expect(screen.getByText("Không tìm thấy món")).toBeInTheDocument();
   });
 
-  it("calls onSelect when clicking a food item", async () => {
+  it("allows selecting food items and clicking Add button", async () => {
     const user = userEvent.setup();
-    const onSelect = vi.fn();
+    const onAdd = vi.fn();
 
-    render(<FoodItemPickerModal {...defaultProps} onSelect={onSelect} />);
+    render(<FoodItemPickerModal {...defaultProps} onAdd={onAdd} />);
 
-    await user.click(screen.getByRole("button", { name: /Phở Bò/i }));
+    // Click on Phở Bò to check it
+    await user.click(screen.getByText("Phở Bò"));
 
-    expect(onSelect).toHaveBeenCalledWith(items[0]);
+    // The Add button should now show "Thêm (1) món" and be enabled
+    const addButton = screen.getByRole("button", { name: /Thêm \(1\) món/i });
+    expect(addButton).toBeEnabled();
+
+    // Click add button
+    await user.click(addButton);
+
+    // expect onAdd to be called with Phở Bò item
+    expect(onAdd).toHaveBeenCalledWith([items[0]]);
   });
 
-  it("calls onClose when clicking close buttons", async () => {
+  it("disables items that are already in the schedule", async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn();
+
+    render(
+      <FoodItemPickerModal
+        {...defaultProps}
+        initialSelectedIds={["food1"]}
+        onAdd={onAdd}
+      />
+    );
+
+    // Phở Bò (food1) should be marked as added and its checkbox disabled
+    expect(screen.getByText("Đã thêm")).toBeInTheDocument();
+    const checkbox = screen.getAllByRole("checkbox")[0];
+    expect(checkbox).toBeDisabled();
+
+    // Clicking Phở Bò should not select it
+    await user.click(screen.getByText("Phở Bò"));
+
+    // Add button should remain disabled because no new item is selected
+    const addButton = screen.getByRole("button", { name: "Thêm món" });
+    expect(addButton).toBeDisabled();
+  });
+
+  it("calls onClose when clicking close button in header", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
 

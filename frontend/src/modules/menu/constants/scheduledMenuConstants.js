@@ -17,3 +17,9 @@ export const DAY_LABEL = {
   Saturday: "Thứ 7",
   Sunday: "Chủ Nhật",
 };
+
+export const SCHEDULED_MENU_ERROR_MAP = {
+  VALIDATION_ERROR: "Ngày trong tuần không hợp lệ.",
+  DUPLICATE_FOOD_ITEM: "Không thể thêm món trùng lặp trong cùng một ngày.",
+  FOOD_ITEM_NOT_FOUND: "Một hoặc nhiều món ăn không tồn tại hoặc đã bị ngừng bán.",
+};

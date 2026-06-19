@@ -20,7 +20,10 @@ export const isDayDirty = (dayOfWeek, schedule, savedSnapshot) => {
 
   if (current.length !== saved.length) return true;
 
-  return current.some((id, index) => id !== saved[index]);
+  const sortedCurrent = [...current].sort();
+  const sortedSaved = [...saved].sort();
+
+  return sortedCurrent.some((id, index) => id !== sortedSaved[index]);
 };
 
 export const getDirtyDays = (schedule, savedSnapshot) =>

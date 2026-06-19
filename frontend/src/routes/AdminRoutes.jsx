@@ -2,8 +2,6 @@ import { lazy } from "react";
 import { Navigate, Route } from "react-router-dom";
 
 import PlaceholderPage from "../components/feedback/PlaceholderPage";
-import CategoryListPage from "../modules/menu/pages/CategoryListPage";
-import FoodItemListPage from "../modules/menu/pages/FoodItemListPage";
 import MainLayout from "../layouts/MainLayout";
 
 const ProfilePage = lazy(() => import("../modules/user/pages/ProfilePage"));
@@ -15,6 +13,12 @@ const UserManagementPage = lazy(
 );
 const ScheduledMenuPage = lazy(
   () => import("../modules/menu/pages/ScheduledMenuPage"),
+);
+const CategoryListPage = lazy(
+  () => import("../modules/menu/pages/CategoryListPage"),
+);
+const FoodItemListPage = lazy(
+  () => import("../modules/menu/pages/FoodItemListPage"),
 );
 
 const AdminRoutes = () => (
