@@ -8,31 +8,38 @@
  */
 const STATUS_MAP = {
   active: {
-    label: "Đang hoạt động",
-    classes: "bg-secondary-container/30 text-secondary border border-secondary/20",
+    label: "Active",
+    classes:
+      "bg-secondary-container/30 text-secondary border border-secondary/20",
   },
   inactive: {
-    label: "Tạm khóa",
+    label: "Inactive",
     classes: "bg-error-container/30 text-error border border-error/20",
   },
+  archived: {
+    label: "Archived",
+    classes:
+      "bg-surface-container-high text-on-surface-variant border border-outline-variant",
+  },
   pending: {
-    label: "Đang chờ",
+    label: "Pending",
     classes: "bg-tertiary-container/20 text-tertiary border border-tertiary/20",
   },
   completed: {
-    label: "Hoàn tất",
+    label: "Completed",
     classes: "bg-primary/10 text-primary border border-primary/20",
   },
   cancelled: {
-    label: "Đã hủy",
+    label: "Cancelled",
     classes: "bg-error-container/30 text-error border border-error/20",
   },
   paid: {
-    label: "Đã thanh toán",
-    classes: "bg-secondary-container/30 text-secondary border border-secondary/20",
+    label: "Paid",
+    classes:
+      "bg-secondary-container/30 text-secondary border border-secondary/20",
   },
   unpaid: {
-    label: "Chưa thanh toán",
+    label: "Unpaid",
     classes: "bg-tertiary-container/20 text-tertiary border border-tertiary/20",
   },
 };
@@ -40,10 +47,13 @@ const STATUS_MAP = {
 const StatusBadge = ({ status = "active", label, size = "md" }) => {
   const config = STATUS_MAP[status] ?? STATUS_MAP.pending;
   const displayLabel = label ?? config.label;
-  const sizeClass = size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-label-md";
+  const sizeClass =
+    size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-label-md";
 
   return (
-    <span className={`inline-flex items-center rounded-full font-semibold ${sizeClass} ${config.classes}`}>
+    <span
+      className={`inline-flex items-center rounded-full font-semibold ${sizeClass} ${config.classes}`}
+    >
       <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-80" />
       {displayLabel}
     </span>

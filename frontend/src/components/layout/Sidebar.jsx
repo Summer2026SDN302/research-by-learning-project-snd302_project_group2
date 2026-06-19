@@ -34,9 +34,11 @@ const Sidebar = ({
       className={`h-screen flex flex-col bg-surface border-r border-outline-variant shadow-soft z-50 relative shrink-0 ${className}`}
     >
       {/* Brand */}
-      <div className={`border-b border-outline-variant/40 relative flex items-center ${
-        collapsed ? "py-6 justify-center px-2" : "py-8 px-6"
-      }`}>
+      <div
+        className={`border-b border-outline-variant/40 relative flex items-center ${
+          collapsed ? "py-6 justify-center px-2" : "py-8 px-6"
+        }`}
+      >
         {!collapsed && (
           <div>
             <h1 className="text-headline-sm font-bold text-primary leading-tight">
@@ -49,9 +51,10 @@ const Sidebar = ({
         )}
         <button
           onClick={onToggleCollapse}
-          className={collapsed
-            ? "p-2 rounded hover:bg-surface-container flex items-center justify-center transition-colors"
-            : "absolute top-4 right-3 p-1 rounded hover:bg-surface-container flex items-center justify-center"
+          className={
+            collapsed
+              ? "p-2 rounded hover:bg-surface-container flex items-center justify-center transition-colors"
+              : "absolute top-4 right-3 p-1 rounded hover:bg-surface-container flex items-center justify-center"
           }
           aria-label="Toggle sidebar"
         >

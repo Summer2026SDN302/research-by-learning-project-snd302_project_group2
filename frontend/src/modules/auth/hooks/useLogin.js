@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import * as authApi from "../api/authApi";
 import { authFailure, authStart, authSuccess } from "../redux/authSlice";
-import { getRoleHomePath } from "../constants/authConstants";
+import { getRoleHomePath, AUTH_ERROR_MAP } from "../constants/authConstants";
 import { setAccessToken } from "../../../services/apiClient";
 import useAppToast from "../../../hooks/useAppToast";
-import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
+import { getApiErrorMsg } from "../../../utils/errorUtils";
 
 const REMEMBER_IDENTIFIER_KEY = "stallbox_remember_identifier";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,12 +19,16 @@ const validateIdentifier = (identifier) => {
   const value = normalizeIdentifier(identifier);
 
   if (!value) return "Vui lòng nhập tên đăng nhập hoặc email.";
-  if (value.length < 3) return "Tên đăng nhập hoặc email cần có ít nhất 3 ký tự.";
-  if (value.length > 80) return "Tên đăng nhập hoặc email không được vượt quá 80 ký tự.";
-  if (/\s/.test(value)) return "Tên đăng nhập hoặc email không được chứa khoảng trắng.";
+  if (value.length < 3)
+    return "Tên đăng nhập hoặc email cần có ít nhất 3 ký tự.";
+  if (value.length > 80)
+    return "Tên đăng nhập hoặc email không được vượt quá 80 ký tự.";
+  if (/\s/.test(value))
+    return "Tên đăng nhập hoặc email không được chứa khoảng trắng.";
 
   if (value.includes("@")) {
-    if (!EMAIL_PATTERN.test(value)) return "Email chưa đúng định dạng. Ví dụ: user@stallbox.com.";
+    if (!EMAIL_PATTERN.test(value))
+      return "Email chưa đúng định dạng. Ví dụ: user@stallbox.com.";
     return "";
   }
 
@@ -35,9 +39,13 @@ const validateIdentifier = (identifier) => {
   return "";
 };
 
+const PASSWORD_ALLOWED_REGEX = /^[\x21-\x7E]+$/;
+
 const validatePassword = (password) => {
   if (!password) return "Vui lòng nhập mật khẩu.";
-  if (String(password).trim().length === 0) return "Mật khẩu không được chỉ gồm khoảng trắng.";
+  if (!PASSWORD_ALLOWED_REGEX.test(password)) {
+    return "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
+  }
   return "";
 };
 
@@ -45,6 +53,7 @@ const useLogin = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useAppToast();
 
   const isLoading = useSelector((state) => state.auth.isLoading);
@@ -56,7 +65,17 @@ const useLogin = () => {
   });
 
   const [fieldErrors, setFieldErrors] = useState({});
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState(() =>
+    searchParams.get("reason") === "session_expired"
+      ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+      : "",
+  );
+
+  useEffect(() => {
+    if (searchParams.get("reason") === "session_expired") {
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const validateField = (name, value) => {
     if (name === "identifier") return validateIdentifier(value);
@@ -66,7 +85,14 @@ const useLogin = () => {
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
-    const nextValue = type === "checkbox" ? checked : value;
+    let nextValue = type === "checkbox" ? checked : value;
+
+    if (typeof nextValue === "string") {
+      if (name === "identifier") {
+        // Strip non-ASCII characters (which includes Vietnamese accented characters) and spaces
+        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
+      }
+    }
 
     setFormData((prev) => ({
       ...prev,
@@ -146,11 +172,15 @@ const useLogin = () => {
 
       navigate(redirectPath, { replace: true });
     } catch (error) {
-      const message = getApiErrorMessage(error);
+      const rawMsg = getApiErrorMsg(
+        AUTH_ERROR_MAP,
+        error,
+        "Tên đăng nhập hoặc mật khẩu không đúng.",
+      );
+      const message = AUTH_ERROR_MAP[rawMsg] || rawMsg;
 
       setFormError(message);
       dispatch(authFailure(message));
-      toast.error("Đăng nhập thất bại", message);
     }
   };
 

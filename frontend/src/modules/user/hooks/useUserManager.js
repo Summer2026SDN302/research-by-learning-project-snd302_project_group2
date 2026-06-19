@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import useAppToast from "../../../hooks/useAppToast";
-import { getApiErrorMessage } from "../../../utils/apiErrorMessage";
-import * as userApi from "../api/userApi";
+import { getApiErrorMsg } from "../../../utils/errorUtils";
 import {
   DEFAULT_RESET_PASSWORD_FORM,
   DEFAULT_USER_FORM,
+  USER_ERROR_MAP,
 } from "../constants/userConstants";
+import * as userApi from "../api/userApi";
+import {
+  setUsersLoading,
+  setUsersSaving,
+  setUsersData,
+  setUsersStats,
+  setUsersError,
+} from "../redux/userSlice";
 
 const DEFAULT_PAGINATION = {
   page: 1,
@@ -24,6 +32,7 @@ const DEFAULT_STATS = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^[0-9+()\s.-]{8,20}$/;
+const PASSWORD_ALLOWED_REGEX = /^[\x21-\x7E]+$/;
 
 const toUserForm = (user) => ({
   username: user?.username || "",
@@ -51,15 +60,16 @@ const buildPayload = (formData, mode) => {
 };
 
 const useUserManager = () => {
+  const dispatch = useDispatch();
   const { toast } = useAppToast();
   const authUser = useSelector((state) => state.auth.user);
 
-  const [users, setUsers] = useState([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [usersSaving, setUsersSaving] = useState(false);
-  const [usersError, setUsersError] = useState("");
-  const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
-  const [stats, setStats] = useState(DEFAULT_STATS);
+  const users = useSelector((state) => state.user.users);
+  const usersLoading = useSelector((state) => state.user.usersLoading);
+  const usersSaving = useSelector((state) => state.user.usersSaving);
+  const usersError = useSelector((state) => state.user.usersError);
+  const pagination = useSelector((state) => state.user.pagination);
+  const stats = useSelector((state) => state.user.stats);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -95,7 +105,7 @@ const useUserManager = () => {
     return params;
   }, [filters]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const [totalData, activeData, inactiveData] = await Promise.all([
         userApi.getUsers({ page: 1, limit: 1 }),
@@ -103,38 +113,32 @@ const useUserManager = () => {
         userApi.getUsers({ page: 1, limit: 1, isActive: false }),
       ]);
 
-      setStats({
-        total: totalData?.pagination?.total || 0,
-        active: activeData?.pagination?.total || 0,
-        inactive: inactiveData?.pagination?.total || 0,
-      });
+      dispatch(
+        setUsersStats({
+          total: totalData?.pagination?.total || 0,
+          active: activeData?.pagination?.total || 0,
+          inactive: inactiveData?.pagination?.total || 0,
+        })
+      );
     } catch {
       // Stats chỉ là phụ trợ, lỗi chính sẽ hiển thị ở list.
     }
-  };
+  }, [dispatch]);
 
   const fetchUsers = useCallback(async () => {
-    setUsersLoading(true);
-    setUsersError("");
+    dispatch(setUsersLoading(true));
 
     try {
       const data = await userApi.getUsers(queryParams);
-      setUsers(data?.items || []);
-      setPagination({
-        ...DEFAULT_PAGINATION,
-        ...(data?.pagination || {}),
-      });
+      dispatch(setUsersData(data));
     } catch (error) {
-      const message = getApiErrorMessage(
-        error,
-        "Không thể tải danh sách người dùng.",
-      );
-      setUsersError(message);
+      if (error?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể tải danh sách người dùng.");
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
+      dispatch(setUsersError(message));
       toast.error("Tải người dùng thất bại", message);
-    } finally {
-      setUsersLoading(false);
     }
-  }, [queryParams, toast]);
+  }, [queryParams, dispatch, toast]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(
@@ -148,34 +152,8 @@ const useUserManager = () => {
   }, [fetchUsers, filters.search]);
 
   useEffect(() => {
-    let isCancelled = false;
-
-    const loadStats = async () => {
-      try {
-        const [totalData, activeData, inactiveData] = await Promise.all([
-          userApi.getUsers({ page: 1, limit: 1 }),
-          userApi.getUsers({ page: 1, limit: 1, isActive: true }),
-          userApi.getUsers({ page: 1, limit: 1, isActive: false }),
-        ]);
-
-        if (isCancelled) return;
-
-        setStats({
-          total: totalData?.pagination?.total || 0,
-          active: activeData?.pagination?.total || 0,
-          inactive: inactiveData?.pagination?.total || 0,
-        });
-      } catch {
-        // Stats chỉ là phụ trợ, lỗi chính sẽ hiển thị ở list.
-      }
-    };
-
-    loadStats();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
+    fetchStats();
+  }, [fetchStats]);
 
   const handleSearchChange = (event) => {
     setFilters((prev) => ({ ...prev, search: event.target.value, page: 1 }));
@@ -207,6 +185,7 @@ const useUserManager = () => {
     setSelectedUser(null);
     setFormData(DEFAULT_USER_FORM);
     setFieldErrors({});
+    setUsersError("");
     setIsFormOpen(true);
   };
 
@@ -215,6 +194,7 @@ const useUserManager = () => {
     setSelectedUser(user);
     setFormData(toUserForm(user));
     setFieldErrors({});
+    dispatch(setUsersError(null));
     setIsFormOpen(true);
   };
 
@@ -223,12 +203,26 @@ const useUserManager = () => {
     setIsFormOpen(false);
     setSelectedUser(null);
     setFieldErrors({});
+    dispatch(setUsersError(null));
   };
 
   const handleFormChange = (event) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let nextValue = value;
+
+    if (typeof nextValue === "string") {
+      if (name === "username") {
+        nextValue = nextValue.replace(/[^a-zA-Z0-9._-]/g, "");
+      } else if (name === "email") {
+        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
+      } else if (name === "phone") {
+        nextValue = nextValue.replace(/[^0-9+\-()\s]/g, "");
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
     setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    dispatch(setUsersError(null));
   };
 
   const validateUserForm = () => {
@@ -246,12 +240,10 @@ const useUserManager = () => {
     if (formMode === "create") {
       if (!formData.password) {
         nextErrors.password = "Vui lòng nhập mật khẩu.";
-      } else if (
-        formData.password.length < 6 ||
-        formData.password.trim().length < 6
-      ) {
-        nextErrors.password =
-          "Mật khẩu phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+      } else if (formData.password.length < 6 || formData.password.trim().length < 6) {
+        nextErrors.password = "Mật khẩu phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+      } else if (!PASSWORD_ALLOWED_REGEX.test(formData.password)) {
+        nextErrors.password = "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
       }
     }
 
@@ -279,8 +271,7 @@ const useUserManager = () => {
     event.preventDefault();
     if (usersSaving || !validateUserForm()) return;
 
-    setUsersSaving(true);
-    setUsersError("");
+    dispatch(setUsersSaving(true));
 
     try {
       const payload = buildPayload(formData, formMode);
@@ -303,32 +294,37 @@ const useUserManager = () => {
       await fetchUsers();
       await fetchStats();
     } catch (error) {
-      const message = getApiErrorMessage(
+      if (error?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(
+        USER_ERROR_MAP,
         error,
         formMode === "create"
           ? "Không thể tạo người dùng."
           : "Không thể cập nhật người dùng.",
       );
-      setUsersError(message);
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
+      dispatch(setUsersError(message));
       toast.error("Lưu người dùng thất bại", message);
     } finally {
-      setUsersSaving(false);
+      dispatch(setUsersSaving(false));
     }
   };
 
-  const openStatusAction = (user) =>
+  const openStatusAction = (user) => {
+    dispatch(setUsersError(null));
     setStatusAction({ user, nextActive: !user.isActive });
+  };
 
   const closeStatusAction = () => {
     if (usersSaving) return;
     setStatusAction(null);
+    dispatch(setUsersError(null));
   };
 
   const confirmStatusAction = async () => {
     if (!statusAction?.user || usersSaving) return;
 
-    setUsersSaving(true);
-    setUsersError("");
+    dispatch(setUsersSaving(true));
 
     try {
       if (statusAction.nextActive) {
@@ -338,25 +334,21 @@ const useUserManager = () => {
           "Người dùng có thể đăng nhập lại.",
         );
       } else {
-        await userApi.disableUser(statusAction.user._id);
-        toast.success(
-          "Đã tạm khóa tài khoản",
-          "Refresh token của người dùng đã bị thu hồi.",
-        );
+        await userApi.disableUser(statusAction.user._id, authUser?._id);
+        toast.success("Đã tạm khóa tài khoản", "Refresh token của người dùng đã bị thu hồi.");
       }
 
       setStatusAction(null);
       await fetchUsers();
       await fetchStats();
     } catch (error) {
-      const message = getApiErrorMessage(
-        error,
-        "Không thể cập nhật trạng thái người dùng.",
-      );
-      setUsersError(message);
+      if (error?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể cập nhật trạng thái người dùng.");
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
+      dispatch(setUsersError(message));
       toast.error("Cập nhật trạng thái thất bại", message);
     } finally {
-      setUsersSaving(false);
+      dispatch(setUsersSaving(false));
     }
   };
 
@@ -364,18 +356,21 @@ const useUserManager = () => {
     setResetUser(user);
     setResetPasswordForm(DEFAULT_RESET_PASSWORD_FORM);
     setResetPasswordErrors({});
+    dispatch(setUsersError(null));
   };
 
   const closeResetPassword = () => {
     if (usersSaving) return;
     setResetUser(null);
     setResetPasswordErrors({});
+    dispatch(setUsersError(null));
   };
 
   const handleResetPasswordChange = (event) => {
     const { name, value } = event.target;
     setResetPasswordForm((prev) => ({ ...prev, [name]: value }));
     setResetPasswordErrors((prev) => ({ ...prev, [name]: "" }));
+    dispatch(setUsersError(null));
   };
 
   const validateResetPassword = () => {
@@ -387,8 +382,9 @@ const useUserManager = () => {
       resetPasswordForm.newPassword.length < 6 ||
       resetPasswordForm.newPassword.trim().length < 6
     ) {
-      nextErrors.newPassword =
-        "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+      nextErrors.newPassword = "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+    } else if (!PASSWORD_ALLOWED_REGEX.test(resetPasswordForm.newPassword)) {
+      nextErrors.newPassword = "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
     }
 
     if (resetPasswordForm.confirmPassword !== resetPasswordForm.newPassword) {
@@ -403,8 +399,7 @@ const useUserManager = () => {
     event.preventDefault();
     if (usersSaving || !resetUser || !validateResetPassword()) return;
 
-    setUsersSaving(true);
-    setUsersError("");
+    dispatch(setUsersSaving(true));
 
     try {
       await userApi.resetUserPassword(resetUser._id, resetPasswordForm);
@@ -415,14 +410,13 @@ const useUserManager = () => {
       setResetUser(null);
       await fetchUsers();
     } catch (error) {
-      const message = getApiErrorMessage(
-        error,
-        "Không thể đặt lại mật khẩu người dùng.",
-      );
-      setUsersError(message);
+      if (error?.response?.status === 401) return;
+      const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể đặt lại mật khẩu người dùng.");
+      const message = USER_ERROR_MAP[rawMsg] || rawMsg;
+      dispatch(setUsersError(message));
       toast.error("Đặt lại mật khẩu thất bại", message);
     } finally {
-      setUsersSaving(false);
+      dispatch(setUsersSaving(false));
     }
   };
 

@@ -13,13 +13,7 @@ import {
 import ResetPasswordModal from "../components/ResetPasswordModal";
 import UserFormModal from "../components/UserFormModal";
 import useUserManager from "../hooks/useUserManager";
-
-const getInitials = (name = "") => {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "U";
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
-};
+import { getInitials } from "../../../utils/formatters";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -68,7 +62,7 @@ const ActionButtons = ({ user, manager }) => {
     <div className="flex justify-end gap-2">
       <button
         type="button"
-        className="rounded-lg p-2 text-outline hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-lg p-2 text-outline hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center"
         onClick={() => manager.openEditForm(user)}
         title="Chỉnh sửa"
       >
@@ -76,7 +70,7 @@ const ActionButtons = ({ user, manager }) => {
       </button>
       <button
         type="button"
-        className="rounded-lg p-2 text-outline hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-lg p-2 text-outline hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center"
         onClick={() => manager.openResetPassword(user)}
         disabled={!canManage}
         title="Đặt lại mật khẩu"
@@ -85,7 +79,7 @@ const ActionButtons = ({ user, manager }) => {
       </button>
       <button
         type="button"
-        className={`rounded-lg p-2 text-outline disabled:cursor-not-allowed disabled:opacity-40 ${
+        className={`rounded-lg p-2 text-outline disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center ${
           user.isActive
             ? "hover:bg-error-container/30 hover:text-error"
             : "hover:bg-secondary-container/30 hover:text-secondary"
@@ -232,6 +226,7 @@ const UserManagementPage = () => {
         onChange={manager.handleFormChange}
         onSubmit={manager.handleSubmitUser}
         onClose={manager.closeForm}
+        error={manager.usersError}
       />
 
       <ResetPasswordModal
@@ -242,6 +237,7 @@ const UserManagementPage = () => {
         onChange={manager.handleResetPasswordChange}
         onSubmit={manager.submitResetPassword}
         onClose={manager.closeResetPassword}
+        error={manager.usersError}
       />
 
       <ConfirmDialog
@@ -254,6 +250,7 @@ const UserManagementPage = () => {
         isLoading={manager.usersSaving}
         onConfirm={manager.confirmStatusAction}
         onCancel={manager.closeStatusAction}
+        error={manager.usersError}
       />
     </section>
   );

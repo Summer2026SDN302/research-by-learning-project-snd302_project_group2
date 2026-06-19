@@ -17,7 +17,7 @@ const useLogout = () => {
 
     try {
       await authApi.logout();
-    } catch  {
+    } catch {
       // Dù backend logout lỗi, FE vẫn clear session local để tránh kẹt màn hình.
     } finally {
       clearAccessToken();

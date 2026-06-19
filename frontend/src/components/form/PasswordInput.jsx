@@ -21,7 +21,6 @@ const PasswordInput = ({
   leftIcon = null,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const inputType = isVisible ? "text" : "password";
 
   return (
     <div className={wrapperClassName}>
@@ -44,8 +43,10 @@ const PasswordInput = ({
           className={`${inputClassName} ${leftIcon ? "pl-11" : ""} ${
             error ? "border-error" : "border-outline-variant"
           }`}
-          type={inputType}
+          type={isVisible ? "text" : "password"}
           value={value}
+          lang="en"
+          spellCheck={false}
           onChange={onChange}
           onBlur={onBlur}
           autoComplete={autoComplete}

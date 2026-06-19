@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const REFRESH_TOKEN_PATH = "/auth/refresh-token";
 
 let accessToken = null;
@@ -71,8 +72,9 @@ apiClient.interceptors.response.use(
 
     const isUnauthorized = error.response?.status === 401;
     const isRefreshRequest = originalRequest?.url?.includes(REFRESH_TOKEN_PATH);
+    const isLoginRequest = originalRequest?.url?.includes("/auth/login");
 
-    if (!isUnauthorized || originalRequest?._retry || isRefreshRequest) {
+    if (!isUnauthorized || originalRequest?._retry || isRefreshRequest || isLoginRequest) {
       return Promise.reject(error);
     }
 
@@ -102,7 +104,7 @@ apiClient.interceptors.response.use(
       resolvePendingRequests(refreshError);
 
       if (window.location.pathname !== "/login") {
-        window.location.replace("/login");
+        window.location.replace("/login?reason=session_expired");
       }
 
       return Promise.reject(refreshError);

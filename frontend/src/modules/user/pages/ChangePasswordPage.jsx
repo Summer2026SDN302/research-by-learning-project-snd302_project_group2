@@ -17,7 +17,7 @@ const ChangePasswordPage = () => {
   } = useChangePassword();
 
   return (
-    <section className="mx-auto max-w-3xl space-y-6">
+    <section className="mx-auto space-y-6">
       <PageHeader
         breadcrumbs={[{ label: "Tài khoản" }, { label: "Đổi mật khẩu" }]}
         title="Đổi mật khẩu"
@@ -29,11 +29,16 @@ const ChangePasswordPage = () => {
         onSubmit={handleSubmit}
       >
         <div className="mb-6 flex items-start gap-4 rounded-xl bg-primary/10 p-4 text-primary">
-          <span className="material-symbols-outlined text-[32px]">shield_lock</span>
+          <span className="material-symbols-outlined text-[32px]">
+            shield_lock
+          </span>
           <div>
-            <h2 className="text-headline-sm font-bold text-on-surface">Bảo mật tài khoản</h2>
+            <h2 className="text-headline-sm font-bold text-on-surface">
+              Bảo mật tài khoản
+            </h2>
             <p className="mt-1 text-body-sm text-on-surface-variant">
-              Mật khẩu mới phải có ít nhất 6 ký tự và không được chỉ gồm khoảng trắng.
+              Mật khẩu mới phải có ít nhất 6 ký tự và không được chỉ gồm khoảng
+              trắng.
             </p>
           </div>
         </div>
