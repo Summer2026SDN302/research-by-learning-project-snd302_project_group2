@@ -1,6 +1,6 @@
 import SearchBar from "../../../../components/search/SearchBar";
 import FilterBar from "../../../../components/search/FilterBar";
-import { DAILY_MENU_ITEM_STATUS_OPTIONS } from "../../constants/daily-menu/dailyMenuConstants";
+import { DAILY_MENU_ITEM_STATUS_OPTIONS } from "../../constants/dailyMenuConstants";
 
 /**
  * DailyMenuToolbar

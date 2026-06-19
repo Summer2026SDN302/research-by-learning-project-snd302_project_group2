@@ -10,7 +10,7 @@ import {
 } from "../../redux/dailyMenuSlice";
 import useAppToast from "../../../../hooks/useAppToast";
 import { getApiErrorMsg } from "../../../../utils/errorUtils";
-import { DAILY_MENU_ERROR_MAP } from "../../constants/daily-menu/dailyMenuConstants";
+import { DAILY_MENU_ERROR_MAP } from "../../constants/dailyMenuConstants";
 
 /**
  * useDailyMenuItem

@@ -24,7 +24,7 @@ import {
 import {
   DAILY_MENU_PAGE_SIZE,
   DAILY_MENU_ERROR_MAP,
-} from "../../constants/daily-menu/dailyMenuConstants";
+} from "../../constants/dailyMenuConstants";
 import useAppToast from "../../../../hooks/useAppToast";
 import { getApiErrorMsg } from "../../../../utils/errorUtils";
 

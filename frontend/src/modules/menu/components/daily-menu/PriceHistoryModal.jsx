@@ -1,9 +1,9 @@
 import { createPortal } from "react-dom";
 import dayjs from "dayjs";
-import { PRICE_SOURCE } from "../../constants/daily-menu/dailyMenuConstants";
+import { PRICE_SOURCE } from "../../constants/dailyMenuConstants";
 import { formatCurrency } from "../../../../utils/formatters";
 import DataTable from "../../../../components/data-display/DataTable";
-import { HISTORY_COLUMNS } from "../../constants/daily-menu/dailyMenuConstants";
+import { HISTORY_COLUMNS } from "../../constants/dailyMenuConstants";
 import { useState } from "react";
 const formatDate = (d) => (d ? dayjs(d).format("DD/MM/YYYY HH:mm") : "—");
 

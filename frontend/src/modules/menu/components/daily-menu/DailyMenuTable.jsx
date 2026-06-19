@@ -1,7 +1,7 @@
 import DataTable from "../../../../components/data-display/DataTable";
 import StatusBadge from "../../../../components/data-display/StatusBadge";
 import PaginationControl from "../../../../components/navigation/PaginationControl";
-import { DAILY_MENU_TABLE_COLUMNS } from "../../constants/daily-menu/dailyMenuConstants";
+import { DAILY_MENU_TABLE_COLUMNS } from "../../constants/dailyMenuConstants";
 import { formatCurrency } from "../../../../utils/formatters";
 import RowActionsMenu from "./RowActionsMenu";
 

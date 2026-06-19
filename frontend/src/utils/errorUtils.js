@@ -17,7 +17,7 @@
  *
  * @example
  * // In a module hook:
- * import { DAILY_MENU_ERROR_MAP } from '../../constants/daily-menu/dailyMenuConstants';
+ * import { DAILY_MENU_ERROR_MAP } from '../../constants/dailyMenuConstants';
  * import { getApiErrorMsg } from '../../../../utils/errorUtils';
  *
  * catch (err) {

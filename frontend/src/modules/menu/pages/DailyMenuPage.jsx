@@ -1,17 +1,17 @@
-import useDailyMenu from "../../hooks/daily-menu/useDailyMenu";
-import useDailyMenuItem from "../../hooks/daily-menu/useDailyMenuItem";
+import useDailyMenu from "../hooks/daily-menu/useDailyMenu";
+import useDailyMenuItem from "../hooks/daily-menu/useDailyMenuItem";
 import { useSelector } from "react-redux";
 import dayjs from "dayjs";
-import ConfirmDialog from "../../../../components/feedback/ConfirmDialog";
-import PageHeader from "../../../../components/layout/PageHeader";
-import DailyMenuStats from "../../components/daily-menu/DailyMenuStats";
-import DailyMenuToolbar from "../../components/daily-menu/DailyMenuToolbar";
-import DailyMenuTable from "../../components/daily-menu/DailyMenuTable";
-import UpdateItemModal from "../../components/daily-menu/UpdateItemModal";
-import PriceHistoryModal from "../../components/daily-menu/PriceHistoryModal";
-import AddFoodItemModal from "../../components/daily-menu/AddFoodItemModal";
-import GenerateMenuModal from "../../components/daily-menu/GenerateMenuModal";
-import Spinner from "../../../../components/feedback/Spinner";
+import ConfirmDialog from "../../../components/feedback/ConfirmDialog";
+import PageHeader from "../../../components/layout/PageHeader";
+import DailyMenuStats from "../components/daily-menu/DailyMenuStats";
+import DailyMenuToolbar from "../components/daily-menu/DailyMenuToolbar";
+import DailyMenuTable from "../components/daily-menu/DailyMenuTable";
+import UpdateItemModal from "../components/daily-menu/UpdateItemModal";
+import PriceHistoryModal from "../components/daily-menu/PriceHistoryModal";
+import AddFoodItemModal from "../components/daily-menu/AddFoodItemModal";
+import GenerateMenuModal from "../components/daily-menu/GenerateMenuModal";
+import Spinner from "../../../components/feedback/Spinner";
 
 /**
  * DailyMenuPage
@@ -99,7 +99,7 @@ const DailyMenuPage = () => {
                   disabled={isMutating}
                 >
                   <span className="material-symbols-outlined">publish</span>
-                  Công bố thực đơn
+                  Công bộ thực đơn
                 </button>
               )}
               <button

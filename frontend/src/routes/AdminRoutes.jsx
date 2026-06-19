@@ -21,7 +21,7 @@ const FoodItemListPage = lazy(
   () => import("../modules/menu/pages/FoodItemListPage"),
 );
 const DailyMenuPage = lazy(
-  () => import("../modules/menu/pages/daily-menu/DailyMenuPage"),
+  () => import("../modules/menu/pages/DailyMenuPage"),
 );
 
 const AdminRoutes = () => (

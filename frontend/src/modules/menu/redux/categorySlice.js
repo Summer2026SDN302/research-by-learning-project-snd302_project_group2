@@ -94,6 +94,11 @@ const categorySlice = createSlice({
     resetMutationStatus(state) {
       state.mutationStatus = "idle";
     },
+    clearCategories(state) {
+      state.items = [];
+      state.listStatus = "idle";
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -190,6 +195,7 @@ export const {
   clearSelectedCategory,
   clearError,
   resetMutationStatus,
+  clearCategories,
 } = categorySlice.actions;
 
 export default categorySlice.reducer;

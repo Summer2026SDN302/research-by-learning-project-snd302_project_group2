@@ -119,6 +119,12 @@ const foodItemSlice = createSlice({
       state.mutationStatus = "idle";
       state.mutationError = null;
     },
+    clearFoodItems(state) {
+      state.items = [];
+      state.pagination = initialState.pagination;
+      state.listStatus = "idle";
+      state.listError = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -212,6 +218,7 @@ export const {
   clearListError,
   clearMutationError,
   resetMutationState,
+  clearFoodItems,
 } = foodItemSlice.actions;
 
 export default foodItemSlice.reducer;

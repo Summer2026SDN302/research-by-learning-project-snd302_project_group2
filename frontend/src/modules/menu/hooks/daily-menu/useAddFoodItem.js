@@ -1,23 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import * as foodItemApi from "../../api/foodItemApi";
-import * as categoryApi from "../../api/categoryApi";
 import {
-  setFoodItems,
-  setFoodItemsLoading,
-  setFoodItemsError,
+  fetchFoodItems,
   clearFoodItems,
-  selectFoodItems,
-  selectFoodItemsPagination,
-  selectFoodItemsLoading,
 } from "../../redux/foodItemSlice";
 import {
-  setCategories,
-  setCategoriesLoading,
-  setCategoriesError,
+  fetchCategories,
   clearCategories,
-  selectCategories,
 } from "../../redux/categorySlice";
 import useAppToast from "../../../../hooks/useAppToast";
 
@@ -25,17 +15,17 @@ import useAppToast from "../../../../hooks/useAppToast";
  * useAddFoodItem
  *
  * Hook to manage states and side-effects for fetching food items
- * to add to the daily menu.
+ * to add to the daily menu. Uses the existing categories and foodItems submodules.
  *
  */
 export const useAddFoodItem = () => {
   const dispatch = useDispatch();
   const { toast } = useAppToast();
 
-  const items = useSelector(selectFoodItems);
-  const pagination = useSelector(selectFoodItemsPagination);
-  const loading = useSelector(selectFoodItemsLoading);
-  const categories = useSelector(selectCategories);
+  const items = useSelector((state) => state.foodItem.items);
+  const pagination = useSelector((state) => state.foodItem.pagination);
+  const loading = useSelector((state) => state.foodItem.listStatus === "loading");
+  const categories = useSelector((state) => state.category.items);
 
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -43,57 +33,39 @@ export const useAddFoodItem = () => {
 
   // Fetch categories on mount
   useEffect(() => {
-    let active = true;
-    const fetchCategories = async () => {
-      dispatch(setCategoriesLoading(true));
+    const loadCategories = async () => {
       try {
-        const data = await categoryApi.getCategories({
+        await dispatch(fetchCategories({
           isActive: true,
           limit: 50,
-        });
-        if (active) {
-          dispatch(setCategories(data?.items || []));
-        }
+        })).unwrap();
       } catch (err) {
-        const errMsg =
-          err?.response?.data?.message ||
-          err?.message ||
-          "Không thể tải danh sách danh mục.";
-        dispatch(setCategoriesError(errMsg));
-        toast.error("Lỗi", errMsg);
-      } finally {
-        if (active) {
-          dispatch(setCategoriesLoading(false));
-        }
+        toast.error(
+          "Lỗi",
+          err?.message || "Không thể tải danh sách danh mục."
+        );
       }
     };
-    fetchCategories();
-    return () => {
-      active = false;
-    };
+    loadCategories();
   }, [dispatch, toast]);
 
   const fetchItems = useCallback(
     async (params = {}) => {
-      dispatch(setFoodItemsLoading(true));
       try {
-        const data = await foodItemApi.getFoodItems({
-          search: params.search ?? search,
-          categoryId: (params.categoryId ?? categoryId) || undefined,
-          isArchived: false,
-          page: params.page ?? page,
-          limit: 10,
-        });
-        dispatch(setFoodItems(data));
+        await dispatch(
+          fetchFoodItems({
+            search: params.search ?? search,
+            categoryId: (params.categoryId ?? categoryId) || undefined,
+            isArchived: false,
+            page: params.page ?? page,
+            limit: 10,
+          })
+        ).unwrap();
       } catch (err) {
-        const errMsg =
-          err?.response?.data?.message ||
-          err?.message ||
-          "Không thể tải danh sách món ăn.";
-        dispatch(setFoodItemsError(errMsg));
-        toast.error("Lỗi", errMsg);
-      } finally {
-        dispatch(setFoodItemsLoading(false));
+        toast.error(
+          "Lỗi",
+          err?.message || "Không thể tải danh sách món ăn."
+        );
       }
     },
     [dispatch, search, categoryId, page, toast],

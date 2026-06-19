@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import Spinner from "../../../../components/feedback/Spinner";
 import dayjs from "dayjs";
-import { generateMenuSchema } from "../../validation/daily-menu/dailyMenuSchema";
+import { generateMenuSchema } from "../../validation/dailyMenuSchema";
 
 /**
  * GenerateMenuModal

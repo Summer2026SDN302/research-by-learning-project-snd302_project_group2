@@ -2,8 +2,8 @@ import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useForm, useWatch } from "react-hook-form";
 import Spinner from "../../../../components/feedback/Spinner";
-import { DAILY_MENU_ITEM_STATUS } from "../../constants/daily-menu/dailyMenuConstants";
-import { updateItemSchema } from "../../validation/daily-menu/dailyMenuSchema";
+import { DAILY_MENU_ITEM_STATUS } from "../../constants/dailyMenuConstants";
+import { updateItemSchema } from "../../validation/dailyMenuSchema";
 import { formatCurrency } from "../../../../utils/formatters";
 import useAppToast from "../../../../hooks/useAppToast";
 

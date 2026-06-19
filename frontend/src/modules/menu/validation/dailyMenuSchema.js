@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DAILY_MENU_ITEM_STATUS } from '../../constants/daily-menu/dailyMenuConstants';
+import { DAILY_MENU_ITEM_STATUS } from '../constants/dailyMenuConstants';
 
 /** Schema for updating a daily menu item (quantity / price / status) */
 export const updateItemSchema = z

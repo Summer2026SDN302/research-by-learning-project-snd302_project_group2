@@ -99,22 +99,22 @@ const RowActionsMenu = ({
             }}
             className="z-[999] w-48 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest/95 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] py-1.5"
           >
-            {/* {isToday && ( */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                closeDropdown();
-                onEdit?.(row._raw);
-              }}
-              className="group relative flex w-full items-center gap-3 px-4 py-2.5 text-body-sm text-on-surface hover:bg-primary/8 hover:text-primary transition-all duration-200 text-left"
-            >
-              <span className="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-primary transition-colors duration-200">
-                edit
-              </span>
-              <span className="font-medium">Chỉnh sửa</span>
-            </button>
-            {/* )} */}
+            {isToday && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeDropdown();
+                  onEdit?.(row._raw);
+                }}
+                className="group relative flex w-full items-center gap-3 px-4 py-2.5 text-body-sm text-on-surface hover:bg-primary/8 hover:text-primary transition-all duration-200 text-left"
+              >
+                <span className="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-primary transition-colors duration-200">
+                  edit
+                </span>
+                <span className="font-medium">Chỉnh sửa</span>
+              </button>
+            )}
 
             <button
               type="button"
