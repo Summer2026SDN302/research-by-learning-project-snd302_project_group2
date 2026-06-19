@@ -31,14 +31,19 @@ const unwrapResponse = (response) => {
   return payload.data;
 };
 
-export const getCategories = async ({ search = "", page = 1, limit = 10, isActive } = {}) => {
-  try{
-  const params = { page, limit };
-  if (search) params.search = search;
-  if (isActive !== null && isActive !== undefined) params.isActive = isActive;
+export const getCategories = async ({
+  search = "",
+  page = 1,
+  limit = 10,
+  isActive,
+} = {}) => {
+  try {
+    const params = { page, limit };
+    if (search) params.search = search;
+    if (isActive !== null && isActive !== undefined) params.isActive = isActive;
 
-  const response = await apiClient.get(BASE_PATH, { params });
-  return unwrapResponse(response);
+    const response = await apiClient.get(BASE_PATH, { params });
+    return unwrapResponse(response);
   } catch (error) {
     throw normalizeApiError(error);
   }
@@ -73,14 +78,16 @@ export const updateCategory = async (id, body) => {
 
 export const patchCategoryStatus = async (id, isActive) => {
   try {
-    const response = await apiClient.patch(`${BASE_PATH}/${id}/status`, { isActive });
+    const response = await apiClient.patch(`${BASE_PATH}/${id}/status`, {
+      isActive,
+    });
     return unwrapResponse(response);
   } catch (error) {
     throw normalizeApiError(error);
   }
 };
 
-export const deleteCategory  = async (id) => {
+export const deleteCategory = async (id) => {
   try {
     const response = await apiClient.patch(`${BASE_PATH}/${id}/status`, {
       isActive: false,

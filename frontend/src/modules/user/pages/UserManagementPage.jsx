@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import DataTable from "../../../components/data-display/DataTable";
 import StatusBadge from "../../../components/data-display/StatusBadge";
 import StatisticCard from "../../../components/data-display/StatisticCard";
@@ -240,18 +241,21 @@ const UserManagementPage = () => {
         error={manager.usersError}
       />
 
-      <ConfirmDialog
-        open={Boolean(manager.statusAction)}
-        title={statusDialogTitle}
-        description={statusDialogDescription}
-        confirmLabel={manager.statusAction?.nextActive ? "Mở khóa" : "Tạm khóa"}
-        cancelLabel="Hủy"
-        variant={manager.statusAction?.nextActive ? "info" : "danger"}
-        isLoading={manager.usersSaving}
-        onConfirm={manager.confirmStatusAction}
-        onCancel={manager.closeStatusAction}
-        error={manager.usersError}
-      />
+      {createPortal(
+        <ConfirmDialog
+          open={Boolean(manager.statusAction)}
+          title={statusDialogTitle}
+          description={statusDialogDescription}
+          confirmLabel={manager.statusAction?.nextActive ? "Mở khóa" : "Tạm khóa"}
+          cancelLabel="Hủy"
+          variant={manager.statusAction?.nextActive ? "info" : "danger"}
+          isLoading={manager.usersSaving}
+          onConfirm={manager.confirmStatusAction}
+          onCancel={manager.closeStatusAction}
+          error={manager.usersError}
+        />,
+        document.body,
+      )}
     </section>
   );
 };

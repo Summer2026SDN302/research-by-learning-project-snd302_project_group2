@@ -94,6 +94,11 @@ const categorySlice = createSlice({
     resetMutationStatus(state) {
       state.mutationStatus = "idle";
     },
+    clearCategories(state) {
+      state.items = [];
+      state.listStatus = "idle";
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -153,7 +158,9 @@ const categorySlice = createSlice({
       })
       .addCase(toggleCategoryStatus.fulfilled, (state, action) => {
         state.mutationStatus = "succeeded";
-        const index = state.items.findIndex((item) => item._id === action.payload._id);
+        const index = state.items.findIndex(
+          (item) => item._id === action.payload._id,
+        );
         if (index !== -1) state.items[index] = action.payload;
       })
       .addCase(toggleCategoryStatus.rejected, (state, action) => {
@@ -166,16 +173,16 @@ const categorySlice = createSlice({
         state.error = null;
       })
       .addCase(deleteCategory.fulfilled, (state, action) => {
-  state.mutationStatus = "succeeded";
+        state.mutationStatus = "succeeded";
 
-  const index = state.items.findIndex(
-    (item) => item._id === action.payload._id,
-  );
+        const index = state.items.findIndex(
+          (item) => item._id === action.payload._id,
+        );
 
-  if (index !== -1) {
-    state.items[index] = action.payload;
-  }
-})
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
       .addCase(deleteCategory.rejected, (state, action) => {
         state.mutationStatus = "failed";
         state.error = action.payload;
@@ -183,7 +190,12 @@ const categorySlice = createSlice({
   },
 });
 
-export const { setFilters, clearSelectedCategory, clearError, resetMutationStatus } =
-  categorySlice.actions;
+export const {
+  setFilters,
+  clearSelectedCategory,
+  clearError,
+  resetMutationStatus,
+  clearCategories,
+} = categorySlice.actions;
 
 export default categorySlice.reducer;

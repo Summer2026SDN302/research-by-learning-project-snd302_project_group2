@@ -20,6 +20,9 @@ const CategoryListPage = lazy(
 const FoodItemListPage = lazy(
   () => import("../modules/menu/pages/FoodItemListPage"),
 );
+const DailyMenuPage = lazy(
+  () => import("../modules/menu/pages/DailyMenuPage"),
+);
 
 const AdminRoutes = () => (
   <Route path="/admin" element={<MainLayout role="admin" />}>
@@ -35,10 +38,7 @@ const AdminRoutes = () => (
     />
     <Route path="food-items" element={<FoodItemListPage title="Món ăn" />} />
     <Route path="scheduled-menu" element={<ScheduledMenuPage />} />
-    <Route
-      path="daily-menu"
-      element={<PlaceholderPage title="Thực đơn hôm nay" />}
-    />
+    <Route path="daily-menu" element={<DailyMenuPage />} />
     <Route path="orders" element={<PlaceholderPage title="Đơn hàng" />} />
     <Route path="payments" element={<PlaceholderPage title="Thanh toán" />} />
     <Route path="ai" element={<PlaceholderPage title="Phân tích & Dự báo" />} />

@@ -16,6 +16,9 @@ const CategoryListPage = lazy(
 const FoodItemListPage = lazy(
   () => import("../modules/menu/pages/FoodItemListPage"),
 );
+const DailyMenuPage = lazy(
+  () => import("../modules/menu/pages/DailyMenuPage"),
+);
 
 const ManagerRoutes = () => (
   <Route path="/manager" element={<MainLayout role="manager" />}>
@@ -29,10 +32,7 @@ const ManagerRoutes = () => (
       path="my-orders"
       element={<PlaceholderPage title="Đơn hàng của tôi" />}
     />
-    <Route
-      path="daily-menu"
-      element={<PlaceholderPage title="Thực đơn hôm nay" />}
-    />
+    <Route path="daily-menu" element={<DailyMenuPage />} />
     <Route
       path="scheduled-menu"
       element={<ScheduledMenuPage title="Thực đơn theo lịch" />}

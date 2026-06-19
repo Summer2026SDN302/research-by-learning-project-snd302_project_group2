@@ -1,9 +1,9 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import * as foodItemApi from '../api/foodItemApi';
-import { DEFAULT_FOOD_ITEM_PAGE_SIZE } from '../constants/foodItemConstants';
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import * as foodItemApi from "../api/foodItemApi";
+import { DEFAULT_FOOD_ITEM_PAGE_SIZE } from "../constants/foodItemConstants";
 
 export const fetchFoodItems = createAsyncThunk(
-  'foodItem/fetchFoodItems',
+  "foodItem/fetchFoodItems",
   async (params, { rejectWithValue }) => {
     try {
       return await foodItemApi.getFoodItems(params);
@@ -14,7 +14,7 @@ export const fetchFoodItems = createAsyncThunk(
 );
 
 export const fetchFoodItemById = createAsyncThunk(
-  'foodItem/fetchFoodItemById',
+  "foodItem/fetchFoodItemById",
   async (id, { rejectWithValue }) => {
     try {
       return await foodItemApi.getFoodItemById(id);
@@ -25,7 +25,7 @@ export const fetchFoodItemById = createAsyncThunk(
 );
 
 export const createFoodItem = createAsyncThunk(
-  'foodItem/createFoodItem',
+  "foodItem/createFoodItem",
   async (body, { rejectWithValue }) => {
     try {
       return await foodItemApi.createFoodItem(body);
@@ -36,7 +36,7 @@ export const createFoodItem = createAsyncThunk(
 );
 
 export const updateFoodItem = createAsyncThunk(
-  'foodItem/updateFoodItem',
+  "foodItem/updateFoodItem",
   async ({ id, body }, { rejectWithValue }) => {
     try {
       return await foodItemApi.updateFoodItem(id, body);
@@ -47,7 +47,7 @@ export const updateFoodItem = createAsyncThunk(
 );
 
 export const toggleFoodItemArchive = createAsyncThunk(
-  'foodItem/toggleFoodItemArchive',
+  "foodItem/toggleFoodItemArchive",
   async ({ id, isArchived }, { rejectWithValue }) => {
     try {
       return await foodItemApi.updateFoodItemArchive(id, isArchived);
@@ -58,7 +58,7 @@ export const toggleFoodItemArchive = createAsyncThunk(
 );
 
 export const deleteFoodItem = createAsyncThunk(
-  'foodItem/deleteFoodItem',
+  "foodItem/deleteFoodItem",
   async (id, { rejectWithValue }) => {
     try {
       return await foodItemApi.deleteFoodItem(id);
@@ -70,29 +70,34 @@ export const deleteFoodItem = createAsyncThunk(
 
 const initialState = {
   items: [],
-  pagination: { page: 1, limit: DEFAULT_FOOD_ITEM_PAGE_SIZE, total: 0, totalPages: 0 },
-  filters: { search: '', categoryId: '', isArchived: '' },
+  pagination: {
+    page: 1,
+    limit: DEFAULT_FOOD_ITEM_PAGE_SIZE,
+    total: 0,
+    totalPages: 0,
+  },
+  filters: { search: "", categoryId: "", isArchived: "" },
   selectedItem: null,
-  listStatus: 'idle',
+  listStatus: "idle",
   listError: null,
-  mutationStatus: 'idle',
+  mutationStatus: "idle",
   mutationError: null,
 };
 
 const foodItemSlice = createSlice({
-  name: 'foodItem',
+  name: "foodItem",
   initialState,
   reducers: {
     setSearch(state, action) {
-      state.filters.search = action.payload ?? '';
+      state.filters.search = action.payload ?? "";
       state.pagination.page = 1;
     },
     setCategoryFilter(state, action) {
-      state.filters.categoryId = action.payload ?? '';
+      state.filters.categoryId = action.payload ?? "";
       state.pagination.page = 1;
     },
     setArchivedFilter(state, action) {
-      state.filters.isArchived = action.payload ?? '';
+      state.filters.isArchived = action.payload ?? "";
       state.pagination.page = 1;
     },
     setPage(state, action) {
@@ -111,87 +116,93 @@ const foodItemSlice = createSlice({
       state.mutationError = null;
     },
     resetMutationState(state) {
-      state.mutationStatus = 'idle';
+      state.mutationStatus = "idle";
       state.mutationError = null;
+    },
+    clearFoodItems(state) {
+      state.items = [];
+      state.pagination = initialState.pagination;
+      state.listStatus = "idle";
+      state.listError = null;
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchFoodItems.pending, (state) => {
-        state.listStatus = 'loading';
+        state.listStatus = "loading";
         state.listError = null;
       })
       .addCase(fetchFoodItems.fulfilled, (state, action) => {
-        state.listStatus = 'succeeded';
+        state.listStatus = "succeeded";
         state.items = action.payload.items ?? [];
         state.pagination = action.payload.pagination ?? initialState.pagination;
       })
       .addCase(fetchFoodItems.rejected, (state, action) => {
-        state.listStatus = 'failed';
+        state.listStatus = "failed";
         state.listError = action.payload;
       })
       .addCase(fetchFoodItemById.pending, (state) => {
-        state.mutationStatus = 'loading';
+        state.mutationStatus = "loading";
         state.mutationError = null;
       })
       .addCase(fetchFoodItemById.fulfilled, (state, action) => {
-        state.mutationStatus = 'idle';
+        state.mutationStatus = "idle";
         state.selectedItem = action.payload;
       })
       .addCase(fetchFoodItemById.rejected, (state, action) => {
-        state.mutationStatus = 'idle';
+        state.mutationStatus = "idle";
         state.mutationError = action.payload;
       })
       .addCase(createFoodItem.pending, (state) => {
-        state.mutationStatus = 'loading';
+        state.mutationStatus = "loading";
         state.mutationError = null;
       })
       .addCase(createFoodItem.fulfilled, (state) => {
-        state.mutationStatus = 'succeeded';
+        state.mutationStatus = "succeeded";
       })
       .addCase(createFoodItem.rejected, (state, action) => {
-        state.mutationStatus = 'failed';
+        state.mutationStatus = "failed";
         state.mutationError = action.payload;
       })
       .addCase(updateFoodItem.pending, (state) => {
-        state.mutationStatus = 'loading';
+        state.mutationStatus = "loading";
         state.mutationError = null;
       })
       .addCase(updateFoodItem.fulfilled, (state) => {
-        state.mutationStatus = 'succeeded';
+        state.mutationStatus = "succeeded";
       })
       .addCase(updateFoodItem.rejected, (state, action) => {
-        state.mutationStatus = 'failed';
+        state.mutationStatus = "failed";
         state.mutationError = action.payload;
       })
       .addCase(toggleFoodItemArchive.pending, (state) => {
-        state.mutationStatus = 'loading';
+        state.mutationStatus = "loading";
         state.mutationError = null;
       })
       .addCase(toggleFoodItemArchive.fulfilled, (state) => {
-        state.mutationStatus = 'succeeded';
+        state.mutationStatus = "succeeded";
       })
       .addCase(toggleFoodItemArchive.rejected, (state, action) => {
-        state.mutationStatus = 'failed';
+        state.mutationStatus = "failed";
         state.mutationError = action.payload;
       })
       .addCase(deleteFoodItem.pending, (state) => {
-        state.mutationStatus = 'loading';
+        state.mutationStatus = "loading";
         state.mutationError = null;
       })
       .addCase(deleteFoodItem.fulfilled, (state, action) => {
-  state.mutationStatus = 'succeeded';
+        state.mutationStatus = "succeeded";
 
-  const index = state.items.findIndex(
-    (item) => item._id === action.payload?._id,
-  );
+        const index = state.items.findIndex(
+          (item) => item._id === action.payload?._id,
+        );
 
-  if (index !== -1) {
-    state.items[index] = action.payload;
-  }
-})
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
       .addCase(deleteFoodItem.rejected, (state, action) => {
-        state.mutationStatus = 'failed';
+        state.mutationStatus = "failed";
         state.mutationError = action.payload;
       });
   },
@@ -207,6 +218,7 @@ export const {
   clearListError,
   clearMutationError,
   resetMutationState,
+  clearFoodItems,
 } = foodItemSlice.actions;
 
 export default foodItemSlice.reducer;
