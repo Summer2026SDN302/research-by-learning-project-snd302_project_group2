@@ -5,7 +5,7 @@ import SearchBar from "../../../../components/search/SearchBar";
 import FilterBar from "../../../../components/search/FilterBar";
 import Spinner from "../../../../components/feedback/Spinner";
 import PaginationControl from "../../../../components/navigation/PaginationControl";
-import { formatVND } from "../../../../utils/formatters";
+import { formatCurrency } from "../../../../utils/formatters";
 
 /**
  * AddFoodItemModal
@@ -198,7 +198,7 @@ const AddFoodItemModal = ({
                       {fi.name}
                     </p>
                     <p className="text-[11px] text-on-surface-variant">
-                      {fi.categoryName ?? "—"} • {formatVND(fi.basePrice)}
+                      {fi.categoryName ?? "—"} • {formatCurrency(fi.basePrice)}
                     </p>
                   </div>
 

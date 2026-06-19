@@ -7,5 +7,13 @@
  * @param {number} n
  * @returns {string}
  */
-export const formatVND = (n) =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n ?? 0);
+const vndFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  maximumFractionDigits: 0,
+});
+
+export const formatCurrency = (value) => {
+  const number = Number(value);
+  return Number.isNaN(number) ? "—" : vndFormatter.format(number);
+};

@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 import dayjs from "dayjs";
 import { PRICE_SOURCE } from "../../constants/daily-menu/dailyMenuConstants";
-import { formatVND } from "../../../../utils/formatters";
+import { formatCurrency } from "../../../../utils/formatters";
 import DataTable from "../../../../components/data-display/DataTable";
 import { HISTORY_COLUMNS } from "../../constants/daily-menu/dailyMenuConstants";
 import { useState } from "react";
@@ -60,7 +60,7 @@ const PriceHistoryModal = ({ open, item, onClose, isAdmin }) => {
         return formatDate(value);
 
       case "oldValue":
-        return formatVND(value);
+        return formatCurrency(value);
 
       case "newValue": {
         const diff = (row.newValue ?? 0) - (row.oldValue ?? 0);
@@ -69,11 +69,11 @@ const PriceHistoryModal = ({ open, item, onClose, isAdmin }) => {
         const diffSign = diff > 0 ? "+" : "";
         return (
           <span className="font-semibold">
-            {formatVND(value)}
+            {formatCurrency(value)}
             <br />
             <span className={`text-[11px] ${diffColor}`}>
               ({diffSign}
-              {formatVND(diff)})
+              {formatCurrency(diff)})
             </span>
           </span>
         );
@@ -177,13 +177,13 @@ const PriceHistoryModal = ({ open, item, onClose, isAdmin }) => {
             Giá hiện tại:
           </span>
           <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-bold text-body-sm">
-            {formatVND(item.currentPrice)}
+            {formatCurrency(item.currentPrice)}
           </span>
           <span className="text-label-md text-on-surface-variant ml-2">
             Giá gốc:
           </span>
           <span className="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-body-sm">
-            {formatVND(item.originalPrice)}
+            {formatCurrency(item.originalPrice)}
           </span>
         </div>
 

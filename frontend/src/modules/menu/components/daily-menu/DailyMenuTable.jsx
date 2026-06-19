@@ -2,7 +2,7 @@ import DataTable from "../../../../components/data-display/DataTable";
 import StatusBadge from "../../../../components/data-display/StatusBadge";
 import PaginationControl from "../../../../components/navigation/PaginationControl";
 import { DAILY_MENU_TABLE_COLUMNS } from "../../constants/daily-menu/dailyMenuConstants";
-import { formatVND } from "../../../../utils/formatters";
+import { formatCurrency } from "../../../../utils/formatters";
 import RowActionsMenu from "./RowActionsMenu";
 
 /**
@@ -54,7 +54,7 @@ const DailyMenuTable = ({
     switch (key) {
       case "originalPrice":
       case "currentPrice":
-        return <span className="font-medium">{formatVND(value)}</span>;
+        return <span className="font-medium">{formatCurrency(value)}</span>;
 
       case "preparedQuantity":
         return (

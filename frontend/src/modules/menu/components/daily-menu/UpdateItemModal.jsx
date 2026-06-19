@@ -4,7 +4,7 @@ import { useForm, useWatch } from "react-hook-form";
 import Spinner from "../../../../components/feedback/Spinner";
 import { DAILY_MENU_ITEM_STATUS } from "../../constants/daily-menu/dailyMenuConstants";
 import { updateItemSchema } from "../../validation/daily-menu/dailyMenuSchema";
-import { formatVND } from "../../../../utils/formatters";
+import { formatCurrency } from "../../../../utils/formatters";
 import useAppToast from "../../../../hooks/useAppToast";
 
 // Parser to convert form input strings to numbers or undefined
@@ -177,7 +177,7 @@ const UpdateItemModal = ({ open, item, onSubmit, onClose, isLoading }) => {
         <div className="flex flex-wrap gap-2 mb-5">
           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-surface-container text-body-sm text-on-surface-variant">
             <span className="material-symbols-outlined text-[14px]">sell</span>
-            Giá gốc: {formatVND(item.originalPrice)}
+            Giá gốc: {formatCurrency(item.originalPrice)}
           </span>
           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-surface-container text-body-sm text-on-surface-variant">
             <span className="material-symbols-outlined text-[14px]">
