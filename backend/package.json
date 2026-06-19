@@ -5,7 +5,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js"
   },
@@ -23,10 +24,12 @@
     "mongoose": "^9.6.3",
     "morgan": "^1.10.1",
     "node-cron": "^4.2.1",
-    "socket.io": "^4.8.3",
-    "nodemailer": "^8.0.11"
+    "nodemailer": "^8.0.11",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.9"
   }
 }
