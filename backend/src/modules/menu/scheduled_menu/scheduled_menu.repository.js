@@ -23,23 +23,21 @@ const scheduledMenuRepository = {
   },
 
   async upsertByDay(day, menuItems, userId) {
-    const existing = await ScheduledMenu.findOne({ dayOfWeek: day });
-
-    if (existing) {
-      existing.menuItems = menuItems;
-      existing.updatedBy = toObjectId(userId);
-      await existing.save();
-      return ScheduledMenu.findById(existing._id).populate(FOOD_ITEM_POPULATE).lean();
-    }
-
-    const created = await ScheduledMenu.create({
-      dayOfWeek: day,
-      menuItems,
-      createdBy: toObjectId(userId),
-      updatedBy: null,
-    });
-
-    return ScheduledMenu.findById(created._id).populate(FOOD_ITEM_POPULATE).lean();
+    return ScheduledMenu.findOneAndUpdate(
+      { dayOfWeek: day },
+      {
+        $set: {
+          menuItems,
+          updatedBy: toObjectId(userId),
+        },
+        $setOnInsert: {
+          createdBy: toObjectId(userId),
+        },
+      },
+      { upsert: true, returnDocument: "after", runValidators: true }
+    )
+      .populate(FOOD_ITEM_POPULATE)
+      .lean();
   },
 };
 
