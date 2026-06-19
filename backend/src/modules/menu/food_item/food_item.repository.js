@@ -107,6 +107,17 @@ const foodItemRepository = {
     });
   },
 
+  async countActiveByIds(ids) {
+    if (!ids.length) {
+      return 0;
+    }
+
+    return FoodItem.countDocuments({
+      _id: { $in: ids.map(toObjectId) },
+      deletedAt: null,
+    });
+  },
+
   async create(data) {
     return FoodItem.create(data);
   },

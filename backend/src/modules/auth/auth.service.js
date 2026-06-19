@@ -222,7 +222,7 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
     );
   }
 
-  const passwordResetToken = await authRepository.findValidPasswordResetOtp({
+  const passwordResetToken = await authRepository.findAndIncrementPasswordResetOtpAttempts({
     userId: user._id,
     otpHash: hashToken(String(otp || "").trim()),
   });
@@ -235,7 +235,7 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
     );
   }
 
-  if (passwordResetToken.attempts >= MAX_RESET_OTP_ATTEMPTS) {
+  if (passwordResetToken.attempts > MAX_RESET_OTP_ATTEMPTS) {
     await authRepository.markPasswordResetTokenAsUsed(passwordResetToken);
 
     throw new AppError(
@@ -244,8 +244,6 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
       "RESET_OTP_ATTEMPTS_EXCEEDED",
     );
   }
-
-  await authRepository.increasePasswordResetOtpAttempts(passwordResetToken);
 
   const isSamePassword = await comparePassword(newPassword, user.passwordHash);
 
