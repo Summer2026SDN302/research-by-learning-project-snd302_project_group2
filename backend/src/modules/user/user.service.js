@@ -115,7 +115,7 @@ export const getUsers = async ({
   const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
   const skip = (safePage - 1) * safeLimit;
 
-  const filter = { deletedAt: null };
+  const filter = {};
 
   if (role) filter.role = role;
 
@@ -222,6 +222,8 @@ export const disableUser = async (id, adminUserId) => {
   }
 
   user.isActive = false;
+  user.deletedAt = new Date();
+  user.deletedBy = adminUserId;
 
   await userRepository.saveUser(user);
   await revokeUserRefreshTokens(user._id);
@@ -230,9 +232,23 @@ export const disableUser = async (id, adminUserId) => {
 };
 
 export const enableUser = async (id) => {
-  const user = await findActiveUserById(id);
+  const user = await userRepository.findUserByIdIncludingDeleted(id);
+
+  if (!user) {
+    throw new AppError("User not found", 404, "USER_NOT_FOUND");
+  }
+
+  if (user.isActive) {
+    throw new AppError(
+      "User is already enabled",
+      409,
+      "USER_ALREADY_ENABLED",
+    );
+  }
 
   user.isActive = true;
+  user.deletedAt = null;
+  user.deletedBy = null;
 
   await userRepository.saveUser(user);
 
