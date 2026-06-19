@@ -9,6 +9,7 @@ import scheduledMenuRoute from "./modules/menu/scheduled_menu/scheduled_menu.rou
 import authRoute from "./modules/auth/auth.route.js";
 import profileRoute from "./modules/user/profile.route.js";
 import userRoute from "./modules/user/user.route.js";
+import dailyMenuRoute from "./modules/menu/daily-menu/daily-menu.route.js";
 import {
   errorHandler,
   notFoundHandler,
@@ -39,6 +40,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoute);
 app.use("/api/profile", profileRoute);
 app.use("/api/users", userRoute);
+app.use("/api/daily-menu", dailyMenuRoute);
 app.use("/api/categories", categoryRoute);
 app.use("/api/food-items", foodItemRoute);
 app.use("/api/scheduled-menu", scheduledMenuRoute);

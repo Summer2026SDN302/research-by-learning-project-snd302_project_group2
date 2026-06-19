@@ -7,7 +7,7 @@ import {
 } from "../../../shared/helpers/query.helper.js";
 import orderRepository from "../../order/order.repository.js";
 import categoryRepository from "../category/category.repository.js";
-import dailyMenuRepository from "../daily_menu/daily_menu.repository.js";
+import * as dailyMenuRepository from "../daily-menu/daily-menu.repository.js";
 import scheduledMenuRepository from "../scheduled_menu/scheduled_menu.repository.js";
 import foodItemRepository from "./food_item.repository.js";
 import { toFoodItemResponse } from "./food_item.dto.js";
