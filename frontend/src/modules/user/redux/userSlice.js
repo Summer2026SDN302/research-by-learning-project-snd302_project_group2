@@ -47,7 +47,7 @@ const userSlice = createSlice({
     setProfileError: (state, action) => {
       state.profileLoading = false;
       state.profileSaving = false;
-      state.profileError = action.payload || "Không thể tải hồ sơ.";
+      state.profileError = action.payload === undefined ? "Không thể tải hồ sơ." : action.payload;
     },
 
     setUsersLoading: (state, action) => {
@@ -80,7 +80,7 @@ const userSlice = createSlice({
     setUsersError: (state, action) => {
       state.usersLoading = false;
       state.usersSaving = false;
-      state.usersError = action.payload || "Không thể tải danh sách người dùng.";
+      state.usersError = action.payload === undefined ? "Không thể tải danh sách người dùng." : action.payload;
     },
   },
 });

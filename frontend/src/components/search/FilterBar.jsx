@@ -10,9 +10,9 @@
 const MOCK_FILTERS = [
   {
     key: 'role',
-    label: 'Role',
+    label: 'Vai trò',
     options: [
-      { value: '', label: 'All Roles' },
+      { value: '', label: 'Tất cả vai trò' },
       { value: 'admin', label: 'Admin' },
       { value: 'manager', label: 'Manager' },
       { value: 'staff', label: 'Staff' },
@@ -20,11 +20,11 @@ const MOCK_FILTERS = [
   },
   {
     key: 'status',
-    label: 'Status',
+    label: 'Trạng thái',
     options: [
-      { value: '', label: 'All Status' },
-      { value: 'active', label: 'Active' },
-      { value: 'inactive', label: 'Inactive' },
+      { value: '', label: 'Tất cả trạng thái' },
+      { value: 'active', label: 'Đang hoạt động' },
+      { value: 'inactive', label: 'Tạm khóa' },
     ],
   },
 ];

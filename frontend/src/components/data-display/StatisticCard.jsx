@@ -29,7 +29,9 @@ const StatisticCard = ({
   return (
     <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-soft p-6 flex items-center gap-4 hover:shadow-elevated transition-shadow duration-200">
       {/* Icon */}
-      <div className={`${bg} ${text} p-4 rounded-xl shrink-0`}>
+      <div
+        className={`${bg} ${text} p-4 rounded-xl shrink-0 flex items-center justify-center`}
+      >
         <span
           className="material-symbols-outlined text-[28px]"
           style={{ fontVariationSettings: "'FILL' 0, 'wght' 400, 'opsz' 32" }}

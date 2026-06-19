@@ -50,7 +50,7 @@ const SearchBar = ({
         <button
           onClick={handleClear}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors"
-          aria-label="Clear search"
+          aria-label="Xóa nội dung tìm kiếm"
         >
           <span className="material-symbols-outlined text-[18px]">close</span>
         </button>

@@ -15,7 +15,13 @@ export const logout = async () => {
   return response.data.data;
 };
 
-export const getProfile = async () => {
-  const response = await apiClient.get("/profile/me");
+export const forgotPassword = async (payload) => {
+  const response = await apiClient.post("/auth/forgot-password", payload);
   return response.data.data;
 };
+
+export const resetPassword = async (payload) => {
+  const response = await apiClient.post("/auth/reset-password", payload);
+  return response.data.data;
+};
+

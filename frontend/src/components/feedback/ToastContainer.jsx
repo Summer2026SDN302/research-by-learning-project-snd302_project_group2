@@ -15,7 +15,7 @@ const ToastContainer = () => {
   if (!toasts.length) return null;
 
   return (
-    <div className="fixed top-5 right-5 z-[300] flex flex-col gap-2">
+    <div className="fixed top-5 right-5 z-[99999] flex flex-col gap-2" style={{ zIndex: 99999 }}>
       {toasts.map((toast) => (
         <Toast key={toast.id} {...toast} onClose={handleClose} />
       ))}

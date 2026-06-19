@@ -35,9 +35,15 @@ const Sidebar = ({
     >
       {/* Brand */}
       <div className="px-6 py-8 border-b border-outline-variant/40">
-        <h1 className="text-headline-sm font-bold text-primary leading-tight">
-          StallBox
-        </h1>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-left hover:opacity-85 active:scale-[0.98] transition-all duration-150 focus:outline-none"
+          title="Tải lại trang"
+        >
+          <h1 className="text-headline-sm font-bold text-primary leading-tight">
+            StallBox
+          </h1>
+        </button>
         {!collapsed && (
           <p className="text-label-md text-on-surface-variant mt-0.5">
             {ROLE_LABEL[role]}

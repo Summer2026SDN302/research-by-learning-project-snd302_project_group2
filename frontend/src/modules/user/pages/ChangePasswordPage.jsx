@@ -1,15 +1,10 @@
+import PasswordInput from "../../../components/form/PasswordInput";
 import Spinner from "../../../components/feedback/Spinner";
 import PageHeader from "../../../components/layout/PageHeader";
 import useChangePassword from "../hooks/useChangePassword";
 
 const inputClass =
-  "w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2.5 text-body-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15";
-
-const FieldError = ({ message, helper }) => {
-  if (message) return <p className="mt-1 text-body-sm text-error">{message}</p>;
-  if (helper) return <p className="mt-1 text-body-sm text-on-surface-variant/70">{helper}</p>;
-  return null;
-};
+  "w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2.5 pr-11 text-body-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15";
 
 const ChangePasswordPage = () => {
   const {
@@ -22,7 +17,7 @@ const ChangePasswordPage = () => {
   } = useChangePassword();
 
   return (
-    <section className="mx-auto max-w-3xl space-y-6">
+    <section className="mx-auto space-y-6">
       <PageHeader
         breadcrumbs={[{ label: "Tài khoản" }, { label: "Đổi mật khẩu" }]}
         title="Đổi mật khẩu"
@@ -34,11 +29,16 @@ const ChangePasswordPage = () => {
         onSubmit={handleSubmit}
       >
         <div className="mb-6 flex items-start gap-4 rounded-xl bg-primary/10 p-4 text-primary">
-          <span className="material-symbols-outlined text-[32px]">shield_lock</span>
+          <span className="material-symbols-outlined text-[32px]">
+            shield_lock
+          </span>
           <div>
-            <h2 className="text-headline-sm font-bold text-on-surface">Bảo mật tài khoản</h2>
+            <h2 className="text-headline-sm font-bold text-on-surface">
+              Bảo mật tài khoản
+            </h2>
             <p className="mt-1 text-body-sm text-on-surface-variant">
-              Mật khẩu mới phải có ít nhất 6 ký tự và không được chỉ gồm khoảng trắng.
+              Mật khẩu mới phải có ít nhất 6 ký tự và không được chỉ gồm khoảng
+              trắng.
             </p>
           </div>
         </div>
@@ -50,56 +50,44 @@ const ChangePasswordPage = () => {
         )}
 
         <div className="space-y-5">
-          <div>
-            <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="currentPassword">
-              Mật khẩu hiện tại
-            </label>
-            <input
-              id="currentPassword"
-              name="currentPassword"
-              className={inputClass}
-              type="password"
-              value={formData.currentPassword}
-              onChange={handleChange}
-              autoComplete="current-password"
-              disabled={isLoading}
-            />
-            <FieldError message={fieldErrors.currentPassword} helper="Nhập mật khẩu hiện tại để xác nhận quyền đổi mật khẩu." />
-          </div>
+          <PasswordInput
+            id="currentPassword"
+            name="currentPassword"
+            label="Mật khẩu hiện tại"
+            value={formData.currentPassword}
+            onChange={handleChange}
+            error={fieldErrors.currentPassword}
+            helper="Nhập mật khẩu hiện tại để xác nhận quyền đổi mật khẩu."
+            autoComplete="current-password"
+            disabled={isLoading}
+            inputClassName={inputClass}
+          />
 
-          <div>
-            <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="newPassword">
-              Mật khẩu mới
-            </label>
-            <input
-              id="newPassword"
-              name="newPassword"
-              className={inputClass}
-              type="password"
-              value={formData.newPassword}
-              onChange={handleChange}
-              autoComplete="new-password"
-              disabled={isLoading}
-            />
-            <FieldError message={fieldErrors.newPassword} helper="Ít nhất 6 ký tự và phải khác mật khẩu hiện tại." />
-          </div>
+          <PasswordInput
+            id="newPassword"
+            name="newPassword"
+            label="Mật khẩu mới"
+            value={formData.newPassword}
+            onChange={handleChange}
+            error={fieldErrors.newPassword}
+            helper="Ít nhất 6 ký tự và phải khác mật khẩu hiện tại."
+            autoComplete="new-password"
+            disabled={isLoading}
+            inputClassName={inputClass}
+          />
 
-          <div>
-            <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="confirmPassword">
-              Xác nhận mật khẩu mới
-            </label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              className={inputClass}
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              autoComplete="new-password"
-              disabled={isLoading}
-            />
-            <FieldError message={fieldErrors.confirmPassword} helper="Nhập lại mật khẩu mới giống phía trên." />
-          </div>
+          <PasswordInput
+            id="confirmPassword"
+            name="confirmPassword"
+            label="Xác nhận mật khẩu mới"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            error={fieldErrors.confirmPassword}
+            helper="Nhập lại mật khẩu mới giống phía trên."
+            autoComplete="new-password"
+            disabled={isLoading}
+            inputClassName={inputClass}
+          />
         </div>
 
         <div className="mt-6 flex justify-end border-t border-outline-variant pt-5">

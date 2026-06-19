@@ -1,7 +1,11 @@
 import { Link } from "react-router-dom";
 
+import PasswordInput from "../../../components/form/PasswordInput";
 import Spinner from "../../../components/feedback/Spinner";
 import useLogin from "../hooks/useLogin";
+
+const loginInputClass =
+  "w-full pl-11 pr-4 py-3 bg-surface rounded-lg border text-on-surface font-body-md text-body-md placeholder-on-surface-variant/50 focus:border-primary focus:ring-[3px] focus:ring-primary-container/30 focus:outline-none transition-all duration-200";
 
 const LoginPage = () => {
   const {
@@ -36,7 +40,7 @@ const LoginPage = () => {
                 </h1>
               </div>
               <p className="font-body-md text-body-md text-on-surface-variant">
-                Canteen Manager Access
+                Truy cập hệ thống quản lý căn tin
               </p>
             </div>
 
@@ -61,11 +65,10 @@ const LoginPage = () => {
                   </span>
 
                   <input
-                    className={`w-full pl-11 pr-4 py-3 bg-surface rounded-lg border text-on-surface font-body-md text-body-md placeholder-on-surface-variant/50 focus:border-primary focus:ring-[3px] focus:ring-primary-container/30 focus:outline-none transition-all duration-200 ${
-                      fieldErrors.identifier
+                    className={`${loginInputClass} ${fieldErrors.identifier
                         ? "border-error"
                         : "border-outline-variant"
-                    }`}
+                      }`}
                     id="identifier"
                     name="identifier"
                     placeholder="Nhập mã nhân viên hoặc email"
@@ -89,47 +92,23 @@ const LoginPage = () => {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label
-                  className="block font-label-md text-label-md text-on-surface uppercase tracking-wider"
-                  htmlFor="password"
-                >
-                  Mật khẩu
-                </label>
-
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">
-                    lock
-                  </span>
-
-                  <input
-                    className={`w-full pl-11 pr-4 py-3 bg-surface rounded-lg border text-on-surface font-body-md text-body-md placeholder-on-surface-variant/50 focus:border-primary focus:ring-[3px] focus:ring-primary-container/30 focus:outline-none transition-all duration-200 ${
-                      fieldErrors.password
-                        ? "border-error"
-                        : "border-outline-variant"
-                    }`}
-                    id="password"
-                    name="password"
-                    placeholder="••••••••"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    autoComplete="current-password"
-                    disabled={isLoading}
-                  />
-                </div>
-
-                {fieldErrors.password ? (
-                  <p className="text-body-sm text-error">
-                    {fieldErrors.password}
-                  </p>
-                ) : (
-                  <p className="text-body-sm text-on-surface-variant/70">
-                    Mật khẩu phân biệt chữ hoa/thường, không nhập toàn khoảng trắng.
-                  </p>
-                )}
-              </div>
+              <PasswordInput
+                id="password"
+                name="password"
+                label="Mật khẩu"
+                value={formData.password}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={fieldErrors.password}
+                helper="Mật khẩu phân biệt chữ hoa/thường, không nhập khoảng trắng hoặc ký tự tiếng Việt có dấu."
+                placeholder="••••••••"
+                autoComplete="current-password"
+                disabled={isLoading}
+                leftIcon="lock"
+                inputClassName={loginInputClass}
+                labelClassName="block font-label-md text-label-md text-on-surface uppercase tracking-wider"
+                wrapperClassName="space-y-2"
+              />
 
               <div className="flex items-center justify-between pt-1">
                 <div className="flex items-center">
