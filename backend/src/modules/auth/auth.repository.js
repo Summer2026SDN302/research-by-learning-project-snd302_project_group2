@@ -14,7 +14,9 @@ export const findUserByIdentifier = async (identifier) => {
 
 export const findUserByEmail = async (email) => {
   return User.findOne({
-    email: String(email || "").trim().toLowerCase(),
+    email: String(email || "")
+      .trim()
+      .toLowerCase(),
     deletedAt: null,
   });
 };
@@ -46,6 +48,7 @@ export const findValidRefreshTokenByHash = async (tokenHash) => {
   return RefreshToken.findOne({
     tokenHash,
     isRevoked: false,
+    expiredAt: { $gt: new Date() },
   });
 };
 
@@ -99,7 +102,11 @@ export const markUnusedPasswordResetTokensAsUsed = async (userId) => {
   );
 };
 
-export const createPasswordResetOtp = async ({ userId, otpHash, expiredAt }) => {
+export const createPasswordResetOtp = async ({
+  userId,
+  otpHash,
+  expiredAt,
+}) => {
   return PasswordResetToken.create({
     userId,
     tokenHash: otpHash,
@@ -107,25 +114,23 @@ export const createPasswordResetOtp = async ({ userId, otpHash, expiredAt }) => 
   });
 };
 
-export const findValidPasswordResetOtp = async ({ userId, otpHash }) => {
-  return PasswordResetToken.findOne({
-    userId,
-    tokenHash: otpHash,
-    usedAt: null,
-    deletedAt: null,
-    isActive: true,
-    expiredAt: { $gt: new Date() },
-  });
-};
-
-export const increasePasswordResetOtpAttempts = async (passwordResetToken) => {
-  if (!passwordResetToken) {
-    return null;
-  }
-
-  passwordResetToken.attempts += 1;
-
-  return passwordResetToken.save();
+export const findAndIncrementPasswordResetOtpAttempts = async ({ userId, otpHash }) => {
+  return PasswordResetToken.findOneAndUpdate(
+    {
+      userId,
+      tokenHash: otpHash,
+      usedAt: null,
+      deletedAt: null,
+      isActive: true,
+      expiredAt: { $gt: new Date() },
+    },
+    {
+      $inc: { attempts: 1 },
+    },
+    {
+      new: true,
+    }
+  );
 };
 
 export const markPasswordResetTokenAsUsed = async (passwordResetToken) => {
