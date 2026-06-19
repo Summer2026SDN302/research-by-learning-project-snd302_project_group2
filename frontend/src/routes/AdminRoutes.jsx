@@ -2,8 +2,6 @@ import { lazy } from "react";
 import { Navigate, Route } from "react-router-dom";
 
 import PlaceholderPage from "../components/feedback/PlaceholderPage";
-import CategoryListPage from "../modules/menu/pages/CategoryListPage";
-import FoodItemListPage from "../modules/menu/pages/FoodItemListPage";
 import MainLayout from "../layouts/MainLayout";
 
 const ProfilePage = lazy(() => import("../modules/user/pages/ProfilePage"));
@@ -12,6 +10,15 @@ const ChangePasswordPage = lazy(
 );
 const UserManagementPage = lazy(
   () => import("../modules/user/pages/UserManagementPage"),
+);
+const ScheduledMenuPage = lazy(
+  () => import("../modules/menu/pages/ScheduledMenuPage"),
+);
+const CategoryListPage = lazy(
+  () => import("../modules/menu/pages/CategoryListPage"),
+);
+const FoodItemListPage = lazy(
+  () => import("../modules/menu/pages/FoodItemListPage"),
 );
 
 const AdminRoutes = () => (
@@ -27,10 +34,7 @@ const AdminRoutes = () => (
       element={<CategoryListPage title="Danh mục món ăn" />}
     />
     <Route path="food-items" element={<FoodItemListPage title="Món ăn" />} />
-    <Route
-      path="scheduled-menu"
-      element={<PlaceholderPage title="Thực đơn theo lịch" />}
-    />
+    <Route path="scheduled-menu" element={<ScheduledMenuPage />} />
     <Route
       path="daily-menu"
       element={<PlaceholderPage title="Thực đơn hôm nay" />}
