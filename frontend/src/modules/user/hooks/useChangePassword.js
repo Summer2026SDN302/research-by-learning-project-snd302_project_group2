@@ -17,7 +17,6 @@ const initialForm = {
   confirmPassword: "",
 };
 
-
 const useChangePassword = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -37,17 +36,27 @@ const useChangePassword = () => {
 
     if (!formData.newPassword) {
       nextErrors.newPassword = "Vui lòng nhập mật khẩu mới.";
-    } else if (formData.newPassword.length < 6 || formData.newPassword.trim().length < 6) {
-      nextErrors.newPassword = "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
+    } else if (
+      formData.newPassword.length < 6 ||
+      formData.newPassword.trim().length < 6
+    ) {
+      nextErrors.newPassword =
+        "Mật khẩu mới phải có ít nhất 6 ký tự và không chỉ gồm khoảng trắng.";
     } else if (!PASSWORD_ALLOWED_REGEX.test(formData.newPassword)) {
-      nextErrors.newPassword = "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
+      nextErrors.newPassword =
+        "Mật khẩu không được chứa dấu tiếng Việt, khoảng trắng hoặc ký tự không hợp lệ.";
     }
 
-    if (formData.confirmPassword !== formData.newPassword) {
+    if (!formData.confirmPassword) {
+      nextErrors.confirmPassword = "Vui lòng nhập lại mật khẩu mới.";
+    } else if (formData.confirmPassword !== formData.newPassword) {
       nextErrors.confirmPassword = "Xác nhận mật khẩu không khớp.";
     }
 
-    if (formData.currentPassword && formData.currentPassword === formData.newPassword) {
+    if (
+      formData.currentPassword &&
+      formData.currentPassword === formData.newPassword
+    ) {
       nextErrors.newPassword = "Mật khẩu mới phải khác mật khẩu hiện tại.";
     }
 
@@ -60,7 +69,11 @@ const useChangePassword = () => {
     let nextValue = value;
 
     if (typeof nextValue === "string") {
-      if (name === "currentPassword" || name === "newPassword" || name === "confirmPassword") {
+      if (
+        name === "currentPassword" ||
+        name === "newPassword" ||
+        name === "confirmPassword"
+      ) {
         nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
       }
     }

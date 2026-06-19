@@ -19,12 +19,16 @@ const validateIdentifier = (identifier) => {
   const value = normalizeIdentifier(identifier);
 
   if (!value) return "Vui lòng nhập tên đăng nhập hoặc email.";
-  if (value.length < 3) return "Tên đăng nhập hoặc email cần có ít nhất 3 ký tự.";
-  if (value.length > 80) return "Tên đăng nhập hoặc email không được vượt quá 80 ký tự.";
-  if (/\s/.test(value)) return "Tên đăng nhập hoặc email không được chứa khoảng trắng.";
+  if (value.length < 3)
+    return "Tên đăng nhập hoặc email cần có ít nhất 3 ký tự.";
+  if (value.length > 80)
+    return "Tên đăng nhập hoặc email không được vượt quá 80 ký tự.";
+  if (/\s/.test(value))
+    return "Tên đăng nhập hoặc email không được chứa khoảng trắng.";
 
   if (value.includes("@")) {
-    if (!EMAIL_PATTERN.test(value)) return "Email chưa đúng định dạng. Ví dụ: user@stallbox.com.";
+    if (!EMAIL_PATTERN.test(value))
+      return "Email chưa đúng định dạng. Ví dụ: user@stallbox.com.";
     return "";
   }
 
@@ -64,7 +68,7 @@ const useLogin = () => {
   const [formError, setFormError] = useState(() =>
     searchParams.get("reason") === "session_expired"
       ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
-      : ""
+      : "",
   );
 
   useEffect(() => {
@@ -84,7 +88,7 @@ const useLogin = () => {
     let nextValue = type === "checkbox" ? checked : value;
 
     if (typeof nextValue === "string") {
-      if (name === "password" || name === "identifier") {
+      if (name === "identifier") {
         // Strip non-ASCII characters (which includes Vietnamese accented characters) and spaces
         nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
       }
@@ -168,12 +172,15 @@ const useLogin = () => {
 
       navigate(redirectPath, { replace: true });
     } catch (error) {
-      const rawMsg = getApiErrorMsg(AUTH_ERROR_MAP, error, "Tên đăng nhập hoặc mật khẩu không đúng.");
+      const rawMsg = getApiErrorMsg(
+        AUTH_ERROR_MAP,
+        error,
+        "Tên đăng nhập hoặc mật khẩu không đúng.",
+      );
       const message = AUTH_ERROR_MAP[rawMsg] || rawMsg;
 
       setFormError(message);
       dispatch(authFailure(message));
-      toast.error("Đăng nhập thất bại", message);
     }
   };
 

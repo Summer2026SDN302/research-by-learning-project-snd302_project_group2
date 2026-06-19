@@ -55,7 +55,7 @@ const ResetPasswordModal = ({
 
           <button
             type="button"
-            className="rounded-full p-2 text-outline hover:bg-surface-container hover:text-on-surface disabled:opacity-50"
+            className="rounded-full p-2 text-outline hover:bg-surface-container hover:text-on-surface disabled:opacity-50 flex items-center justify-center"
             disabled={isSaving}
             onClick={onClose}
             aria-label="Đóng"
@@ -64,9 +64,14 @@ const ResetPasswordModal = ({
           </button>
         </div>
 
-        <form className="max-h-[calc(100dvh-9rem)] space-y-5 overflow-y-auto px-6 py-6" onSubmit={onSubmit}>
+        <form
+          className="max-h-[calc(100dvh-9rem)] space-y-5 overflow-y-auto px-6 py-6"
+          onSubmit={onSubmit}
+        >
           <div className="rounded-lg bg-surface-container-low p-4 text-body-sm text-on-surface-variant">
-            Bạn đang đặt lại mật khẩu cho tài khoản <strong>{user.fullName || user.username}</strong> (@{user.username}).
+            Bạn đang đặt lại mật khẩu cho tài khoản{" "}
+            <strong>{user.fullName || user.username}</strong> (@{user.username}
+            ).
           </div>
 
           <div className="space-y-4">
@@ -102,7 +107,10 @@ const ResetPasswordModal = ({
           </div>
 
           {error && (
-            <div className="rounded-lg border border-error/20 bg-error-container/40 px-4 py-3 text-body-sm text-on-error-container" role="alert">
+            <div
+              className="rounded-lg border border-error/20 bg-error-container/40 px-4 py-3 text-body-sm text-on-error-container"
+              role="alert"
+            >
               {error}
             </div>
           )}

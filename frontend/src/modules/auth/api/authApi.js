@@ -24,8 +24,4 @@ export const resetPassword = async (payload) => {
   const response = await apiClient.post("/auth/reset-password", payload);
   return response.data.data;
 };
-
-export const getProfile = async () => {
-  const response = await apiClient.get("/profile/me");
-  return response.data.data;
-};
+

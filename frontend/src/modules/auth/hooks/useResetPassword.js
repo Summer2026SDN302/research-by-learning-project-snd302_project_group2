@@ -53,10 +53,11 @@ const useResetPassword = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useAppToast();
 
-  const emailFromQuery = useMemo(
-    () => searchParams.get("email") || "",
-    [searchParams],
-  );
+  const emailFromQuery = useMemo(() => {
+    const rawEmail = searchParams.get("email") || "";
+    const clean = rawEmail.trim().toLowerCase();
+    return EMAIL_PATTERN.test(clean) ? clean : "";
+  }, [searchParams]);
 
   const [formData, setFormData] = useState(buildInitialForm(emailFromQuery));
   const [fieldErrors, setFieldErrors] = useState({});
@@ -93,9 +94,7 @@ const useResetPassword = () => {
       name === "otp" ? value.replace(/\D/g, "").slice(0, 6) : value;
 
     if (typeof nextValue === "string") {
-      if (name === "newPassword" || name === "confirmPassword") {
-        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
-      } else if (name === "email") {
+      if (name === "email") {
         nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
       }
     }

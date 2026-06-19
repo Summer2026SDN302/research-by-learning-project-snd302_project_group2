@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import useAppToast from "../../../hooks/useAppToast";
 import { getApiErrorMsg } from "../../../utils/errorUtils";
@@ -9,6 +9,13 @@ import {
   USER_ERROR_MAP,
 } from "../constants/userConstants";
 import * as userApi from "../api/userApi";
+import {
+  setUsersLoading,
+  setUsersSaving,
+  setUsersData,
+  setUsersStats,
+  setUsersError,
+} from "../redux/userSlice";
 
 const DEFAULT_PAGINATION = {
   page: 1,
@@ -53,15 +60,16 @@ const buildPayload = (formData, mode) => {
 };
 
 const useUserManager = () => {
+  const dispatch = useDispatch();
   const { toast } = useAppToast();
   const authUser = useSelector((state) => state.auth.user);
 
-  const [users, setUsers] = useState([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [usersSaving, setUsersSaving] = useState(false);
-  const [usersError, setUsersError] = useState("");
-  const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
-  const [stats, setStats] = useState(DEFAULT_STATS);
+  const users = useSelector((state) => state.user.users);
+  const usersLoading = useSelector((state) => state.user.usersLoading);
+  const usersSaving = useSelector((state) => state.user.usersSaving);
+  const usersError = useSelector((state) => state.user.usersError);
+  const pagination = useSelector((state) => state.user.pagination);
+  const stats = useSelector((state) => state.user.stats);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -97,7 +105,7 @@ const useUserManager = () => {
     return params;
   }, [filters]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const [totalData, activeData, inactiveData] = await Promise.all([
         userApi.getUsers({ page: 1, limit: 1 }),
@@ -105,37 +113,32 @@ const useUserManager = () => {
         userApi.getUsers({ page: 1, limit: 1, isActive: false }),
       ]);
 
-      setStats({
-        total: totalData?.pagination?.total || 0,
-        active: activeData?.pagination?.total || 0,
-        inactive: inactiveData?.pagination?.total || 0,
-      });
+      dispatch(
+        setUsersStats({
+          total: totalData?.pagination?.total || 0,
+          active: activeData?.pagination?.total || 0,
+          inactive: inactiveData?.pagination?.total || 0,
+        })
+      );
     } catch {
       // Stats chỉ là phụ trợ, lỗi chính sẽ hiển thị ở list.
     }
-  };
+  }, [dispatch]);
 
   const fetchUsers = useCallback(async () => {
-    setUsersLoading(true);
-    setUsersError("");
+    dispatch(setUsersLoading(true));
 
     try {
       const data = await userApi.getUsers(queryParams);
-      setUsers(data?.items || []);
-      setPagination({
-        ...DEFAULT_PAGINATION,
-        ...(data?.pagination || {}),
-      });
+      dispatch(setUsersData(data));
     } catch (error) {
       if (error?.response?.status === 401) return;
       const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể tải danh sách người dùng.");
       const message = USER_ERROR_MAP[rawMsg] || rawMsg;
-      setUsersError(message);
+      dispatch(setUsersError(message));
       toast.error("Tải người dùng thất bại", message);
-    } finally {
-      setUsersLoading(false);
     }
-  }, [queryParams, toast]);
+  }, [queryParams, dispatch, toast]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(
@@ -149,34 +152,8 @@ const useUserManager = () => {
   }, [fetchUsers, filters.search]);
 
   useEffect(() => {
-    let isCancelled = false;
-
-    const loadStats = async () => {
-      try {
-        const [totalData, activeData, inactiveData] = await Promise.all([
-          userApi.getUsers({ page: 1, limit: 1 }),
-          userApi.getUsers({ page: 1, limit: 1, isActive: true }),
-          userApi.getUsers({ page: 1, limit: 1, isActive: false }),
-        ]);
-
-        if (isCancelled) return;
-
-        setStats({
-          total: totalData?.pagination?.total || 0,
-          active: activeData?.pagination?.total || 0,
-          inactive: inactiveData?.pagination?.total || 0,
-        });
-      } catch {
-        // Stats chỉ là phụ trợ, lỗi chính sẽ hiển thị ở list.
-      }
-    };
-
-    loadStats();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
+    fetchStats();
+  }, [fetchStats]);
 
   const handleSearchChange = (event) => {
     setFilters((prev) => ({ ...prev, search: event.target.value, page: 1 }));
@@ -217,7 +194,7 @@ const useUserManager = () => {
     setSelectedUser(user);
     setFormData(toUserForm(user));
     setFieldErrors({});
-    setUsersError("");
+    dispatch(setUsersError(null));
     setIsFormOpen(true);
   };
 
@@ -226,7 +203,7 @@ const useUserManager = () => {
     setIsFormOpen(false);
     setSelectedUser(null);
     setFieldErrors({});
-    setUsersError("");
+    dispatch(setUsersError(null));
   };
 
   const handleFormChange = (event) => {
@@ -236,7 +213,7 @@ const useUserManager = () => {
     if (typeof nextValue === "string") {
       if (name === "username") {
         nextValue = nextValue.replace(/[^a-zA-Z0-9._-]/g, "");
-      } else if (name === "password" || name === "email") {
+      } else if (name === "email") {
         nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
       } else if (name === "phone") {
         nextValue = nextValue.replace(/[^0-9+\-()\s]/g, "");
@@ -245,7 +222,7 @@ const useUserManager = () => {
 
     setFormData((prev) => ({ ...prev, [name]: nextValue }));
     setFieldErrors((prev) => ({ ...prev, [name]: "" }));
-    setUsersError("");
+    dispatch(setUsersError(null));
   };
 
   const validateUserForm = () => {
@@ -294,8 +271,7 @@ const useUserManager = () => {
     event.preventDefault();
     if (usersSaving || !validateUserForm()) return;
 
-    setUsersSaving(true);
-    setUsersError("");
+    dispatch(setUsersSaving(true));
 
     try {
       const payload = buildPayload(formData, formMode);
@@ -327,29 +303,28 @@ const useUserManager = () => {
           : "Không thể cập nhật người dùng.",
       );
       const message = USER_ERROR_MAP[rawMsg] || rawMsg;
-      setUsersError(message);
+      dispatch(setUsersError(message));
       toast.error("Lưu người dùng thất bại", message);
     } finally {
-      setUsersSaving(false);
+      dispatch(setUsersSaving(false));
     }
   };
 
   const openStatusAction = (user) => {
-    setUsersError("");
+    dispatch(setUsersError(null));
     setStatusAction({ user, nextActive: !user.isActive });
   };
 
   const closeStatusAction = () => {
     if (usersSaving) return;
     setStatusAction(null);
-    setUsersError("");
+    dispatch(setUsersError(null));
   };
 
   const confirmStatusAction = async () => {
     if (!statusAction?.user || usersSaving) return;
 
-    setUsersSaving(true);
-    setUsersError("");
+    dispatch(setUsersSaving(true));
 
     try {
       if (statusAction.nextActive) {
@@ -370,10 +345,10 @@ const useUserManager = () => {
       if (error?.response?.status === 401) return;
       const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể cập nhật trạng thái người dùng.");
       const message = USER_ERROR_MAP[rawMsg] || rawMsg;
-      setUsersError(message);
+      dispatch(setUsersError(message));
       toast.error("Cập nhật trạng thái thất bại", message);
     } finally {
-      setUsersSaving(false);
+      dispatch(setUsersSaving(false));
     }
   };
 
@@ -381,29 +356,21 @@ const useUserManager = () => {
     setResetUser(user);
     setResetPasswordForm(DEFAULT_RESET_PASSWORD_FORM);
     setResetPasswordErrors({});
-    setUsersError("");
+    dispatch(setUsersError(null));
   };
 
   const closeResetPassword = () => {
     if (usersSaving) return;
     setResetUser(null);
     setResetPasswordErrors({});
-    setUsersError("");
+    dispatch(setUsersError(null));
   };
 
   const handleResetPasswordChange = (event) => {
     const { name, value } = event.target;
-    let nextValue = value;
-
-    if (typeof nextValue === "string") {
-      if (name === "newPassword" || name === "confirmPassword") {
-        nextValue = nextValue.replace(/[^\x21-\x7E]/g, "");
-      }
-    }
-
-    setResetPasswordForm((prev) => ({ ...prev, [name]: nextValue }));
+    setResetPasswordForm((prev) => ({ ...prev, [name]: value }));
     setResetPasswordErrors((prev) => ({ ...prev, [name]: "" }));
-    setUsersError("");
+    dispatch(setUsersError(null));
   };
 
   const validateResetPassword = () => {
@@ -432,8 +399,7 @@ const useUserManager = () => {
     event.preventDefault();
     if (usersSaving || !resetUser || !validateResetPassword()) return;
 
-    setUsersSaving(true);
-    setUsersError("");
+    dispatch(setUsersSaving(true));
 
     try {
       await userApi.resetUserPassword(resetUser._id, resetPasswordForm);
@@ -447,10 +413,10 @@ const useUserManager = () => {
       if (error?.response?.status === 401) return;
       const rawMsg = getApiErrorMsg(USER_ERROR_MAP, error, "Không thể đặt lại mật khẩu người dùng.");
       const message = USER_ERROR_MAP[rawMsg] || rawMsg;
-      setUsersError(message);
+      dispatch(setUsersError(message));
       toast.error("Đặt lại mật khẩu thất bại", message);
     } finally {
-      setUsersSaving(false);
+      dispatch(setUsersSaving(false));
     }
   };
 

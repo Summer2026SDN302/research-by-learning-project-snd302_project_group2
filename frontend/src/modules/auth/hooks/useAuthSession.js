@@ -22,7 +22,7 @@ const useAuthSession = () => {
 
         setAccessToken(data.accessToken);
 
-        const user = data.user || (await authApi.getProfile());
+        const user = data.user;
 
         if (isCancelled) return;
 

@@ -6,16 +6,16 @@ import { getApiErrorMsg } from "../../../utils/errorUtils";
 import { USER_ERROR_MAP } from "../constants/userConstants";
 import { updateAuthUser } from "../../auth/redux/authSlice";
 import * as userApi from "../api/userApi";
+import { getInitials } from "../../../utils/formatters";
+import {
+  setProfileLoading,
+  setProfileSaving,
+  setProfile,
+  setProfileError,
+} from "../redux/userSlice";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^[0-9+()\s.-]{8,20}$/;
-
-const getInitials = (name = "") => {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "U";
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
-};
 
 const toProfileForm = (user) => ({
   fullName: user?.fullName || "",
@@ -28,10 +28,10 @@ const useProfile = () => {
   const { toast } = useAppToast();
   const authUser = useSelector((state) => state.auth.user);
 
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
+  const profile = useSelector((state) => state.user.profile);
+  const isLoading = useSelector((state) => state.user.profileLoading);
+  const isSaving = useSelector((state) => state.user.profileSaving);
+  const error = useSelector((state) => state.user.profileError);
 
   const currentUser = profile || authUser;
   const [formData, setFormData] = useState(toProfileForm(currentUser));
@@ -41,14 +41,13 @@ const useProfile = () => {
     let isCancelled = false;
 
     const loadProfile = async () => {
-      setIsLoading(true);
-      setError("");
+      dispatch(setProfileLoading(true));
 
       try {
         const data = await userApi.getMyProfile();
         if (isCancelled) return;
 
-        setProfile(data);
+        dispatch(setProfile(data));
         setFormData(toProfileForm(data));
         dispatch(updateAuthUser(data));
       } catch (loadError) {
@@ -57,10 +56,8 @@ const useProfile = () => {
 
         const rawMsg = getApiErrorMsg(USER_ERROR_MAP, loadError, "Không thể tải hồ sơ cá nhân.");
         const message = USER_ERROR_MAP[rawMsg] || rawMsg;
-        setError(message);
+        dispatch(setProfileError(message));
         toast.error("Tải hồ sơ thất bại", message);
-      } finally {
-        if (!isCancelled) setIsLoading(false);
       }
     };
 
@@ -118,7 +115,7 @@ const useProfile = () => {
       ...prev,
       [name]: "",
     }));
-    setError("");
+    dispatch(setProfileError(null));
   };
 
   const handleSubmit = async (event) => {
@@ -126,8 +123,7 @@ const useProfile = () => {
 
     if (isSaving || !validateForm()) return;
 
-    setIsSaving(true);
-    setError("");
+    dispatch(setProfileSaving(true));
 
     try {
       const payload = {
@@ -138,7 +134,7 @@ const useProfile = () => {
 
       const data = await userApi.updateMyProfile(payload);
 
-      setProfile(data);
+      dispatch(setProfile(data));
       dispatch(updateAuthUser(data));
       toast.success("Đã cập nhật hồ sơ", "Thông tin cá nhân đã được lưu.");
     } catch (submitError) {
@@ -149,10 +145,8 @@ const useProfile = () => {
         "Không thể cập nhật hồ sơ. Vui lòng thử lại.",
       );
       const message = USER_ERROR_MAP[rawMsg] || rawMsg;
-      setError(message);
+      dispatch(setProfileError(message));
       toast.error("Cập nhật thất bại", message);
-    } finally {
-      setIsSaving(false);
     }
   };
 

@@ -21,7 +21,6 @@ const PasswordInput = ({
   leftIcon = null,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const inputType = isVisible ? "text" : "password";
 
   return (
     <div className={wrapperClassName}>
@@ -44,8 +43,10 @@ const PasswordInput = ({
           className={`${inputClassName} ${leftIcon ? "pl-11" : ""} ${
             error ? "border-error" : "border-outline-variant"
           }`}
-          type={inputType}
+          type={isVisible ? "text" : "password"}
           value={value}
+          lang="en"
+          spellCheck={false}
           onChange={onChange}
           onBlur={onBlur}
           autoComplete={autoComplete}
@@ -55,7 +56,7 @@ const PasswordInput = ({
 
         <button
           type="button"
-          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-outline hover:bg-surface-container hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-outline hover:bg-surface-container hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center"
           onClick={() => setIsVisible((prev) => !prev)}
           disabled={disabled}
           aria-label={isVisible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
