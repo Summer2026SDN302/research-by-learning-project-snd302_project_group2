@@ -12,7 +12,10 @@ const passwordInputClass = `${inputClass} pr-11`;
 
 const FieldError = ({ message, helper }) => {
   if (message) return <p className="mt-1 text-body-sm text-error">{message}</p>;
-  if (helper) return <p className="mt-1 text-body-sm text-on-surface-variant/70">{helper}</p>;
+  if (helper)
+    return (
+      <p className="mt-1 text-body-sm text-on-surface-variant/70">{helper}</p>
+    );
   return null;
 };
 
@@ -74,10 +77,16 @@ const UserFormModal = ({
           </button>
         </div>
 
-        <form className="max-h-[calc(100dvh-9rem)] space-y-5 overflow-y-auto px-6 py-6" onSubmit={onSubmit}>
+        <form
+          className="max-h-[calc(100dvh-9rem)] space-y-5 overflow-y-auto px-6 py-6"
+          onSubmit={onSubmit}
+        >
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="username">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="username"
+              >
                 Tên đăng nhập
               </label>
               <input
@@ -90,11 +99,17 @@ const UserFormModal = ({
                 disabled={isSaving}
                 placeholder="staff01"
               />
-              <FieldError message={fieldErrors.username} helper="Ít nhất 4 ký tự, chỉ dùng chữ, số, dấu chấm, gạch dưới hoặc gạch ngang." />
+              <FieldError
+                message={fieldErrors.username}
+                helper="Ít nhất 4 ký tự, chỉ dùng chữ, số, dấu chấm, gạch dưới hoặc gạch ngang."
+              />
             </div>
 
             <div>
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="role">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="role"
+              >
                 Vai trò
               </label>
               <select
@@ -111,7 +126,10 @@ const UserFormModal = ({
                   </option>
                 ))}
               </select>
-              <FieldError message={fieldErrors.role} helper="Chọn quyền phù hợp với tài khoản này." />
+              <FieldError
+                message={fieldErrors.role}
+                helper="Chọn quyền phù hợp với tài khoản này."
+              />
             </div>
 
             {isCreate && (
@@ -132,7 +150,10 @@ const UserFormModal = ({
             )}
 
             <div>
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="fullName">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="fullName"
+              >
                 Họ tên
               </label>
               <input
@@ -145,11 +166,17 @@ const UserFormModal = ({
                 disabled={isSaving}
                 placeholder="Nguyễn Văn An"
               />
-              <FieldError message={fieldErrors.fullName} helper="Tên hiển thị của người dùng trong hệ thống." />
+              <FieldError
+                message={fieldErrors.fullName}
+                helper="Tên hiển thị của người dùng trong hệ thống."
+              />
             </div>
 
             <div>
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="email">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="email"
+              >
                 Email
               </label>
               <input
@@ -162,11 +189,17 @@ const UserFormModal = ({
                 disabled={isSaving}
                 placeholder="user@stallbox.com"
               />
-              <FieldError message={fieldErrors.email} helper="Email hợp lệ, ví dụ: user@stallbox.com." />
+              <FieldError
+                message={fieldErrors.email}
+                helper="Email hợp lệ, ví dụ: user@stallbox.com."
+              />
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-1 block font-label-md text-label-md text-on-surface-variant" htmlFor="phone">
+              <label
+                className="mb-1 block font-label-md text-label-md text-on-surface-variant"
+                htmlFor="phone"
+              >
                 Số điện thoại
               </label>
               <input
@@ -179,12 +212,18 @@ const UserFormModal = ({
                 disabled={isSaving}
                 placeholder="Tùy chọn"
               />
-              <FieldError message={fieldErrors.phone} helper="Tùy chọn. Có thể nhập số điện thoại kèm mã vùng." />
+              <FieldError
+                message={fieldErrors.phone}
+                helper="Tùy chọn. Có thể nhập số điện thoại kèm mã vùng."
+              />
             </div>
           </div>
 
           {error && (
-            <div className="rounded-lg border border-error/20 bg-error-container/40 px-4 py-3 text-body-sm text-on-error-container" role="alert">
+            <div
+              className="rounded-lg border border-error/20 bg-error-container/40 px-4 py-3 text-body-sm text-on-error-container"
+              role="alert"
+            >
               {error}
             </div>
           )}
