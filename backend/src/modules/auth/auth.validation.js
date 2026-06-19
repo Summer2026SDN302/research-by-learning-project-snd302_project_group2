@@ -29,7 +29,7 @@ export const loginValidation = [
 
   body("password")
     .isString()
-    .withMessage("Password is required")
+    .withMessage("Password must be a string")
     .bail()
     .notEmpty()
     .withMessage("Password is required"),
