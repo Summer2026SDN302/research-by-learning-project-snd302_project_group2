@@ -45,7 +45,14 @@ export const createUserValidation = [
     .withMessage("Username can only contain letters, numbers, dot, underscore, and hyphen"),
   passwordValidation("password"),
   body("fullName").trim().notEmpty().withMessage("Full name is required"),
-  body("email").trim().isEmail().withMessage("Invalid email format").normalizeEmail(),
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .bail()
+    .isEmail()
+    .withMessage("Invalid email format")
+    .normalizeEmail(),
   body("phone").optional({ nullable: true, checkFalsy: true }).trim(),
   body("role").isIn(USER_ROLE_VALUES).withMessage("Invalid role"),
 ];

@@ -113,7 +113,6 @@ const dailyMenuSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      index: true,
     },
 
     isConfigured: {
@@ -126,7 +125,7 @@ const dailyMenuSchema = new Schema(
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
     },
   },
   {
