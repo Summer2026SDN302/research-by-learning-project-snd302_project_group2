@@ -15,10 +15,6 @@ const foodItemFieldsValidation = [
     .withMessage("Description must not exceed 1000 characters"),
   body("basePrice").isFloat({ min: 0 }).withMessage("Invalid base price"),
   body("cost").isFloat({ min: 0 }).withMessage("Invalid cost"),
-  body("isArchived")
-    .optional()
-    .isBoolean()
-    .withMessage("Invalid archive status"),
 ];
 
 const foodItemUpdateFieldsValidation = [
@@ -43,10 +39,6 @@ const foodItemUpdateFieldsValidation = [
     .isFloat({ min: 0 })
     .withMessage("Invalid base price"),
   body("cost").optional().isFloat({ min: 0 }).withMessage("Invalid cost"),
-  body("isArchived")
-    .optional()
-    .isBoolean()
-    .withMessage("Invalid archive status"),
 ];
 
 const objectIdParamValidation = [
