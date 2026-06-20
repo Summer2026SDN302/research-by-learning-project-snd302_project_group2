@@ -8,6 +8,7 @@ import foodItemRoute from "./modules/menu/food_item/food_item.route.js";
 import authRoute from "./modules/auth/auth.route.js";
 import profileRoute from "./modules/user/profile.route.js";
 import userRoute from "./modules/user/user.route.js";
+import orderRoute from "./modules/order/order.route.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -37,6 +38,8 @@ app.use("/api/profile", profileRoute);
 app.use("/api/users", userRoute);
 app.use("/api/categories", categoryRoute);
 app.use("/api/food-items", foodItemRoute);
+app.use("/api/orders", orderRoute);
+
 
 
 app.use(notFoundHandler);
