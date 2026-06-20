@@ -138,7 +138,7 @@ ERROR:
 
 ALL errors MUST use:
 
-AppError(code, statusCode)
+AppError(message, statusCode, code, details, isOperational)
 
 NEVER:
 
@@ -153,13 +153,13 @@ If module requires authentication:
 
 MUST use:
 
-authenticateToken middleware
+authenticate middleware
 
 If role required:
 
 MUST use:
 
-authorizeRoles(["role"])
+authorizeRoles(USER_ROLES.ROLE)
 
 ---
 
