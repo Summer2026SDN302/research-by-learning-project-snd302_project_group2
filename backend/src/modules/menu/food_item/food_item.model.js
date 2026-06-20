@@ -62,6 +62,7 @@ const nameUniqueIndexOptions = {
   collation: { locale: "vi", strength: 2 },
 };
 
+foodItemSchema.index({ name: 1 }, nameUniqueIndexOptions);
 foodItemSchema.index({ deletedAt: 1 });
 foodItemSchema.index({ categoryId: 1, isArchived: 1, deletedAt: 1 });
 

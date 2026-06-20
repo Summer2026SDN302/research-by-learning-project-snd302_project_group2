@@ -1,10 +1,23 @@
 import User from "./user.model.js";
-import RefreshToken from "../auth/refresh_token.model.js";
 
 export const findUserById = async (id, includePassword = false) => {
   const query = User.findOne({
     _id: id,
-    deletedAt: null,
+  });
+
+  if (!includePassword) {
+    query.select("-passwordHash");
+  }
+
+  return query;
+};
+
+export const findUserByIdIncludingDeleted = async (
+  id,
+  includePassword = false,
+) => {
+  const query = User.findOne({
+    _id: id,
   });
 
   if (!includePassword) {
@@ -30,7 +43,6 @@ export const findDuplicatedUser = async ({
 
   const query = {
     $or: conditions,
-    deletedAt: null,
   };
 
   if (excludeUserId) {
