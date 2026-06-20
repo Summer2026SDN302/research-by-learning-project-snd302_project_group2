@@ -2,23 +2,13 @@ import mongoose from "mongoose";
 import AppError from "../../shared/exceptions/AppError.js";
 import { buildPaginationMeta } from "../../shared/helpers/pagination.helper.js";
 import { parsePagination } from "../../shared/helpers/query.helper.js";
-import dailyMenuRepository from "../menu/daily_menu/daily_menu.repository.js";
+import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.js";
+import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
 import orderRepository from "./order.repository.js";
 import { toOrderResponse } from "./order.dto.js";
 import { VALID_STATUS_TRANSITIONS, TAX_PERCENT } from "./order.constants.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Trả về ngày hôm nay theo UTC midnight (Date object).
- * Dùng Date thay vì String để hỗ trợ query $gte/$lte theo range.
- */
-const getTodayUTCMidnight = () => {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
-};
 
 const generateOrderNumber = () => {
   const now = new Date();
@@ -87,9 +77,7 @@ const calculateOrderPricing = (lineItems) => {
 
 const orderService = {
   async createOrder(body, staffId) {
-    const today = getTodayUTCMidnight(); // Fix #5: dùng Date thay vì String
-
-    // Fix #9: validate duplicate foodItemId trong items trước khi xử lý
+    const todayStr = getTodayVNDateString(); // "YYYY-MM-DD" theo múi giờ VN
     const seen = new Set();
     for (const item of body.items) {
       if (seen.has(item.foodItemId)) {
@@ -103,7 +91,7 @@ const orderService = {
     }
 
     // Fix #1: findByDate giờ populate items.foodItemId với field "name"
-    const dailyMenu = await dailyMenuRepository.findByDate(today);
+    const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr);
 
     if (!dailyMenu || !dailyMenu.isConfigured) {
       throw new AppError(
@@ -166,7 +154,7 @@ const orderService = {
       // Fix #2: deductSoldQuantity giờ có atomic guard ($gte) và nhận session
       await Promise.all(
         body.items.map(({ foodItemId, quantity }) =>
-          dailyMenuRepository.deductSoldQuantity(today, foodItemId, quantity, session),
+          dailyMenuRepository.decrementSoldQuantity(dailyMenu._id, foodItemId, quantity, session),
         ),
       );
 
@@ -180,7 +168,7 @@ const orderService = {
           taxAmount,
           totalAmount,
           orderStatus: "Pending",
-          orderDate: today,
+          orderDate: new Date(todayStr),
         },
         session,
       );
