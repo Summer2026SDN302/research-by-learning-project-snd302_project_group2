@@ -5,13 +5,12 @@ import {
   parsePagination,
   parseSearchQuery,
 } from "../../../shared/helpers/query.helper.js";
-import orderRepository from "../../order/order.repository.js";
 import categoryRepository from "../category/category.repository.js";
-import * as dailyMenuRepository from "../daily-menu/daily-menu.repository.js";
-import scheduledMenuRepository from "../scheduled_menu/scheduled_menu.repository.js";
 import foodItemRepository from "./food_item.repository.js";
 import { toFoodItemResponse } from "./food_item.dto.js";
 import { USER_ROLES } from "../../user/user.constants.js";
+import scheduledMenuRepository from "../scheduled_menu/scheduled_menu.repository.js";
+import * as dailyMenuRepository from "../daily-menu/daily-menu.repository.js";
 
 const foodItemNotFoundError = () =>
   new AppError("Food item not found", 404, "FOODITEM_NOT_FOUND");
@@ -41,6 +40,8 @@ const buildFoodItemPayload = (body) => ({
   basePrice: Number(body.basePrice),
   cost: Number(body.cost),
   isArchived: false,
+  deletedAt: null,
+  deletedBy: null,
 });
 
 const getFoodItemOrThrow = async (id) => {
@@ -65,18 +66,6 @@ const toFoodItemResponseFromDocument = (foodItem, categoryName) => {
   });
 };
 
-const assertFoodItemNotReferenced = async (foodItemId) => {
-  const [dailyMenuCount, scheduledMenuCount, orderCount] = await Promise.all([
-    dailyMenuRepository.countByFoodItemId(foodItemId),
-    scheduledMenuRepository.countByFoodItemId(foodItemId),
-    orderRepository.countByFoodItemId(foodItemId),
-  ]);
-
-  if (dailyMenuCount + scheduledMenuCount + orderCount > 0) {
-    throw new AppError("FOODITEM_IN_USE", 409);
-  }
-};
-
 const mutateFoodItem = async (id, { patch, categoryName }) => {
   const foodItem = await foodItemRepository.patchById(id, patch);
 
@@ -95,11 +84,7 @@ const getCategoryOrThrow = async (categoryId) => {
   }
 
   if (!category.isActive || category.deletedAt) {
-    throw new AppError(
-      "Category is inactive",
-      400,
-      "CATEGORY_INACTIVE",
-    );
+    throw new AppError("Category is inactive", 400, "CATEGORY_INACTIVE");
   }
 
   return category;
@@ -108,8 +93,10 @@ const getCategoryOrThrow = async (categoryId) => {
 const foodItemService = {
   async getFoodItems(query, role) {
     const { page, limit } = parsePagination(query);
+
     const isArchived =
       role === USER_ROLES.STAFF ? false : parseBooleanQuery(query.isArchived);
+
     const search = parseSearchQuery(query.search);
     const categoryId = query.categoryId?.trim() || undefined;
 
@@ -136,6 +123,7 @@ const foodItemService = {
     await assertUniqueName(body.name);
 
     const category = await getCategoryOrThrow(body.categoryId);
+
     const foodItem = await foodItemRepository.create(
       buildFoodItemPayload(body),
     );
@@ -156,12 +144,26 @@ const foodItemService = {
     }
 
     const patch = {};
-    if (body.categoryId !== undefined) patch.categoryId = body.categoryId;
-    if (body.name !== undefined) patch.name = body.name.trim();
-    if (body.description !== undefined)
+
+    if (body.categoryId !== undefined) {
+      patch.categoryId = body.categoryId;
+    }
+
+    if (body.name !== undefined) {
+      patch.name = body.name.trim();
+    }
+
+    if (body.description !== undefined) {
       patch.description = body.description?.trim() || null;
-    if (body.basePrice !== undefined) patch.basePrice = Number(body.basePrice);
-    if (body.cost !== undefined) patch.cost = Number(body.cost);
+    }
+
+    if (body.basePrice !== undefined) {
+      patch.basePrice = Number(body.basePrice);
+    }
+
+    if (body.cost !== undefined) {
+      patch.cost = Number(body.cost);
+    }
 
     if (categoryName === undefined) {
       const foodItem = await getFoodItemOrThrow(id);
@@ -172,36 +174,28 @@ const foodItemService = {
   },
 
   async updateFoodItemArchive(id, isArchived, userId) {
-    const foodItem = await getFoodItemOrThrow(id);
-    const patch = { isArchived };
+  const foodItem = await getFoodItemOrThrow(id);
+
+  const patch = {
+    isArchived,
+    deletedAt: isArchived ? new Date() : null,
+    deletedBy: isArchived ? userId ?? null : null,
+  };
+
+  if (isArchived) {
     const today = new Date().toISOString().slice(0, 10);
 
-    if (isArchived) {
-      const [dailyMenuCount, scheduledMenuCount] = await Promise.all([
-        dailyMenuRepository.countActiveByFoodItemId(id, today),
-        scheduledMenuRepository.countByFoodItemId(id),
-      ]);
+    await Promise.all([
+      scheduledMenuRepository.removeFoodItemFromAllSchedules(id),
+      dailyMenuRepository.setFoodItemUnavailableFromDate(id, today),
+    ]);
+  }
 
-      if (dailyMenuCount + scheduledMenuCount > 0) {
-        throw new AppError(
-          "Cannot disable food item referenced by active daily/scheduled menu",
-          409,
-          "FOODITEM_IN_USE",
-        );
-      }
-
-      patch.deletedAt = new Date();
-      patch.deletedBy = userId ?? null;
-    } else {
-      patch.deletedAt = null;
-      patch.deletedBy = null;
-    }
-
-    return mutateFoodItem(id, {
-      patch,
-      categoryName: foodItem.categoryName,
-    });
-  },
+  return mutateFoodItem(id, {
+    patch,
+    categoryName: foodItem.categoryName,
+  });
+}
 };
 
 export default foodItemService;
