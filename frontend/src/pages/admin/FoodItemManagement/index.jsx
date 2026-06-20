@@ -1,0 +1,1 @@
+export { default } from '../../../modules/menu/pages/FoodItemListPage';
