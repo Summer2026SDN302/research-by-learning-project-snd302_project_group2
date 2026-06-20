@@ -255,3 +255,30 @@ export const expireAllPastMenus = async (beforeDateStr) => {
     { arrayFilters: [{ "elem.status": DAILY_MENU_ITEM_STATUS.AVAILABLE }] },
   );
 };
+
+export const setFoodItemUnavailableFromDate = async (foodItemId, fromDate) => {
+  return DailyMenu.updateMany(
+    {
+      date: { $gte: fromDate },
+      items: {
+        $elemMatch: {
+          foodItemId: toObjectId(foodItemId),
+          status: DAILY_MENU_ITEM_STATUS.AVAILABLE,
+        },
+      },
+    },
+    {
+      $set: {
+        "items.$[item].status": DAILY_MENU_ITEM_STATUS.UNAVAILABLE,
+      },
+    },
+    {
+      arrayFilters: [
+        {
+          "item.foodItemId": toObjectId(foodItemId),
+          "item.status": DAILY_MENU_ITEM_STATUS.AVAILABLE,
+        },
+      ],
+    },
+  );
+};
