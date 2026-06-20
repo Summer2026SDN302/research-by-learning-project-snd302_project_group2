@@ -9,7 +9,10 @@ const FoodItemCard = ({ item, onRemove, isAdmin }) => {
   const category = food?.categoryId?.name ?? "";
 
   return (
-    <div className="group flex items-center justify-between rounded-lg border border-outline-variant bg-surface p-3">
+    <div
+      title={name}
+      className="group flex items-center justify-between rounded-lg border border-outline-variant bg-surface p-3"
+    >
       <div className="min-w-0">
         <p className="truncate text-body-sm font-semibold text-on-surface">
           {name}

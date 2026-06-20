@@ -75,8 +75,16 @@ const useFoodItem = () => {
   useEffect(() => {
     dispatch(setSearch(debouncedSearch));
     dispatch(setPage(1));
-    loadFoodItems({ search: debouncedSearch, page: 1 });
-  }, [debouncedSearch, dispatch, loadFoodItems]);
+    dispatch(
+      fetchFoodItems({
+        search: debouncedSearch,
+        categoryId: filters.categoryId || undefined,
+        isArchived: filters.isArchived !== "" ? filters.isArchived : undefined,
+        page: 1,
+        limit: pagination.limit ?? DEFAULT_FOOD_ITEM_PAGE_SIZE,
+      })
+    );
+  }, [debouncedSearch, dispatch, filters.categoryId, filters.isArchived, pagination.limit]);
 
   useEffect(() => {
   dispatch(fetchCategories({ limit: 50, page: 1, isActive: true }));
