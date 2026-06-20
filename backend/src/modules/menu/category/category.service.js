@@ -112,7 +112,6 @@ const categoryService = {
     if (body.description !== undefined)
       patch.description = body.description?.trim() || null;
     if (body.icon !== undefined) patch.icon = body.icon;
-    if (body.isActive !== undefined) patch.isActive = body.isActive;
 
     return mutateCategory(id, { patch });
   },

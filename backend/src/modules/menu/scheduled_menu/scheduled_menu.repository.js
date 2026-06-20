@@ -47,6 +47,21 @@ const scheduledMenuRepository = {
       .populate(FOOD_ITEM_POPULATE)
       .lean();
   },
+
+  async removeFoodItemFromAllSchedules(foodItemId) {
+  return ScheduledMenu.updateMany(
+    {
+      "menuItems.foodItemId": toObjectId(foodItemId),
+    },
+    {
+      $pull: {
+        menuItems: {
+          foodItemId: toObjectId(foodItemId),
+        },
+      },
+    },
+  );
+},
 };
 
 export default scheduledMenuRepository;
