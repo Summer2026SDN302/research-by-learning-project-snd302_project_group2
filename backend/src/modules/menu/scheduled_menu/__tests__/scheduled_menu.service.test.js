@@ -14,6 +14,10 @@ vi.mock("../scheduled_menu.repository.js", () => ({
   },
 }));
 
+vi.mock("../../../../shared/helpers/transaction.helper.js", () => ({
+  withTransaction: vi.fn((callback) => callback("mock-session")),
+}));
+
 vi.mock("../../food_item/food_item.repository.js", () => ({
   default: {
     countActiveByIds: vi.fn(),
@@ -172,5 +176,96 @@ describe("AppError contract", () => {
     expect(error).toBeInstanceOf(Error);
     expect(error.statusCode).toBe(400);
     expect(error.code).toBe("TEST_CODE");
+  });
+});
+
+describe("scheduledMenuService.batchUpdateSchedule", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("updates batch of days successfully", async () => {
+    foodItemRepository.countActiveByIds.mockResolvedValue(2);
+    scheduledMenuRepository.findAll.mockResolvedValue([
+      {
+        dayOfWeek: "Monday",
+        menuItems: [{ foodItemId: { _id: FOOD_ID_1, name: "Phở Bò" } }],
+      },
+      {
+        dayOfWeek: "Friday",
+        menuItems: [{ foodItemId: { _id: FOOD_ID_2, name: "Cơm gà" } }],
+      },
+    ]);
+
+    const result = await scheduledMenuService.batchUpdateSchedule(
+      [
+        { dayOfWeek: "Monday", foodItemIds: [FOOD_ID_1] },
+        { dayOfWeek: "Friday", foodItemIds: [FOOD_ID_2] },
+      ],
+      USER_ID,
+    );
+
+    expect(foodItemRepository.countActiveByIds).toHaveBeenCalledWith([FOOD_ID_1, FOOD_ID_2]);
+    expect(scheduledMenuRepository.upsertByDay).toHaveBeenCalledTimes(2);
+    expect(scheduledMenuRepository.upsertByDay).toHaveBeenNthCalledWith(
+      1,
+      "Monday",
+      [{ foodItemId: FOOD_ID_1 }],
+      USER_ID,
+      { session: "mock-session" },
+    );
+    expect(scheduledMenuRepository.upsertByDay).toHaveBeenNthCalledWith(
+      2,
+      "Friday",
+      [{ foodItemId: FOOD_ID_2 }],
+      USER_ID,
+      { session: "mock-session" },
+    );
+    expect(result).toHaveLength(7);
+  });
+
+  it("throws DUPLICATE_DAY_IN_BATCH when same day is specified multiple times", async () => {
+    await expect(
+      scheduledMenuService.batchUpdateSchedule(
+        [
+          { dayOfWeek: "Monday", foodItemIds: [FOOD_ID_1] },
+          { dayOfWeek: "Monday", foodItemIds: [FOOD_ID_2] },
+        ],
+        USER_ID,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: "DUPLICATE_DAY_IN_BATCH",
+    });
+  });
+
+  it("throws DUPLICATE_FOOD_ITEM when duplicate items inside same day are present", async () => {
+    await expect(
+      scheduledMenuService.batchUpdateSchedule(
+        [
+          { dayOfWeek: "Monday", foodItemIds: [FOOD_ID_1, FOOD_ID_1] },
+        ],
+        USER_ID,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: "DUPLICATE_FOOD_ITEM",
+    });
+  });
+
+  it("throws FOOD_ITEM_NOT_FOUND when one or more food item ids do not exist in DB", async () => {
+    foodItemRepository.countActiveByIds.mockResolvedValue(1);
+
+    await expect(
+      scheduledMenuService.batchUpdateSchedule(
+        [
+          { dayOfWeek: "Monday", foodItemIds: [FOOD_ID_1, FOOD_ID_2] },
+        ],
+        USER_ID,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      code: "FOOD_ITEM_NOT_FOUND",
+    });
   });
 });
