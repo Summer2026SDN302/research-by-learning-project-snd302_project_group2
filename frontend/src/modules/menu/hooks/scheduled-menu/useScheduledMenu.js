@@ -5,7 +5,7 @@ import useAppToast from "../../../../hooks/useAppToast";
 import * as scheduledMenuApi from "../../api/scheduledMenuApi";
 import { fetchAllFoodItems } from "../../api/foodItemApi";
 import { getCategories } from "../../api/categoryApi";
-import { DAY_LABEL, SCHEDULED_MENU_ERROR_MAP } from "../../constants/scheduledMenuConstants";
+import { DAY_OF_WEEK, DAY_LABEL, SCHEDULED_MENU_ERROR_MAP } from "../../constants/scheduledMenuConstants";
 import {
   markDaysSaved,
   revertDayItems,
@@ -146,6 +146,7 @@ const useScheduledMenu = () => {
 
   const saveDaySchedule = useCallback(
     async (dayOfWeek) => {
+      if (isSaving) return false;
       const day = schedule.find((entry) => entry.dayOfWeek === dayOfWeek);
       if (!day) return false;
 
@@ -179,56 +180,49 @@ const useScheduledMenu = () => {
         dispatch(setSaving(false));
       }
     },
-    [dirtyDays, dispatch, fetchSchedule, schedule, toast],
+    [dirtyDays, dispatch, fetchSchedule, isSaving, schedule, toast],
   );
 
   const saveAllSchedule = useCallback(async () => {
+    if (isSaving) return false;
     if (dirtyDays.length === 0) {
       toast.info("Thông báo", "Không có thay đổi cần lưu.");
       return false;
     }
 
     dispatch(setSaving(true));
-    const savedDays = [];
-    let hasError = false;
 
     try {
-      for (const dayOfWeek of dirtyDays) {
+      const sortedDirtyDays = [...dirtyDays].sort((a, b) => {
+        const indexA = DAY_OF_WEEK.indexOf(a);
+        const indexB = DAY_OF_WEEK.indexOf(b);
+        return indexA - indexB;
+      });
+
+      const daysPayload = sortedDirtyDays.map((dayOfWeek) => {
         const day = schedule.find((entry) => entry.dayOfWeek === dayOfWeek);
-        if (!day) continue;
+        const foodItemIds = day
+          ? day.menuItems.map((item) => item.foodItemId?._id || item.foodItemId)
+          : [];
+        return { dayOfWeek, foodItemIds };
+      });
 
-        const foodItemIds = day.menuItems.map(
-          (item) => item.foodItemId?._id || item.foodItemId,
-        );
-
-        try {
-          await scheduledMenuApi.updateDaySchedule(dayOfWeek, foodItemIds);
-          savedDays.push(dayOfWeek);
-        } catch (err) {
-          hasError = true;
-          const message = getApiErrorMsg(
-            SCHEDULED_MENU_ERROR_MAP,
-            err,
-            `Không thể lưu ${DAY_LABEL[dayOfWeek] || dayOfWeek}.`,
-          );
-          toast.error("Lưu thất bại", message);
-          break;
-        }
-      }
-
-      if (savedDays.length > 0) {
-        dispatch(markDaysSaved(savedDays));
-        if (!hasError) {
-          toast.success("Đã lưu", "Lịch thực đơn tuần đã được cập nhật.");
-        }
-        await fetchSchedule(true);
-      }
-
-      return !hasError;
+      const updatedSchedule = await scheduledMenuApi.batchUpdateSchedule(daysPayload);
+      dispatch(setSchedule(updatedSchedule));
+      toast.success("Đã lưu", "Lịch thực đơn tuần đã được cập nhật.");
+      return true;
+    } catch (err) {
+      const message = getApiErrorMsg(
+        SCHEDULED_MENU_ERROR_MAP,
+        err,
+        "Không thể lưu thay đổi lịch thực đơn tuần."
+      );
+      toast.error("Lưu thất bại", message);
+      return false;
     } finally {
       dispatch(setSaving(false));
     }
-  }, [dirtyDays, dispatch, fetchSchedule, schedule, toast]);
+  }, [dirtyDays, dispatch, isSaving, schedule, toast]);
 
   const cancelDayEdits = useCallback(
     (dayOfWeek) => {
