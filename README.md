@@ -8,7 +8,7 @@
 
 Overleaf project link: https://www.overleaf.com/2821918727ccqrhwxdgvkr#6f3a88
 
-# Link deploye
+# Link deployment
 
 https://stall-box-web.vercel.app/
 
