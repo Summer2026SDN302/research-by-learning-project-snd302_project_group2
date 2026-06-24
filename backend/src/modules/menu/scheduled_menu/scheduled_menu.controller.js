@@ -17,3 +17,9 @@ export const updateDaySchedule = asyncHandler(async (req, res) => {
   );
   return successResponse(res, data, "Schedule updated successfully");
 });
+
+export const batchUpdateSchedule = asyncHandler(async (req, res) => {
+  const { days } = req.body;
+  const data = await scheduledMenuService.batchUpdateSchedule(days, req.userId);
+  return successResponse(res, data, "Weekly schedule updated successfully");
+});
