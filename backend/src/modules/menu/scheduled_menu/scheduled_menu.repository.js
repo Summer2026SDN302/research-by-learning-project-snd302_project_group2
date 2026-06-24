@@ -30,7 +30,7 @@ const scheduledMenuRepository = {
       .lean();
   },
 
-  async upsertByDay(day, menuItems, userId) {
+  async upsertByDay(day, menuItems, userId, options = {}) {
     return ScheduledMenu.findOneAndUpdate(
       { dayOfWeek: day },
       {
@@ -42,7 +42,7 @@ const scheduledMenuRepository = {
           createdBy: toObjectId(userId),
         },
       },
-      { upsert: true, returnDocument: "after", runValidators: true },
+      { upsert: true, returnDocument: "after", runValidators: true, session: options.session },
     )
       .populate(FOOD_ITEM_POPULATE)
       .lean();
