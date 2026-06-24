@@ -203,8 +203,21 @@ const orderService = {
     };
   },
 
-  async getOrderById(id) {
+  async getOrderById(id, requestingUserId, requestingRole) {
     const order = await getOrderOrThrow(id);
+
+    // Staff chỉ được xem order của chính mình
+    if (
+      requestingRole === "Staff" &&
+      order.staffId.toString() !== requestingUserId
+    ) {
+      throw new AppError(
+        "You do not have permission to view this order",
+        403,
+        "FORBIDDEN",
+      );
+    }
+
     return toOrderResponse(order);
   },
 
