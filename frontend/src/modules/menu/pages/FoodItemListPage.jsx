@@ -251,7 +251,7 @@ const FoodItemListPage = () => {
           description={
             archiveConfirmTarget?.isArchived
               ? `Bạn có chắc chắn muốn mở bán lại món ăn "${archiveConfirmTarget?.name}"? Món sẽ có thể được thêm lại vào lịch bán và thực đơn.`
-              : `Bạn có chắc chắn muốn ngừng bán món ăn "${archiveConfirmTarget?.name}"? Món sẽ bị gỡ khỏi lịch bán định kỳ, không thể thêm vào thực đơn mới và nếu đang có trong thực đơn hôm nay hoặc tương lai thì sẽ được chuyển sang Không khả dụng.`
+              : `Bạn có chắc chắn muốn ngừng bán món ăn "${archiveConfirmTarget?.name}"? Lưu ý: Không thể ngừng bán nếu món ăn đang được sử dụng trong thực đơn theo lịch hoặc thực đơn hàng ngày của hôm nay/tương lai.`
           }
           confirmLabel={
             archiveConfirmTarget?.isArchived ? "Mở bán lại" : "Ngừng bán"
