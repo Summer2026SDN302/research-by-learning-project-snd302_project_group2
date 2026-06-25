@@ -6,12 +6,13 @@ import MainLayout from "../layouts/MainLayout";
 
 const ProfilePage = lazy(() => import("../modules/user/pages/ProfilePage"));
 const ChangePasswordPage = lazy(() => import("../modules/user/pages/ChangePasswordPage"));
+const CreateOrderPage = lazy(() => import("../modules/order/pages/CreateOrderPage"));
 
 const StaffRoutes = () => (
   <Route path="/staff" element={<MainLayout role="staff" />}>
     <Route index element={<Navigate to="dashboard" replace />} />
     <Route path="dashboard" element={<PlaceholderPage title="Tổng quan Staff" />} />
-    <Route path="pos" element={<PlaceholderPage title="POS" />} />
+    <Route path="pos" element={<CreateOrderPage />} />
     <Route path="my-orders" element={<PlaceholderPage title="Đơn hàng của tôi" />} />
     <Route path="profile" element={<ProfilePage />} />
     <Route path="change-password" element={<ChangePasswordPage />} />
@@ -19,3 +20,4 @@ const StaffRoutes = () => (
 );
 
 export default StaffRoutes;
+
