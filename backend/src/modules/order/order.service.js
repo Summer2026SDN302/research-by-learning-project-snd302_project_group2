@@ -7,6 +7,7 @@ import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
 import orderRepository from "./order.repository.js";
 import { toOrderResponse } from "./order.dto.js";
 import { VALID_STATUS_TRANSITIONS, TAX_PERCENT } from "./order.constants.js";
+import { USER_ROLES } from "../user/user.constants.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -208,7 +209,7 @@ const orderService = {
 
     // Staff chỉ được xem order của chính mình
     if (
-      requestingRole === "Staff" &&
+      requestingRole === USER_ROLES.STAFF &&
       order.staffId.toString() !== requestingUserId
     ) {
       throw new AppError(
