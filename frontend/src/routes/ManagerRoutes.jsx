@@ -19,6 +19,13 @@ const FoodItemListPage = lazy(
 const DailyMenuPage = lazy(
   () => import("../modules/menu/pages/DailyMenuPage"),
 );
+const ManagerPosPage = lazy(() => import("../modules/order/pages/ManagerPosPage"));
+const ManagerReceiptPage = lazy(
+  () => import("../modules/invoice/pages/ManagerReceiptPage"),
+);
+const OwnOrderHistoryPage = lazy(() => import("../modules/order/pages/OwnOrderHistoryPage"));
+const OrderListPage = lazy(() => import("../modules/order/pages/OrderListPage"));
+const PaymentListPage = lazy(() => import("../modules/payment/pages/PaymentListPage"));
 
 const ManagerRoutes = () => (
   <Route path="/manager" element={<MainLayout role="manager" />}>
@@ -27,10 +34,11 @@ const ManagerRoutes = () => (
       path="dashboard"
       element={<PlaceholderPage title="Tổng quan Manager" />}
     />
-    <Route path="create-order" element={<PlaceholderPage title="POS" />} />
+    <Route path="create-order" element={<ManagerPosPage />} />
+    <Route path="receipts/:invoiceId" element={<ManagerReceiptPage />} />
     <Route
       path="my-orders"
-      element={<PlaceholderPage title="Đơn hàng của tôi" />}
+      element={<OwnOrderHistoryPage />}
     />
     <Route path="daily-menu" element={<DailyMenuPage />} />
     <Route
@@ -42,8 +50,8 @@ const ManagerRoutes = () => (
       element={<PlaceholderPage title="Định giá linh hoạt" />}
     />
     <Route path="ai" element={<PlaceholderPage title="Tối ưu hóa AI" />} />
-    <Route path="orders" element={<PlaceholderPage title="Đơn hàng" />} />
-    <Route path="payments" element={<PlaceholderPage title="Thanh toán" />} />
+    <Route path="orders" element={<OrderListPage />} />
+    <Route path="payments" element={<PaymentListPage />} />
     <Route path="profile" element={<ProfilePage />} />
     <Route path="change-password" element={<ChangePasswordPage />} />
     <Route
