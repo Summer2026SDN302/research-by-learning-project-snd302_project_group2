@@ -26,7 +26,7 @@ const PosMenuGrid = ({ items = [], onAddItem }) => {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pb-8 pr-2 flex-1 min-h-0">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 content-start gap-4 overflow-y-auto pb-8 pr-2 flex-1 min-h-0">
       {items.map((item) => {
         const {
           foodItemId,
@@ -54,7 +54,7 @@ const PosMenuGrid = ({ items = [], onAddItem }) => {
                 onAddItem(foodItemId, currentPrice);
               }
             }}
-            className={`relative bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden flex flex-col py-2 transition-all duration-200 select-none ${
+            className={`relative w-full h-[13rem] min-h-[13rem] max-h-[13rem] bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden flex flex-col py-2 transition-all duration-200 select-none ${
               isUnavailable
                 ? "opacity-60 cursor-not-allowed"
                 : "cursor-pointer hover:shadow-md hover:border-primary/50 group active:scale-[0.98]"
@@ -73,10 +73,10 @@ const PosMenuGrid = ({ items = [], onAddItem }) => {
             )}
 
             <div className="p-4 flex flex-col flex-1 min-h-[120px]">
-              <h3 className="font-body-md font-semibold text-on-surface mb-1 group-hover:text-primary transition-colors line-clamp-2">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface mb-1 group-hover:text-primary transition-colors line-clamp-2">
                 {foodItemId.name}
               </h3>
-              <p className="font-body-md text-primary font-bold mb-3">
+              <p className="font-body-md text-body-md text-primary font-bold mb-3">
                 {formatCurrency(currentPrice)}
               </p>
 

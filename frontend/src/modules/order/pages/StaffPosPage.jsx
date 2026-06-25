@@ -124,7 +124,7 @@ const StaffPosPage = () => {
             </div>
 
             {/* Content Search Input */}
-            <div className="relative w-full md:w-72">
+            <div className="relative w-full shrink-0 md:w-[18rem] md:min-w-[18rem] md:max-w-[18rem] md:flex-none">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">
                 search
               </span>
@@ -197,6 +197,7 @@ const StaffPosPage = () => {
         setCashReceivedAmount={paymentHook.setCashReceivedAmount}
         changeReturned={paymentHook.changeReturned}
         isCashValid={paymentHook.isCashValid}
+        quickCashOptions={paymentHook.quickCashOptions}
       />
     </div>
   );

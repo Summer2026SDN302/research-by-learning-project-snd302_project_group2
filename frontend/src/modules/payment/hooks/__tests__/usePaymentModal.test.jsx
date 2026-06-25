@@ -4,7 +4,7 @@ import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import paymentReducer from "../../redux/paymentSlice";
-import { usePaymentModal } from "../usePaymentModal";
+import { getQuickCashOptions, usePaymentModal } from "../usePaymentModal";
 import * as paymentApi from "../../api/paymentApi";
 
 vi.mock("../../api/paymentApi", () => ({
@@ -112,5 +112,31 @@ describe("usePaymentModal", () => {
       _id: "payment-1",
       invoiceId: "invoice-1",
     });
+  });
+
+  it("builds quick cash suggestions from the current order total", () => {
+    expect(getQuickCashOptions(57000)).toEqual([100000, 200000]);
+    expect(getQuickCashOptions(160000)).toEqual([200000, 300000]);
+    expect(getQuickCashOptions(32000)).toEqual([50000, 100000]);
+  });
+
+  it("exposes dynamic quick cash options for the active order", () => {
+    const store = createTestStore();
+    const { result } = renderHook(() => usePaymentModal(), {
+      wrapper: createWrapper(store),
+    });
+
+    act(() => {
+      result.current.openModal(
+        {
+          _id: "order-1",
+          orderNumber: "ORD-001",
+          finalAmount: 160000,
+        },
+        "Cash",
+      );
+    });
+
+    expect(result.current.quickCashOptions).toEqual([200000, 300000]);
   });
 });

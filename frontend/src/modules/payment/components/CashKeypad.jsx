@@ -1,5 +1,4 @@
 import React from "react";
-import { formatCurrency } from "@/utils/formatters";
 
 /**
  * CashKeypad
@@ -9,6 +8,7 @@ import { formatCurrency } from "@/utils/formatters";
  *   changeReturned     {number}   - Calculated change
  *   isCashValid        {boolean}  - True if cashReceived >= finalAmount
  *   finalAmount        {number}   - Total order amount
+ *   quickCashOptions   {number[]} - Suggested quick cash amounts above the order total
  *   onAppendDigit      {Function} - (digit) => void
  *   onClearCash        {Function} - () => void
  *   onSetCashAmount    {Function} - (amount) => void
@@ -18,6 +18,7 @@ const CashKeypad = ({
   changeReturned,
   isCashValid,
   finalAmount,
+  quickCashOptions = [],
   onAppendDigit,
   onClearCash,
   onSetCashAmount,
@@ -32,9 +33,8 @@ const CashKeypad = ({
   ];
 
   return (
-    <div className="bg-surface-container-low rounded-2xl p-6 flex flex-col h-full select-none border border-outline-variant/30">
-      {/* Inputs and computations */}
-      <div className="mb-6 grid grid-cols-2 gap-4">
+    <div className="w-full h-full min-h-[34rem] bg-surface-container-low rounded-2xl p-6 flex flex-col select-none border border-outline-variant/30">
+      <div className="mb-6 grid grid-cols-2 gap-4 shrink-0">
         <div>
           <label className="font-label-md text-on-surface-variant mb-2 block font-semibold">
             Số tiền khách đưa
@@ -51,6 +51,7 @@ const CashKeypad = ({
             </span>
           </div>
         </div>
+
         <div>
           <label className="font-label-md text-on-surface-variant mb-2 block text-right font-semibold">
             Tiền thừa trả khách
@@ -65,10 +66,10 @@ const CashKeypad = ({
         </div>
       </div>
 
-      {/* Numeric Keypad */}
-      <div className="grid grid-cols-3 gap-2 flex-1 min-h-[220px]">
+      <div className="grid grid-cols-3 gap-3 flex-1 auto-rows-fr min-h-[15rem]">
         {keypadButtons.map((btn) => {
           const isClear = btn === "C";
+
           return (
             <button
               key={btn}
@@ -80,7 +81,7 @@ const CashKeypad = ({
                   onAppendDigit(btn);
                 }
               }}
-              className={`h-full rounded-xl shadow-sm text-lg font-bold transition-all active:scale-95 flex items-center justify-center py-3 select-none ${
+              className={`min-h-[4.5rem] rounded-xl shadow-sm text-lg font-bold transition-all active:scale-95 flex items-center justify-center py-3 ${
                 isClear
                   ? "bg-error-container/20 text-error hover:bg-error-container/30"
                   : "bg-white text-on-surface hover:bg-surface-container-high"
@@ -92,29 +93,24 @@ const CashKeypad = ({
         })}
       </div>
 
-      {/* Quick Select Preset Keys */}
-      <div className="mt-4 grid grid-cols-3 gap-2 shrink-0">
+      <div className="mt-4 grid grid-cols-3 gap-3 shrink-0">
         <button
           type="button"
           onClick={() => onSetCashAmount(finalAmount)}
-          className="bg-white/70 border border-outline-variant rounded-xl py-2.5 text-xs font-bold hover:bg-white hover:border-primary transition-all text-on-surface active:scale-95"
+          className="min-h-[3rem] bg-white/70 border border-outline-variant rounded-xl py-2.5 text-xs font-bold hover:bg-white hover:border-primary transition-all text-on-surface active:scale-95"
         >
           Đúng số tiền
         </button>
-        <button
-          type="button"
-          onClick={() => onSetCashAmount(200000)}
-          className="bg-white/70 border border-outline-variant rounded-xl py-2.5 text-xs font-bold hover:bg-white hover:border-primary transition-all text-on-surface active:scale-95"
-        >
-          200,000đ
-        </button>
-        <button
-          type="button"
-          onClick={() => onSetCashAmount(500000)}
-          className="bg-white/70 border border-outline-variant rounded-xl py-2.5 text-xs font-bold hover:bg-white hover:border-primary transition-all text-on-surface active:scale-95"
-        >
-          500,000đ
-        </button>
+        {quickCashOptions.map((amount) => (
+          <button
+            key={amount}
+            type="button"
+            onClick={() => onSetCashAmount(amount)}
+            className="min-h-[3rem] bg-white/70 border border-outline-variant rounded-xl py-2.5 text-xs font-bold hover:bg-white hover:border-primary transition-all text-on-surface active:scale-95"
+          >
+            {amount.toLocaleString("vi-VN")}đ
+          </button>
+        ))}
       </div>
     </div>
   );

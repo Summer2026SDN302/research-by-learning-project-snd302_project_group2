@@ -27,6 +27,7 @@ import { formatCurrency } from "@/utils/formatters";
  *   setCashReceivedAmount{Function}
  *   changeReturned       {number}
  *   isCashValid          {boolean}
+ *   quickCashOptions     {number[]}
  */
 const PaymentModal = ({
   open,
@@ -46,6 +47,7 @@ const PaymentModal = ({
   setCashReceivedAmount,
   changeReturned,
   isCashValid,
+  quickCashOptions,
 }) => {
   if (!open || !order) return null;
 
@@ -80,7 +82,7 @@ const PaymentModal = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 grid grid-cols-12 gap-6 min-h-[350px]">
-          <div className="col-span-12 md:col-span-5 border-b md:border-b-0 md:border-r border-outline-variant/60 pb-6 md:pb-0 md:pr-6">
+          <div className="col-span-12 md:col-span-5 md:min-h-[34rem] border-b md:border-b-0 md:border-r border-outline-variant/60 pb-6 md:pb-0 md:pr-6">
             <h3 className="font-body-md font-bold mb-4 text-on-surface">
               Phương thức thanh toán
             </h3>
@@ -90,13 +92,14 @@ const PaymentModal = ({
             />
           </div>
 
-          <div className="col-span-12 md:col-span-7 flex flex-col">
+          <div className="col-span-12 md:col-span-7 flex flex-col md:min-h-[34rem]">
             {selectedMethod === "Cash" ? (
               <CashKeypad
                 cashReceived={cashReceived}
                 changeReturned={changeReturned}
                 isCashValid={isCashValid}
                 finalAmount={order.finalAmount}
+                quickCashOptions={quickCashOptions}
                 onAppendDigit={appendDigit}
                 onClearCash={clearCash}
                 onSetCashAmount={setCashReceivedAmount}

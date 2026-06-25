@@ -5,6 +5,22 @@ import useAppToast from "@/hooks/useAppToast";
 import { getApiErrorMsg } from "@/utils/errorUtils";
 import { PAYMENT_ERROR_MAP } from "../constants/paymentConstants";
 
+export const getQuickCashOptions = (amount) => {
+  const totalAmount = Number(amount) || 0;
+
+  if (totalAmount < 50000) {
+    return [50000, 100000];
+  }
+
+  if (totalAmount < 100000) {
+    return [100000, 200000];
+  }
+
+  const nextRoundedAmount = (Math.floor(totalAmount / 100000) + 1) * 100000;
+
+  return [nextRoundedAmount, nextRoundedAmount + 100000];
+};
+
 export const usePaymentModal = () => {
   const dispatch = useDispatch();
   const { toast } = useAppToast();
@@ -61,6 +77,11 @@ export const usePaymentModal = () => {
     const receivedVal = parseInt(cashReceived, 10) || 0;
     return receivedVal >= order.finalAmount;
   }, [cashReceived, order]);
+
+  const quickCashOptions = useMemo(
+    () => getQuickCashOptions(order?.finalAmount),
+    [order?.finalAmount],
+  );
 
   const submitCheckout = useCallback(
     async (onSuccess) => {
@@ -154,6 +175,7 @@ export const usePaymentModal = () => {
     setCashReceivedAmount,
     changeReturned,
     isCashValid,
+    quickCashOptions,
     submitCheckout,
   };
 };
