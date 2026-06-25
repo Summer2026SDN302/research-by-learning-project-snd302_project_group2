@@ -174,28 +174,32 @@ const foodItemService = {
   },
 
   async updateFoodItemArchive(id, isArchived, userId) {
-  const foodItem = await getFoodItemOrThrow(id);
+    const foodItem = await getFoodItemOrThrow(id);
 
-  const patch = {
-    isArchived,
-    deletedAt: isArchived ? new Date() : null,
-    deletedBy: isArchived ? userId ?? null : null,
-  };
+    const patch = {
+      isArchived,
+      deletedAt: isArchived ? new Date() : null,
+      deletedBy: isArchived ? userId ?? null : null,
+    };
 
-  if (isArchived) {
-    const today = new Date().toISOString().slice(0, 10);
+    if (isArchived) {
+      const scheduledCount = await scheduledMenuRepository.countByFoodItemId(id);
+      if (scheduledCount > 0) {
+        throw new AppError("Food item is in use by scheduled menu", 409, "FOODITEM_IN_USE");
+      }
 
-    await Promise.all([
-      scheduledMenuRepository.removeFoodItemFromAllSchedules(id),
-      dailyMenuRepository.setFoodItemUnavailableFromDate(id, today),
-    ]);
+      const today = new Date().toISOString().slice(0, 10);
+      const activeDailyCount = await dailyMenuRepository.countActiveByFoodItemId(id, today);
+      if (activeDailyCount > 0) {
+        throw new AppError("Food item is in use by active daily menu", 409, "FOODITEM_IN_USE");
+      }
+    }
+
+    return mutateFoodItem(id, {
+      patch,
+      categoryName: foodItem.categoryName,
+    });
   }
-
-  return mutateFoodItem(id, {
-    patch,
-    categoryName: foodItem.categoryName,
-  });
-}
 };
 
 export default foodItemService;
