@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { validationResult } from "express-validator";
 
-import { validateDayParam, validateUpdateBody } from "../scheduled_menu.validation.js";
+import { validateDayParam, validateUpdateBody, validateBatchUpdateBody } from "../scheduled_menu.validation.js";
 
 const runValidations = async (validations, req) => {
   for (const validation of validations) {
@@ -83,5 +83,78 @@ describe("validateUpdateBody", () => {
 
     expect(result.isEmpty()).toBe(false);
     expect(result.array()[0].path).toBe("foodItemIds[0]");
+  });
+});
+
+describe("validateBatchUpdateBody", () => {
+  it("accepts valid batch update payload", async () => {
+    const result = await runValidations(
+      validateBatchUpdateBody,
+      makeReq({
+        body: {
+          days: [
+            {
+              dayOfWeek: "Monday",
+              foodItemIds: ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"],
+            },
+            {
+              dayOfWeek: "Friday",
+              foodItemIds: [],
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(result.isEmpty()).toBe(true);
+  });
+
+  it("rejects empty days array", async () => {
+    const result = await runValidations(
+      validateBatchUpdateBody,
+      makeReq({
+        body: {
+          days: [],
+        },
+      }),
+    );
+
+    expect(result.isEmpty()).toBe(false);
+  });
+
+  it("rejects invalid dayOfWeek in days array", async () => {
+    const result = await runValidations(
+      validateBatchUpdateBody,
+      makeReq({
+        body: {
+          days: [
+            {
+              dayOfWeek: "InvalidDay",
+              foodItemIds: [],
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(result.isEmpty()).toBe(false);
+  });
+
+  it("rejects invalid MongoDB ObjectId in foodItemIds in batch", async () => {
+    const result = await runValidations(
+      validateBatchUpdateBody,
+      makeReq({
+        body: {
+          days: [
+            {
+              dayOfWeek: "Monday",
+              foodItemIds: ["not-a-mongo-id"],
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(result.isEmpty()).toBe(false);
   });
 });
