@@ -1,35 +1,46 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+// [CHƯA CÓ BE] useNavigate — sẽ cần khi BE có module Invoice
+// import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
+import Datepicker from "react-tailwindcss-datepicker";
 import { useOwnOrderHistory } from "../hooks/useOwnOrderHistory";
 import Spinner from "@/components/feedback/Spinner";
 
+const STATUS_OPTIONS = [
+  { value: "", label: "Tất cả trạng thái" },
+  { value: "Pending", label: "Đang chờ" },
+  { value: "Confirmed", label: "Đã xác nhận" },
+  { value: "Completed", label: "Hoàn thành" },
+  { value: "Cancelled", label: "Đã hủy" },
+  { value: "Returned", label: "Đã trả lại" },
+];
+
 const OwnOrderHistoryPage = () => {
-  const navigate = useNavigate();
+  // [CHƯA CÓ BE] useNavigate
+  // const navigate = useNavigate();
   const {
     orders,
     loading,
     kpis,
     filters,
     pagination,
-    handleSearch,
+    // [CHƯA CÓ BE] handleSearch — BE chưa hỗ trợ search
     handlePageChange,
     handleFilterChange,
     refetch,
   } = useOwnOrderHistory();
 
-  const [searchInput, setSearchInput] = useState(filters.search);
+  const [statusDropdownOpen, setStatusDropdownOpen] = React.useState(false);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    handleSearch(searchInput);
-  };
+  const dateValue = React.useMemo(() => ({
+    startDate: filters.fromDate || null,
+    endDate: filters.toDate || null
+  }), [filters.fromDate, filters.toDate]);
 
-  const handleClearSearch = () => {
-    setSearchInput("");
-    handleSearch("");
-  };
-
+  /**
+   * Badge trạng thái đơn hàng — khớp với BE ORDER_STATUS:
+   * Pending, Confirmed, Completed, Cancelled, Returned
+   */
   const getStatusBadge = (status) => {
     switch (status) {
       case "Completed":
@@ -46,6 +57,13 @@ const OwnOrderHistoryPage = () => {
             Đang chờ
           </span>
         );
+      case "Confirmed":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-container/20 text-primary border border-primary-container font-label-md text-[11px] font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            Đã xác nhận
+          </span>
+        );
       case "Cancelled":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container/30 text-error border border-error-container font-label-md text-[11px] font-bold">
@@ -53,11 +71,11 @@ const OwnOrderHistoryPage = () => {
             Đã hủy
           </span>
         );
-      case "Preparing":
+      case "Returned":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-container/20 text-primary border border-primary-container font-label-md text-[11px] font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-            Đang chuẩn bị
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-outline/20 text-on-surface-variant border border-outline font-label-md text-[11px] font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-outline"></span>
+            Đã trả lại
           </span>
         );
       default:
@@ -70,34 +88,8 @@ const OwnOrderHistoryPage = () => {
     }
   };
 
-  const getPaymentStatusBadge = (status) => {
-    switch (status) {
-      case "Paid":
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[11px] font-bold">
-            Đã trả
-          </span>
-        );
-      case "Unpaid":
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-error-container text-on-error-container text-[11px] font-bold">
-            Chưa trả
-          </span>
-        );
-      case "Pending":
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[11px] font-bold">
-            Đang chờ
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant text-[11px] font-bold">
-            {status}
-          </span>
-        );
-    }
-  };
+  // [CHƯA CÓ BE] getPaymentStatusBadge — BE chưa có field paymentStatus trong Order model
+  // const getPaymentStatusBadge = (status) => { ... };
 
   const getOrderItemsSummary = (items) => {
     if (!items || items.length === 0) return "Không có món";
@@ -162,63 +154,95 @@ const OwnOrderHistoryPage = () => {
       </div>
 
       {/* Table & Filters Card */}
-      <div className="bg-surface rounded-xl border border-outline-variant shadow-soft overflow-hidden flex flex-col">
-        {/* Filters Header */}
-        <div className="p-6 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <form onSubmit={handleSearchSubmit} className="relative w-full max-w-md flex gap-2">
-            <div className="relative flex-1">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant">
-                search
-              </span>
-              <input
-                className="w-full pl-10 pr-10 py-2 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background outline-none transition-all text-on-surface"
-                placeholder="Tìm kiếm đơn hàng..."
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant hover:text-on-surface"
-                >
-                  <span className="material-symbols-outlined text-[16px]">close</span>
-                </button>
+      <div className="bg-surface rounded-xl border border-outline-variant shadow-soft overflow-visible flex flex-col">
+        {/* Filter Section matching Image 2 */}
+        <div className="p-4 border-b border-outline-variant bg-surface-container-lowest flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
+          {/* Khoảng thời gian (Date Picker) */}
+          <div className="flex-1 max-w-md relative z-20">
+            <Datepicker
+              value={dateValue}
+              onChange={(newValue) => {
+                let from = newValue?.startDate || "";
+                let to = newValue?.endDate || "";
+                if (typeof from === 'string' && from.includes('/')) {
+                  const [d, m, y] = from.split('/');
+                  from = `${y}-${m}-${d}`;
+                } else if (from) {
+                  from = dayjs(from).format("YYYY-MM-DD");
+                }
+                
+                if (typeof to === 'string' && to.includes('/')) {
+                  const [d, m, y] = to.split('/');
+                  to = `${y}-${m}-${d}`;
+                } else if (to) {
+                  to = dayjs(to).format("YYYY-MM-DD");
+                }
+                
+                handleFilterChange({ 
+                  fromDate: from, 
+                  toDate: to 
+                });
+              }}
+              useRange={false}
+              showShortcuts={true}
+              primaryColor="teal"
+              inputClassName="w-full text-sm bg-white border border-outline-variant rounded-full px-4 py-2 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+              displayFormat="DD/MM/YYYY"
+              placeholder="Chọn ngày"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Filter: Trạng thái đơn hàng */}
+            <div className="relative">
+              <div 
+                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                className={`flex items-center bg-white border rounded-lg px-3 py-2 text-sm text-on-surface cursor-pointer transition-all ${statusDropdownOpen ? 'ring-1 ring-primary border-primary' : 'border-outline-variant hover:border-outline'}`}
+              >
+                <span className="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">receipt_long</span>
+                <span className="flex-1 text-[13px] truncate pr-4">
+                  {STATUS_OPTIONS.find((opt) => opt.value === filters.orderStatus)?.label || "Tất cả trạng thái"}
+                </span>
+                <span className={`material-symbols-outlined text-[18px] text-on-surface-variant transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`}>
+                  arrow_drop_down
+                </span>
+              </div>
+              
+              {/* Custom Dropdown List */}
+              {statusDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setStatusDropdownOpen(false)}></div>
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-outline-variant rounded-xl shadow-lg z-40 overflow-hidden py-1 min-w-[160px]">
+                    {STATUS_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        onClick={() => {
+                          handleFilterChange({ orderStatus: option.value });
+                          setStatusDropdownOpen(false);
+                        }}
+                        className={`px-4 py-2.5 text-[13px] cursor-pointer transition-colors ${
+                          filters.orderStatus === option.value
+                            ? "bg-primary-container text-on-primary-container font-semibold"
+                            : "text-on-surface hover:bg-surface-container-low"
+                        }`}
+                      >
+                        {option.label}
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Tìm
-            </button>
-          </form>
 
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-on-surface-variant">Trạng thái:</span>
-              <select
-                value={filters.orderStatus}
-                onChange={(e) => handleFilterChange({ orderStatus: e.target.value })}
-                className="border border-outline-variant rounded-lg px-2.5 py-1.5 text-xs bg-background text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="">Tất cả</option>
-                <option value="Pending">Đang chờ</option>
-                <option value="Confirmed">Xác nhận</option>
-                <option value="Preparing">Đang làm</option>
-                <option value="Ready">Sẵn sàng</option>
-                <option value="Completed">Hoàn thành</option>
-                <option value="Cancelled">Đã hủy</option>
-              </select>
-            </div>
-
+            {/* Action Buttons */}
             <button
               onClick={refetch}
-              className="p-2 border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-primary text-primary rounded-lg hover:bg-primary-container transition-all font-label-md text-sm font-semibold"
               title="Tải lại dữ liệu"
             >
               <span className="material-symbols-outlined text-[18px]">refresh</span>
+              Tải lại
             </button>
           </div>
         </div>
@@ -246,9 +270,9 @@ const OwnOrderHistoryPage = () => {
                   <th className="px-6 py-4 font-bold">Thời Gian</th>
                   <th className="px-6 py-4 font-bold">Món Ăn</th>
                   <th className="px-6 py-4 font-bold text-right">Tổng Tiền</th>
-                  <th className="px-6 py-4 font-bold">Thanh Toán</th>
+                  {/* [CHƯA CÓ BE] Cột "Thanh Toán" — paymentStatus chưa có trong Order model */}
                   <th className="px-6 py-4 font-bold">Trạng Thái Đơn</th>
-                  <th className="px-6 py-4 font-bold text-center">Biên Lai</th>
+                  {/* [CHƯA CÓ BE] Cột "Biên Lai" — module Invoice chưa có ở BE */}
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant text-body-sm text-sm">
@@ -266,33 +290,21 @@ const OwnOrderHistoryPage = () => {
                     <td className="px-6 py-4 max-w-xs truncate" title={getOrderItemsSummary(order.items)}>
                       {getOrderItemsSummary(order.items)}
                     </td>
+                    {/* Dùng totalAmount — BE DTO trả về totalAmount (không có finalAmount) */}
                     <td className="px-6 py-4 font-bold text-right">
-                      {(order.finalAmount || order.totalAmount || 0).toLocaleString("vi-VN")}₫
+                      {(order.totalAmount || 0).toLocaleString("vi-VN")}₫
                     </td>
+                    {/* [CHƯA CÓ BE] Cột paymentStatus
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getPaymentStatusBadge(order.paymentStatus)}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(order.orderStatus)}
                     </td>
+                    {/* [CHƯA CÓ BE] Nút xem biên lai — module Invoice chưa có
                     <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => {
-                          const role = window.location.pathname.startsWith("/manager") ? "manager" : "staff";
-                          const targetInvoiceId = order.invoiceId?._id || order.invoiceId;
-                          if (targetInvoiceId) {
-                            navigate(`/${role}/receipts/${targetInvoiceId}`);
-                          } else {
-                            // If no invoice yet (unpaid or custom state), navigate to POS checkout or detail if needed
-                            toast.error("Chưa có hóa đơn", "Đơn hàng này chưa hoàn tất thanh toán.");
-                          }
-                        }}
-                        className="p-2 text-primary hover:bg-primary-container hover:bg-opacity-10 rounded-full transition-colors"
-                        title="Xem biên lai / In"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">print</span>
-                      </button>
-                    </td>
+                      <button onClick={() => navigate(`...`)}>...</button>
+                    </td> */}
                   </tr>
                 ))}
               </tbody>
@@ -310,7 +322,7 @@ const OwnOrderHistoryPage = () => {
               <button
                 onClick={() => handlePageChange(pagination.page - 1)}
                 disabled={pagination.page <= 1}
-                className="p-1.5 border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px]">chevron_left</span>
               </button>
@@ -322,7 +334,7 @@ const OwnOrderHistoryPage = () => {
                     <button
                       key={pNum}
                       onClick={() => handlePageChange(pNum)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold transition-all ${
+                      className={`w-8 h-8 flex items-center justify-center rounded-full font-bold transition-all ${
                         pagination.page === pNum
                           ? "bg-primary text-on-primary shadow-sm"
                           : "hover:bg-surface-container text-on-surface"
@@ -337,7 +349,7 @@ const OwnOrderHistoryPage = () => {
               <button
                 onClick={() => handlePageChange(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages}
-                className="p-1.5 border border-outline-variant rounded-lg text-on-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px]">chevron_right</span>
               </button>
