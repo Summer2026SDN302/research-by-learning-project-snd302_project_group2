@@ -7,22 +7,24 @@ import { formatCurrency } from "@/utils/formatters";
  * Props:
  *   cart               {Object}   - Cart state: { items }
  *   totals             {Object}   - Computed totals: { subtotal, taxRate, taxAmount, totalAmount }
- *   orderNotes         {string}   - Shared note for the current order
- *   onOrderNotesChange {Function} - (value) => void
  *   onUpdateQuantity   {Function} - (foodItemId, qty) => void
- *   onUpdateNote       {Function} - (foodItemId, note) => void
  *   onRemove           {Function} - (foodItemId) => void
  *   onClearCart        {Function} - () => void
- *   onCheckout         {Function} - (method) => Promise<void>
+ *   onCheckout         {Function} - () => void — tạo đơn trực tiếp (BE chưa có Payment module)
  *   isSubmitting       {boolean}  - Loading state during API order creation
+ *
+ * [CHƯA CÓ BE] Props tạm ẩn (BE chưa hỗ trợ):
+ *   orderNotes         {string}   - Ghi chú chung cho đơn — BE chưa có field notes
+ *   onOrderNotesChange {Function} - (value) => void
+ *   onUpdateNote       {Function} - (foodItemId, note) => void — BE chưa có field note cho item
  */
 const OrderSummaryCard = ({
   cart,
   totals,
-  orderNotes,
-  onOrderNotesChange,
+  // [CHƯA CÓ BE] orderNotes,
+  // [CHƯA CÓ BE] onOrderNotesChange,
   onUpdateQuantity,
-  onUpdateNote,
+  // [CHƯA CÓ BE] onUpdateNote,
   onRemove,
   onClearCart,
   onCheckout,
@@ -69,15 +71,15 @@ const OrderSummaryCard = ({
             key={item.foodItemId}
             item={item}
             onUpdateQuantity={onUpdateQuantity}
-            onUpdateNote={onUpdateNote}
+            // [CHƯA CÓ BE] onUpdateNote — BE chưa hỗ trợ field note cho item
             onRemove={onRemove}
           />
         ))
       )}
     </div>
 
-    {/* Order Notes */}
-    {cart.items.length > 0 && (
+    {/* [CHƯA CÓ BE] Order Notes — BE chưa hỗ trợ field notes cho order */}
+    {/* {cart.items.length > 0 && (
       <div className="mb-4 shrink-0">
         <label
           htmlFor="order-notes"
@@ -95,7 +97,7 @@ const OrderSummaryCard = ({
           className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
         />
       </div>
-    )}
+    )} */}
 
     {/* Calculations & Pricing */}
     {cart.items.length > 0 && (
@@ -126,38 +128,24 @@ const OrderSummaryCard = ({
     {/* Checkout Action Panel */}
     {cart.items.length > 0 && (
       <div className="space-y-3 shrink-0">
+        {/* [CHƯA CÓ BE] Nút chọn phương thức thanh toán (Thẻ / Tiền mặt) — module Payment chưa có
         <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => onCheckout("Card")}
-            className="py-2.5 border border-outline-variant text-on-surface-variant rounded-xl font-label-md text-label-md hover:bg-surface-container transition-all flex justify-center items-center gap-2 font-bold active:scale-[0.98] disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-[18px]">credit_card</span>
-            Thẻ
-          </button>
-          <button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => onCheckout("Cash")}
-            className="py-2.5 border border-outline-variant text-on-surface-variant rounded-xl font-label-md text-label-md hover:bg-surface-container transition-all flex justify-center items-center gap-2 font-bold active:scale-[0.98] disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-[18px]">payments</span>
-            Tiền mặt
-          </button>
-        </div>
+          <button onClick={() => onCheckout("Card")} ...>Thẻ</button>
+          <button onClick={() => onCheckout("Cash")} ...>Tiền mặt</button>
+        </div> */}
 
+        {/* Nút tạo đơn — gọi trực tiếp handleSubmitOrder (không mở PaymentModal) */}
         <button
           type="button"
           disabled={isSubmitting}
-          onClick={() => onCheckout("Cash")}
+          onClick={onCheckout}
           className="w-full bg-primary text-on-primary py-3.5 rounded-xl font-body-md font-bold shadow-md hover:shadow-lg hover:opacity-95 transition-all active:scale-[0.98] flex justify-center items-center gap-2 disabled:opacity-50"
         >
           {isSubmitting ? (
             <span>Đang xử lý đơn...</span>
           ) : (
             <>
-              Thanh toán
+              Tạo đơn hàng
               <span className="material-symbols-outlined text-[20px]">
                 arrow_forward
               </span>

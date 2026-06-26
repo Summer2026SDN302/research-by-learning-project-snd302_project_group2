@@ -1,16 +1,20 @@
-import { useNavigate } from "react-router-dom";
+// [CHƯA CÓ BE] import useNavigate — sẽ dùng khi BE có module Invoice để navigate đến receipt
+// import { useNavigate } from "react-router-dom";
 import { useStaffPos } from "../hooks/useStaffPos";
-import { usePaymentModal } from "@/modules/payment/hooks/usePaymentModal";
+// [CHƯA CÓ BE] PaymentModal — module Payment chưa có ở BE
+// import { usePaymentModal } from "@/modules/payment/hooks/usePaymentModal";
+// import PaymentModal from "@/modules/payment/components/PaymentModal";
 import CategoryFilterBar from "../components/CategoryFilterBar";
 import PosMenuGrid from "../components/PosMenuGrid";
 import OrderSummaryCard from "../components/OrderSummaryCard";
-import PaymentModal from "@/modules/payment/components/PaymentModal";
 import Spinner from "@/components/feedback/Spinner";
 
 const StaffPosPage = () => {
-  const navigate = useNavigate();
+  // [CHƯA CÓ BE] useNavigate — sẽ cần khi có Invoice page
+  // const navigate = useNavigate();
   const staffPos = useStaffPos();
-  const paymentHook = usePaymentModal();
+  // [CHƯA CÓ BE] usePaymentModal — module Payment chưa có ở BE
+  // const paymentHook = usePaymentModal();
 
   const {
     todayMenu,
@@ -24,34 +28,35 @@ const StaffPosPage = () => {
     filteredMenuItems,
     cart,
     cartTotals,
-    orderNotes,
-    handleOrderNotesChange,
+    // [CHƯA CÓ BE] orderNotes,
+    // [CHƯA CÓ BE] handleOrderNotesChange,
     handleAddItem,
     handleRemoveItem,
     handleUpdateQuantity,
-    handleUpdateNote,
+    // [CHƯA CÓ BE] handleUpdateNote,
     handleClearCart,
-    handleCheckout,
+    handleSubmitOrder,
+    // [CHƯA CÓ BE] handleCheckout,
     submitStatus,
     refetchMenu,
   } = staffPos;
 
-  // Handle successful payment checkout
-  const handlePaymentSuccess = (confirmedPayment) => {
-    const invoiceId = confirmedPayment?.invoiceId?._id || confirmedPayment?.invoiceId;
-    // Clear cart in Redux so the next order starts fresh
-    void handleClearCart({ skipCancel: true });
-    // Navigate to receipt page
-    navigate(`/staff/receipts/${invoiceId}`);
+  // [CHƯA CÓ BE] handlePaymentSuccess — module Payment/Invoice chưa có ở BE
+  // const handlePaymentSuccess = (confirmedPayment) => {
+  //   const invoiceId = confirmedPayment?.invoiceId?._id || confirmedPayment?.invoiceId;
+  //   void handleClearCart({ skipCancel: true });
+  //   navigate(`/staff/receipts/${invoiceId}`);
+  // };
+
+  // Bấm "Thanh toán" → tạo đơn trực tiếp (không mở PaymentModal vì BE chưa có)
+  const handleCheckoutClick = () => {
+    void handleSubmitOrder();
   };
 
-  const handleCheckoutClick = (method) => {
-    void handleCheckout(method, paymentHook.openModal);
-  };
-
-  const handlePaymentConfirm = () => {
-    void paymentHook.submitCheckout(handlePaymentSuccess);
-  };
+  // [CHƯA CÓ BE] handlePaymentConfirm — module Payment chưa có ở BE
+  // const handlePaymentConfirm = () => {
+  //   void paymentHook.submitCheckout(handlePaymentSuccess);
+  // };
 
   if (loadingMenu) {
     return (
@@ -119,7 +124,7 @@ const StaffPosPage = () => {
                 Quầy gọi món (POS)
               </h1>
               <p className="text-xs text-on-surface-variant font-medium mt-0.5">
-                Chọn các món ăn khách gọi để lập hóa đơn
+                Chọn các món ăn khách gọi để lập đơn hàng
               </p>
             </div>
 
@@ -166,10 +171,10 @@ const StaffPosPage = () => {
           <OrderSummaryCard
             cart={cart}
             totals={cartTotals}
-            orderNotes={orderNotes}
-            onOrderNotesChange={handleOrderNotesChange}
+            // [CHƯA CÓ BE] orderNotes={orderNotes}
+            // [CHƯA CÓ BE] onOrderNotesChange={handleOrderNotesChange}
             onUpdateQuantity={handleUpdateQuantity}
-            onUpdateNote={handleUpdateNote}
+            // [CHƯA CÓ BE] onUpdateNote={handleUpdateNote}
             onRemove={handleRemoveItem}
             onClearCart={handleClearCart}
             onCheckout={handleCheckoutClick}
@@ -178,8 +183,8 @@ const StaffPosPage = () => {
         </div>
       </div>
 
-      {/* Payment Modal Dialog */}
-      <PaymentModal
+      {/* [CHƯA CÓ BE] PaymentModal — module Payment chưa có ở BE */}
+      {/* <PaymentModal
         open={paymentHook.isOpen}
         order={paymentHook.order}
         onClose={paymentHook.closeModal}
@@ -198,7 +203,7 @@ const StaffPosPage = () => {
         changeReturned={paymentHook.changeReturned}
         isCashValid={paymentHook.isCashValid}
         quickCashOptions={paymentHook.quickCashOptions}
-      />
+      /> */}
     </div>
   );
 };
