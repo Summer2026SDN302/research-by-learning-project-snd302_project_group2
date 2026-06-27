@@ -5,6 +5,7 @@ import { parsePagination } from "../../shared/helpers/query.helper.js";
 import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.js";
 import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
 import orderRepository from "./order.repository.js";
+import { triggerLowStockNotification, triggerOrderStatusNotification } from "../notification/notification.service.js";
 import { toOrderResponse } from "./order.dto.js";
 import { VALID_STATUS_TRANSITIONS, TAX_PERCENT } from "./order.constants.js";
 import { USER_ROLES } from "../user/user.constants.js";
@@ -153,7 +154,7 @@ const orderService = {
 
     try {
       // Fix #2: deductSoldQuantity giờ có atomic guard ($gte) và nhận session
-      await Promise.all(
+      const updatedMenus = await Promise.all(
         body.items.map(({ foodItemId, quantity }) =>
           dailyMenuRepository.decrementSoldQuantity(dailyMenu._id, foodItemId, quantity, session),
         ),
@@ -173,6 +174,25 @@ const orderService = {
         },
         session,
       );
+
+      // Trigger low stock notifications for items that fell below threshold
+      const lastMenu = updatedMenus[updatedMenus.length - 1];
+      if (lastMenu) {
+        for (const item of body.items) {
+          const updatedItem = lastMenu.items.find((i) => i.foodItemId.toString() === item.foodItemId);
+          if (updatedItem) {
+            const originalItem = dailyMenu.items.find((i) => i.foodItemId._id.toString() === item.foodItemId);
+            const foodItemName = originalItem?.foodItemId?.name || "Món ăn";
+            
+            triggerLowStockNotification(
+              todayStr,
+              item.foodItemId,
+              foodItemName,
+              updatedItem.remainingQuantity
+            ).catch((err) => console.error("Error triggering low stock notification:", err));
+          }
+        }
+      }
 
       await session.commitTransaction();
       return toOrderResponse(order);
@@ -239,6 +259,10 @@ const orderService = {
     }
 
     const updated = await orderRepository.updateStatusById(id, newStatus);
+
+    triggerOrderStatusNotification(updated, newStatus)
+      .catch((err) => console.error("Error triggering order status notification:", err));
+
     return toOrderResponse(updated);
   },
 };
