@@ -1,5 +1,6 @@
 import AppError from "../../../shared/exceptions/AppError.js";
 import * as dailyMenuRepository from "./daily-menu.repository.js";
+import { triggerLowStockNotification } from "../../notification/notification.service.js";
 import scheduledMenuRepository from "../scheduled_menu/scheduled_menu.repository.js";
 import * as foodItemRepository from "../food_item/food_item.repository.js";
 import {
@@ -295,6 +296,17 @@ export const updateDailyMenuItem = async (menuId, itemId, payload, userId) => {
       itemId,
       fieldsToUpdate,
     );
+
+    const updatedItem = updatedMenu.items.find((i) => i.foodItemId._id.toString() === itemId);
+    if (updatedItem && fieldsToUpdate.preparedQuantity !== undefined) {
+      triggerLowStockNotification(
+        updatedMenu.date,
+        updatedItem.foodItemId._id.toString(),
+        updatedItem.foodItemId.name,
+        updatedItem.remainingQuantity
+      ).catch((err) => console.error("Error triggering low stock notification:", err));
+    }
+
     return updatedMenu;
   } catch (error) {
     if (error.message === "UPDATE_FAILED") {
@@ -351,6 +363,17 @@ export const applyAiQuantity = async (
         adjustedAt: new Date(),
       },
     );
+
+    const updatedItem = updatedMenu.items.find((i) => i.foodItemId._id.toString() === itemId);
+    if (updatedItem) {
+      triggerLowStockNotification(
+        updatedMenu.date,
+        updatedItem.foodItemId._id.toString(),
+        updatedItem.foodItemId.name,
+        updatedItem.remainingQuantity
+      ).catch((err) => console.error("Error triggering low stock notification:", err));
+    }
+
     return updatedMenu;
   } catch (error) {
     if (error.message === "UPDATE_FAILED") {
