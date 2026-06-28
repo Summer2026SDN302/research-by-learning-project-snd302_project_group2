@@ -6,6 +6,7 @@ import * as analyticsService from "../analytics.service.js";
 
 vi.mock("../analytics.repository.js", () => ({
   countPaidPayments: vi.fn(),
+  countCompletedOrders: vi.fn(),
   sumRevenueForDate: vi.fn(),
   sumRevenueByDateRange: vi.fn(),
   getRevenueGroupedByDay: vi.fn(),
@@ -32,6 +33,7 @@ describe("analyticsService.getDashboardSummary", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     analyticsRepository.countPaidPayments.mockResolvedValue(0);
+    analyticsRepository.countCompletedOrders.mockResolvedValue(0);
     analyticsRepository.sumRevenueForDate.mockResolvedValue({
       revenue: 0,
       orderCount: 0,
@@ -124,6 +126,7 @@ describe("analyticsService.getTransactionReport", () => {
       successRate: 0,
     });
     analyticsRepository.countPaidPayments.mockResolvedValue(0);
+    analyticsRepository.countCompletedOrders.mockResolvedValue(0);
     analyticsRepository.sumRevenueByDateRange.mockResolvedValue({
       revenue: 0,
       orderCount: 0,

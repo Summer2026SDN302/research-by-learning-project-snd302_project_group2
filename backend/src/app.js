@@ -9,6 +9,7 @@ import scheduledMenuRoute from "./modules/menu/scheduled_menu/scheduled_menu.rou
 import authRoute from "./modules/auth/auth.route.js";
 import profileRoute from "./modules/user/profile.route.js";
 import userRoute from "./modules/user/user.route.js";
+import orderRoute from "./modules/order/order.route.js";
 import dailyMenuRoute from "./modules/menu/daily-menu/daily-menu.route.js";
 import analyticsRoute from "./modules/analytics/analytics.route.js";
 import {
@@ -45,6 +46,7 @@ app.use("/api/daily-menu", dailyMenuRoute);
 app.use("/api/categories", categoryRoute);
 app.use("/api/food-items", foodItemRoute);
 app.use("/api/scheduled-menu", scheduledMenuRoute);
+app.use("/api/orders", orderRoute);
 app.use("/api/analytics", analyticsRoute);
 
 app.use(notFoundHandler);

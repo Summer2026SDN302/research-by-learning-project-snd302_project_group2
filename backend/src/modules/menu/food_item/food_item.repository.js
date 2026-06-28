@@ -129,7 +129,7 @@ const foodItemRepository = {
 
     return FoodItem.countDocuments({
       _id: { $in: ids.map(toObjectId) },
-      deletedAt: null,
+      isArchived: false,
     });
   },
 

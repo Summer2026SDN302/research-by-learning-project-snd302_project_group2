@@ -11,6 +11,7 @@ vi.mock("../scheduled_menu.service.js", () => ({
   default: {
     getWeeklySchedule: vi.fn(),
     updateDaySchedule: vi.fn(),
+    batchUpdateSchedule: vi.fn(),
   },
 }));
 
@@ -183,6 +184,58 @@ describe("scheduled menu routes", () => {
 
       expect(response.status).toBe(404);
       expect(response.body.error.code).toBe("FOOD_ITEM_NOT_FOUND");
+    });
+  });
+
+  describe("PUT /api/scheduled-menu/batch", () => {
+    it("updates schedule in batch for admin", async () => {
+      const schedule = [{ dayOfWeek: "Monday", menuItems: [] }];
+      scheduledMenuService.batchUpdateSchedule.mockResolvedValue(schedule);
+
+      const response = await request(createApp())
+        .put("/api/scheduled-menu/batch")
+        .set("x-test-role", "Admin")
+        .send({
+          days: [
+            { dayOfWeek: "Monday", foodItemIds: [FOOD_ID] },
+          ],
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toEqual(schedule);
+      expect(scheduledMenuService.batchUpdateSchedule).toHaveBeenCalledWith(
+        [{ dayOfWeek: "Monday", foodItemIds: [FOOD_ID] }],
+        "507f1f77bcf86cd799439099",
+      );
+    });
+
+    it("returns 403 for manager role", async () => {
+      const response = await request(createApp())
+        .put("/api/scheduled-menu/batch")
+        .set("x-test-role", "Manager")
+        .send({
+          days: [
+            { dayOfWeek: "Monday", foodItemIds: [FOOD_ID] },
+          ],
+        });
+
+      expect(response.status).toBe(403);
+      expect(scheduledMenuService.batchUpdateSchedule).not.toHaveBeenCalled();
+    });
+
+    it("returns 400 for invalid request body validation", async () => {
+      const response = await request(createApp())
+        .put("/api/scheduled-menu/batch")
+        .set("x-test-role", "Admin")
+        .send({
+          days: [
+            { dayOfWeek: "InvalidDay", foodItemIds: ["not-a-mongo-id"] },
+          ],
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe("VALIDATION_ERROR");
     });
   });
 });

@@ -31,9 +31,19 @@ import {
 import * as analyticsDto from "./analytics.dto.js";
 import * as analyticsRepository from "./analytics.repository.js";
 
+// Revenue is read from whichever real dataset has more records. The payment
+// table is the preferred source, but if completed orders outnumber paid
+// payments (the current real data), revenue falls back to orders so the
+// dashboard reflects actual sales instead of a near-empty payment table.
 const resolveRevenueSource = async () => {
-  const count = await analyticsRepository.countPaidPayments();
-  return count > 0 ? REVENUE_SOURCE.PAYMENT : REVENUE_SOURCE.ORDER;
+  const [paidPayments, completedOrders] = await Promise.all([
+    analyticsRepository.countPaidPayments(),
+    analyticsRepository.countCompletedOrders(),
+  ]);
+
+  return paidPayments >= completedOrders
+    ? REVENUE_SOURCE.PAYMENT
+    : REVENUE_SOURCE.ORDER;
 };
 
 const buildTopFoodsWithChange = async (refDate, limit) => {

@@ -18,9 +18,22 @@ const matchPaidPaymentsByCreatedAt = (fromDateStr, toDateStr) => ({
   },
 });
 
-const matchCompletedOrdersByOrderDate = (fromDateStr, toDateStr) => ({
+// Orders are filtered by `createdAt` (always a real Date via timestamps)
+// instead of `orderDate`, because legacy data stores `orderDate` with mixed
+// BSON types (some String, some Date), which breaks string range matching.
+const matchCompletedOrdersByDate = (fromDateStr, toDateStr) => ({
   orderStatus: ORDER_STATUS.COMPLETED,
-  orderDate: { $gte: fromDateStr, $lte: toDateStr },
+  createdAt: {
+    $gte: toStartOfDayVN(fromDateStr),
+    $lte: toEndOfDayVN(toDateStr),
+  },
+});
+
+const matchOrdersByDate = (fromDateStr, toDateStr) => ({
+  createdAt: {
+    $gte: toStartOfDayVN(fromDateStr),
+    $lte: toEndOfDayVN(toDateStr),
+  },
 });
 
 const buildPaymentDateMatch = (fromDateStr, toDateStr) => {
@@ -68,6 +81,9 @@ const buildPaymentFilterMatch = (filters = {}) => {
 export const countPaidPayments = () =>
   Payment.countDocuments({ paymentStatus: PAYMENT_STATUS.PAID });
 
+export const countCompletedOrders = () =>
+  Order.countDocuments({ orderStatus: ORDER_STATUS.COMPLETED });
+
 export const sumRevenueForDate = async (dateStr, source) => {
   if (source === "payment") {
     const [result] = await Payment.aggregate([
@@ -88,7 +104,7 @@ export const sumRevenueForDate = async (dateStr, source) => {
   }
 
   const [result] = await Order.aggregate([
-    { $match: { orderStatus: ORDER_STATUS.COMPLETED, orderDate: dateStr } },
+    { $match: matchCompletedOrdersByDate(dateStr, dateStr) },
     {
       $group: {
         _id: null,
@@ -124,7 +140,7 @@ export const sumRevenueByDateRange = async (from, to, source) => {
   }
 
   const [result] = await Order.aggregate([
-    { $match: matchCompletedOrdersByOrderDate(from, to) },
+    { $match: matchCompletedOrdersByDate(from, to) },
     {
       $group: {
         _id: null,
@@ -168,10 +184,16 @@ export const getRevenueGroupedByDay = async (from, to, source) => {
   }
 
   const rows = await Order.aggregate([
-    { $match: matchCompletedOrdersByOrderDate(from, to) },
+    { $match: matchCompletedOrdersByDate(from, to) },
     {
       $group: {
-        _id: "$orderDate",
+        _id: {
+          $dateToString: {
+            format: "%Y-%m-%d",
+            date: "$createdAt",
+            timezone: TIMEZONE,
+          },
+        },
         revenue: { $sum: "$totalAmount" },
         orderCount: { $sum: 1 },
       },
@@ -190,7 +212,7 @@ export const getTopFoods = async ({ from, to, limit, sortBy }) => {
   const sortField = sortBy === "revenue" ? "revenue" : "quantity";
 
   return Order.aggregate([
-    { $match: matchCompletedOrdersByOrderDate(from, to) },
+    { $match: matchCompletedOrdersByDate(from, to) },
     { $unwind: "$items" },
     {
       $group: {
@@ -219,7 +241,7 @@ export const getTopFoods = async ({ from, to, limit, sortBy }) => {
 
 export const getOrdersByStatus = async (from, to) =>
   Order.aggregate([
-    { $match: { orderDate: { $gte: from, $lte: to } } },
+    { $match: matchOrdersByDate(from, to) },
     {
       $group: {
         _id: "$orderStatus",
