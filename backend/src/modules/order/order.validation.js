@@ -1,15 +1,30 @@
 import { body, param, query } from "express-validator";
-import { ORDER_STATUS } from "./order.constants.js";
+import {
+  ORDER_PAYMENT_STATUS,
+  ORDER_STATUS,
+} from "./order.constants.js";
 
-/** Helper: kiểm tra chuỗi YYYY-MM-DD có phải ngày thực sự hợp lệ không */
 const isRealDate = (value) => {
   const [year, month, day] = value.split("-").map(Number);
-  const d = new Date(Date.UTC(year, month - 1, day));
+  const date = new Date(Date.UTC(year, month - 1, day));
+
   return (
-    d.getUTCFullYear() === year &&
-    d.getUTCMonth() === month - 1 &&
-    d.getUTCDate() === day
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
   );
+};
+
+const validateOptionalNote = (value) => {
+  if (value == null || value === "") {
+    return true;
+  }
+
+  if (typeof value !== "string") {
+    throw new Error("Note must be a string");
+  }
+
+  return true;
 };
 
 export const validateCreateOrder = [
@@ -22,6 +37,19 @@ export const validateCreateOrder = [
   body("items.*.quantity")
     .isInt({ min: 1 })
     .withMessage("Quantity must be at least 1"),
+  body("items.*.note")
+    .optional()
+    .custom(validateOptionalNote)
+    .withMessage("Item note must be a string"),
+  body("notes")
+    .optional()
+    .custom(validateOptionalNote)
+    .withMessage("Order notes must be a string"),
+];
+
+export const validateUpdateOrderItems = [
+  param("id").isMongoId().withMessage("Invalid order id"),
+  ...validateCreateOrder,
 ];
 
 export const validateUpdateStatus = [
@@ -40,26 +68,29 @@ export const validateGetOrders = [
     .optional()
     .isInt({ min: 1, max: 50 })
     .withMessage("Limit must be between 1 and 50"),
-
-  // trim() để tránh lỗi do khoảng trắng thừa
   query("orderStatus")
     .optional()
     .trim()
     .isIn(Object.values(ORDER_STATUS))
     .withMessage("Invalid status filter"),
-
-  // validate staffId là MongoId hợp lệ (Admin/Manager filter theo staff)
+  query("paymentStatus")
+    .optional()
+    .trim()
+    .isIn(Object.values(ORDER_PAYMENT_STATUS))
+    .withMessage("Invalid payment status filter"),
   query("staffId")
     .optional()
     .isMongoId()
     .withMessage("staffId must be a valid MongoId"),
-
   query("date")
     .optional()
     .matches(/^\d{4}-\d{2}-\d{2}$/)
     .withMessage("Date must be in YYYY-MM-DD format")
     .custom((value) => {
-      if (!isRealDate(value)) throw new Error("Date is not a valid calendar date");
+      if (!isRealDate(value)) {
+        throw new Error("Date is not a valid calendar date");
+      }
+
       return true;
     }),
   query("fromDate")
@@ -67,7 +98,10 @@ export const validateGetOrders = [
     .matches(/^\d{4}-\d{2}-\d{2}$/)
     .withMessage("fromDate must be in YYYY-MM-DD format")
     .custom((value) => {
-      if (!isRealDate(value)) throw new Error("fromDate is not a valid calendar date");
+      if (!isRealDate(value)) {
+        throw new Error("fromDate is not a valid calendar date");
+      }
+
       return true;
     }),
   query("toDate")
@@ -75,17 +109,19 @@ export const validateGetOrders = [
     .matches(/^\d{4}-\d{2}-\d{2}$/)
     .withMessage("toDate must be in YYYY-MM-DD format")
     .custom((value) => {
-      if (!isRealDate(value)) throw new Error("toDate is not a valid calendar date");
+      if (!isRealDate(value)) {
+        throw new Error("toDate is not a valid calendar date");
+      }
+
       return true;
     }),
-
-  // Custom validator: nếu date tồn tại thì fromDate / toDate phải absent
   query("date").custom((value, { req }) => {
     if (value && (req.query.fromDate || req.query.toDate)) {
       throw new Error(
         "Cannot use 'date' together with 'fromDate'/'toDate'. Use either exact date or date range, not both",
       );
     }
+
     return true;
   }),
 ];
@@ -93,4 +129,3 @@ export const validateGetOrders = [
 export const validateGetOrderById = [
   param("id").isMongoId().withMessage("Invalid order id"),
 ];
-
