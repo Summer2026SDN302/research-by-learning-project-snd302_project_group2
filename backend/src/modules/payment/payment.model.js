@@ -77,4 +77,7 @@ const paymentSchema = new Schema(
   },
 );
 
+paymentSchema.index({ paymentStatus: 1, createdAt: -1 });
+paymentSchema.index({ paymentMethod: 1, paymentStatus: 1 });
+
 export default mongoose.model("Payment", paymentSchema);

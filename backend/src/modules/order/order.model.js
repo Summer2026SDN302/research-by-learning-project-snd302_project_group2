@@ -82,4 +82,7 @@ const orderSchema = new Schema(
   },
 );
 
+orderSchema.index({ orderDate: 1, orderStatus: 1 });
+orderSchema.index({ "items.foodItemId": 1 });
+
 export default mongoose.model("Order", orderSchema);
