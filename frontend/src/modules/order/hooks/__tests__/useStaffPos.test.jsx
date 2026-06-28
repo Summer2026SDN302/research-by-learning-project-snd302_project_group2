@@ -9,6 +9,11 @@ import orderReducer from "../../redux/orderSlice";
 import { useStaffPos } from "../useStaffPos";
 import * as orderApi from "../../api/orderApi";
 
+vi.mock("../../api/orderApi", () => ({
+  createOrder: vi.fn(),
+  updateOrderItems: vi.fn(),
+}));
+
 vi.mock("@/modules/menu/api/dailyMenuApi", () => ({
   getTodayMenu: vi.fn(),
 }));
@@ -20,6 +25,7 @@ vi.mock("@/modules/menu/api/categoryApi", () => ({
 const mockToast = {
   error: vi.fn(),
   success: vi.fn(),
+  warning: vi.fn(),
 };
 
 vi.mock("@/hooks/useAppToast", () => ({
@@ -56,13 +62,22 @@ const createWrapper = (store) =>
 
 describe("useStaffPos", () => {
   beforeEach(() => {
-    vi.spyOn(orderApi, "cancelOrder").mockResolvedValue({
-      _id: "order-1",
-      orderStatus: "Cancelled",
-      paymentStatus: "Unpaid",
-      isActive: false,
+    dailyMenuApi.getTodayMenu.mockResolvedValue({
+      items: [
+        {
+          foodItemId: {
+            _id: "food-1",
+            name: "Pho",
+          },
+          currentPrice: 35000,
+          originalPrice: 35000,
+          preparedQuantity: 5,
+          soldQuantity: 3,
+          remainingQuantity: 2,
+          status: "Available",
+        },
+      ],
     });
-    dailyMenuApi.getTodayMenu.mockResolvedValue({ items: [] });
     categoryApi.getCategories.mockResolvedValue({ items: [] });
   });
 
@@ -71,7 +86,7 @@ describe("useStaffPos", () => {
     vi.clearAllMocks();
   });
 
-  it("keeps the current draft order in the store after the POS hook unmounts", async () => {
+  it("hydrates shared order notes from currentOrder and leaves the store untouched on unmount", async () => {
     const store = createTestStore({
       currentOrder: {
         _id: "order-1",
@@ -102,7 +117,7 @@ describe("useStaffPos", () => {
     });
   });
 
-  it("cancels the active draft order before clearing the cart", async () => {
+  it("clears both cart items and local order notes", async () => {
     const store = createTestStore({
       cart: {
         items: [
@@ -114,12 +129,6 @@ describe("useStaffPos", () => {
             note: null,
           },
         ],
-      },
-      currentOrder: {
-        _id: "order-1",
-        orderNumber: "ORD-001",
-        paymentStatus: "Unpaid",
-        orderStatus: "Pending",
       },
     });
 
@@ -133,17 +142,18 @@ describe("useStaffPos", () => {
 
     let clearResult;
     await act(async () => {
+      result.current.handleOrderNotesChange("Ban 7");
       clearResult = await result.current.handleClearCart();
     });
 
     expect(clearResult).toBe(true);
-    expect(orderApi.cancelOrder).toHaveBeenCalledWith("order-1");
     expect(store.getState().order.cart.items).toEqual([]);
     expect(store.getState().order.currentOrder).toBeNull();
+    expect(result.current.orderNotes).toBe("");
   });
 
-  it("does not show a success toast when creating an order for checkout", async () => {
-    vi.spyOn(orderApi, "createOrder").mockResolvedValue({
+  it("submits a new unpaid order with shared notes and clears the POS state", async () => {
+    orderApi.createOrder.mockResolvedValue({
       _id: "order-2",
       orderNumber: "ORD-002",
       paymentStatus: "Unpaid",
@@ -173,9 +183,17 @@ describe("useStaffPos", () => {
       expect(result.current.loadingMenu).toBe(false);
     });
 
+    await act(async () => {
+      result.current.handleOrderNotesChange("Ban 5");
+    });
+
+    await waitFor(() => {
+      expect(result.current.orderNotes).toBe("Ban 5");
+    });
+
     let submitResult;
     await act(async () => {
-      submitResult = await result.current.handleSubmitOrder("Ban 5");
+      submitResult = await result.current.handleSubmitOrder();
     });
 
     expect(submitResult).toMatchObject({
@@ -191,8 +209,223 @@ describe("useStaffPos", () => {
         },
       ],
       notes: "Ban 5",
-      taxRate: 0.08,
     });
-    expect(mockToast.success).not.toHaveBeenCalled();
+    expect(mockToast.success).toHaveBeenCalledWith(
+      "Tao don thanh cong",
+      "Don hang #ORD-002 da duoc tao.",
+    );
+    expect(store.getState().order.cart.items).toEqual([]);
+    expect(result.current.orderNotes).toBe("");
+  });
+
+  it("shows stock meta and blocks selecting more than the remaining quantity", async () => {
+    const store = createTestStore();
+
+    const { result } = renderHook(() => useStaffPos(), {
+      wrapper: createWrapper(store),
+    });
+
+    await waitFor(() => {
+      expect(result.current.loadingMenu).toBe(false);
+    });
+
+    const menuItem = result.current.filteredMenuItems[0];
+
+    await act(async () => {
+      result.current.handleAddItem(menuItem);
+      result.current.handleAddItem(menuItem);
+      result.current.handleAddItem(menuItem);
+    });
+
+    expect(store.getState().order.cart.items).toEqual([
+      expect.objectContaining({
+        foodItemId: "food-1",
+        quantity: 2,
+      }),
+    ]);
+    expect(result.current.menuItemSelectionMap["food-1"]).toMatchObject({
+      actualRemainingQuantity: 2,
+      soldQuantity: 3,
+      preparedQuantity: 5,
+      maxSelectableQuantity: 2,
+    });
+    expect(mockToast.warning).toHaveBeenCalledWith(
+      "Vuot qua so luong con lai",
+      "Mon Pho chi co the chon toi da 2 phan.",
+    );
+  });
+
+  it("updates the current unpaid order instead of creating a new one", async () => {
+    orderApi.updateOrderItems.mockResolvedValue({
+      _id: "order-3",
+      orderNumber: "ORD-003",
+      paymentStatus: "Unpaid",
+      orderStatus: "Pending",
+      notes: "Ban 8",
+    });
+
+    const store = createTestStore({
+      cart: {
+        items: [
+          {
+            foodItemId: "food-1",
+            name: "Pho",
+            unitPrice: 35000,
+            quantity: 2,
+          },
+        ],
+      },
+      currentOrder: {
+        _id: "order-3",
+        orderNumber: "ORD-003",
+        paymentStatus: "Unpaid",
+        orderStatus: "Pending",
+        notes: "Ban 6",
+      },
+    });
+
+    const { result } = renderHook(() => useStaffPos(), {
+      wrapper: createWrapper(store),
+    });
+
+    await waitFor(() => {
+      expect(result.current.loadingMenu).toBe(false);
+    });
+
+    await act(async () => {
+      result.current.handleOrderNotesChange("Ban 8");
+    });
+
+    let submitResult;
+    await act(async () => {
+      submitResult = await result.current.handleSubmitOrder();
+    });
+
+    expect(submitResult).toMatchObject({
+      _id: "order-3",
+      orderNumber: "ORD-003",
+    });
+    expect(orderApi.updateOrderItems).toHaveBeenCalledWith("order-3", {
+      items: [
+        {
+          foodItemId: "food-1",
+          quantity: 2,
+          note: null,
+        },
+      ],
+      notes: "Ban 8",
+    });
+    expect(orderApi.createOrder).not.toHaveBeenCalled();
+    expect(mockToast.success).toHaveBeenCalledWith(
+      "Cap nhat don thanh cong",
+      "Don hang #ORD-003 da duoc cap nhat.",
+    );
+  });
+
+  it("caps quantity updates at the allowed maximum", async () => {
+    const store = createTestStore({
+      cart: {
+        items: [
+          {
+            foodItemId: "food-1",
+            name: "Pho",
+            unitPrice: 35000,
+            quantity: 1,
+          },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useStaffPos(), {
+      wrapper: createWrapper(store),
+    });
+
+    await waitFor(() => {
+      expect(result.current.loadingMenu).toBe(false);
+    });
+
+    let updateResult;
+    await act(async () => {
+      updateResult = result.current.handleUpdateQuantity("food-1", 5);
+    });
+
+    expect(updateResult).toBe(false);
+    expect(store.getState().order.cart.items).toEqual([
+      expect.objectContaining({
+        foodItemId: "food-1",
+        quantity: 2,
+      }),
+    ]);
+    expect(mockToast.warning).toHaveBeenCalledWith(
+      "Vuot qua so luong con lai",
+      "Mon Pho chi co the chon toi da 2 phan.",
+    );
+  });
+
+  it("updates the note of a specific cart item", async () => {
+    const store = createTestStore({
+      cart: {
+        items: [
+          {
+            foodItemId: "food-1",
+            name: "Pho",
+            unitPrice: 35000,
+            quantity: 1,
+            note: null,
+          },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useStaffPos(), {
+      wrapper: createWrapper(store),
+    });
+
+    await waitFor(() => {
+      expect(result.current.loadingMenu).toBe(false);
+    });
+
+    let updateResult;
+    await act(async () => {
+      updateResult = result.current.handleUpdateItemNote("food-1", "Khong hanh");
+    });
+
+    expect(updateResult).toBe(true);
+    expect(store.getState().order.cart.items).toEqual([
+      expect.objectContaining({
+        foodItemId: "food-1",
+        note: "Khong hanh",
+      }),
+    ]);
+  });
+
+  it("rounds subtotal, tax and total for the later payment handoff", async () => {
+    const store = createTestStore({
+      cart: {
+        items: [
+          {
+            foodItemId: "food-1",
+            name: "Pho dac biet",
+            unitPrice: 33333,
+            quantity: 1,
+          },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useStaffPos(), {
+      wrapper: createWrapper(store),
+    });
+
+    await waitFor(() => {
+      expect(result.current.loadingMenu).toBe(false);
+    });
+
+    expect(result.current.cartTotals).toEqual({
+      subtotal: 33333,
+      taxRate: 0.08,
+      taxAmount: 2666.64,
+      totalAmount: 35999.64,
+    });
   });
 });

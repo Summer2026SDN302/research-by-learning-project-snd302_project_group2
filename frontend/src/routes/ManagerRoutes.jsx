@@ -35,7 +35,7 @@ const ManagerRoutes = () => (
       element={<PlaceholderPage title="Tổng quan Manager" />}
     />
     <Route path="create-order" element={<ManagerPosPage />} />
-    <Route path="receipts/:invoiceId" element={<ManagerReceiptPage />} />
+    <Route path="receipts/:paymentId" element={<ManagerReceiptPage />} />
     <Route
       path="my-orders"
       element={<OwnOrderHistoryPage />}

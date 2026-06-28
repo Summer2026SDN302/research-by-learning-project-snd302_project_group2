@@ -40,9 +40,27 @@ export const getPaymentById = async (id) => {
   }
 };
 
+export const getPaymentReceipt = async (id) => {
+  try {
+    const response = await apiClient.get(`${BASE_PATH}/${id}/receipt`);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+};
+
 export const initiatePayment = async (body) => {
   try {
     const response = await apiClient.post(BASE_PATH, body);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+};
+
+export const checkoutPayment = async (body) => {
+  try {
+    const response = await apiClient.post(`${BASE_PATH}/checkout`, body);
     return unwrapResponse(response);
   } catch (error) {
     throw normalizeApiError(error);
@@ -61,6 +79,15 @@ export const confirmPayment = async (id, body) => {
 export const failPayment = async (id, body) => {
   try {
     const response = await apiClient.patch(`${BASE_PATH}/${id}/fail`, body);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+};
+
+export const printPaymentReceipt = async (id) => {
+  try {
+    const response = await apiClient.post(`${BASE_PATH}/${id}/print`);
     return unwrapResponse(response);
   } catch (error) {
     throw normalizeApiError(error);

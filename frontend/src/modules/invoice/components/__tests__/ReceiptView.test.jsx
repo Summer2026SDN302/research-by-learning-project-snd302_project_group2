@@ -8,7 +8,7 @@ describe("ReceiptView", () => {
     render(
       <ReceiptView
         receipt={{
-          invoiceNumber: "INV-001",
+          paymentNumber: "PAY-001",
           issuedAt: "2026-06-25T10:00:00.000Z",
           staff: {
             fullName: "Staff A",

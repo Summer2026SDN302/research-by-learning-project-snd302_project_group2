@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import ReceiptPageContent from "../components/ReceiptPageContent";
 import { usePaymentReceipt } from "@/modules/payment/hooks/usePaymentReceipt";
 
-const ManagerReceiptPage = () => {
+const AdminReceiptPage = () => {
   const { paymentId } = useParams();
   const { receipt, loading, error, fetchReceipt, handlePrint, resetState } =
     usePaymentReceipt();
@@ -18,7 +18,7 @@ const ManagerReceiptPage = () => {
 
   return (
     <ReceiptPageContent
-      role="manager"
+      role="admin"
       receipt={receipt}
       loading={loading}
       error={error}
@@ -27,4 +27,4 @@ const ManagerReceiptPage = () => {
   );
 };
 
-export default ManagerReceiptPage;
+export default AdminReceiptPage;

@@ -1,9 +1,28 @@
 import { useState, useCallback, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { initiatePaymentThunk, confirmPaymentThunk } from "../redux/paymentSlice";
+import { checkoutPaymentThunk } from "../redux/paymentSlice";
+import {
+  DEFAULT_PAYMENT_METHOD,
+  getDefaultPaymentProviderName,
+} from "../constants/paymentConstants";
 import useAppToast from "@/hooks/useAppToast";
 import { getApiErrorMsg } from "@/utils/errorUtils";
 import { PAYMENT_ERROR_MAP } from "../constants/paymentConstants";
+
+const getOrderAmount = (order) =>
+  Number(order?.finalAmount ?? order?.totalAmount ?? 0);
+
+const normalizeOrderItems = (items = []) =>
+  items.map((item) => ({
+    foodItemId: item.foodItemId?._id ?? item.foodItemId,
+    quantity: Number(item.quantity || 0),
+    note: normalizeText(item.note),
+  }));
+
+const normalizeText = (value) => {
+  const normalized = String(value ?? "").trim();
+  return normalized || null;
+};
 
 export const getQuickCashOptions = (amount) => {
   const totalAmount = Number(amount) || 0;
@@ -27,25 +46,42 @@ export const usePaymentModal = () => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [order, setOrder] = useState(null);
-  const [selectedMethod, setSelectedMethod] = useState("Cash");
+  const [selectedMethod, setSelectedMethodState] = useState(DEFAULT_PAYMENT_METHOD);
   const [cashReceived, setCashReceived] = useState("0");
   const [transactionCode, setTransactionCode] = useState("");
   const [providerName, setProviderName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const openModal = useCallback((orderData, initialMethod = "Cash") => {
-    setOrder(orderData);
-    setSelectedMethod(initialMethod);
+  const resetModalState = useCallback(() => {
+    setIsOpen(false);
+    setOrder(null);
+    setSelectedMethodState(DEFAULT_PAYMENT_METHOD);
     setCashReceived("0");
     setTransactionCode("");
     setProviderName("");
+    setIsSubmitting(false);
+  }, []);
+
+  const openModal = useCallback((orderData, initialMethod = "Cash") => {
+    setOrder(orderData);
+    setSelectedMethodState(initialMethod);
+    setCashReceived("0");
+    setTransactionCode("");
+    setProviderName(getDefaultPaymentProviderName(initialMethod));
     setIsOpen(true);
   }, []);
 
   const closeModal = useCallback(() => {
-    setIsOpen(false);
-    setOrder(null);
-  }, []);
+    resetModalState();
+  }, [resetModalState]);
+
+  const handleSelectMethod = useCallback(
+    (method) => {
+      setSelectedMethodState(method);
+      setProviderName(getDefaultPaymentProviderName(method));
+    },
+    [],
+  );
 
   const appendDigit = useCallback((digit) => {
     setCashReceived((prev) => {
@@ -53,6 +89,7 @@ export const usePaymentModal = () => {
         if (prev === "0" || prev === "") return "0";
         return prev + "000";
       }
+
       if (prev === "0") return digit;
       return prev + digit;
     });
@@ -66,108 +103,113 @@ export const usePaymentModal = () => {
     setCashReceived(String(amount));
   }, []);
 
+  const orderAmount = useMemo(() => getOrderAmount(order), [order]);
+
   const changeReturned = useMemo(() => {
     if (!order) return 0;
     const receivedVal = parseInt(cashReceived, 10) || 0;
-    return receivedVal - order.finalAmount;
-  }, [cashReceived, order]);
+    return receivedVal - orderAmount;
+  }, [cashReceived, order, orderAmount]);
 
   const isCashValid = useMemo(() => {
     if (!order) return false;
     const receivedVal = parseInt(cashReceived, 10) || 0;
-    return receivedVal >= order.finalAmount;
-  }, [cashReceived, order]);
+    return receivedVal >= orderAmount;
+  }, [cashReceived, order, orderAmount]);
 
   const quickCashOptions = useMemo(
-    () => getQuickCashOptions(order?.finalAmount),
-    [order?.finalAmount],
+    () => getQuickCashOptions(orderAmount),
+    [orderAmount],
   );
 
   const submitCheckout = useCallback(
     async (onSuccess) => {
-      if (!order) return;
+      if (!order) {
+        return null;
+      }
+
       setIsSubmitting(true);
 
       const amountVal =
         selectedMethod === "Cash"
-          ? (parseInt(cashReceived, 10) || 0)
-          : order.finalAmount;
+          ? parseInt(cashReceived, 10) || 0
+          : orderAmount;
 
-      if (selectedMethod === "Cash" && amountVal < order.finalAmount) {
-        toast.error("Thanh toán thất bại", "Số tiền khách đưa chưa đủ.");
+      if (selectedMethod === "Cash" && amountVal < orderAmount) {
+        toast.error("Thanh toan that bai", "So tien khach dua chua du.");
         setIsSubmitting(false);
-        return;
+        return null;
+      }
+
+      const normalizedTransactionCode =
+        selectedMethod === "Cash" ? null : normalizeText(transactionCode);
+
+      let confirmedPayment;
+
+      try {
+        confirmedPayment = await dispatch(
+          checkoutPaymentThunk({
+            items: normalizeOrderItems(order.items),
+            notes: normalizeText(order.notes),
+            paymentMethod: selectedMethod,
+            amountReceived: amountVal,
+            transactionCode: normalizedTransactionCode,
+          }),
+        ).unwrap();
+
+        const orderNumber =
+          confirmedPayment?.orderId?.orderNumber || order?.orderNumber || null;
+
+        toast.success(
+          "Thanh toan thanh cong",
+          orderNumber
+            ? `Don hang #${orderNumber} da thanh toan xong va duoc luu bien lai.`
+            : "Giao dich da thanh toan xong va duoc luu bien lai.",
+        );
+      } catch (err) {
+        toast.error("Giao dich that bai", getApiErrorMsg(PAYMENT_ERROR_MAP, err));
+        setIsSubmitting(false);
+        return null;
       }
 
       try {
-        const initiatePayload = {
-          orderId: order._id,
-          paymentMethod: selectedMethod,
-          amountReceived: amountVal,
-          providerName:
-            selectedMethod !== "Cash" ? (providerName || selectedMethod) : null,
-          transactionCode:
-            selectedMethod !== "Cash" ? (transactionCode || null) : null,
-        };
-
-        const paymentResult = await dispatch(
-          initiatePaymentThunk(initiatePayload),
-        ).unwrap();
-
-        const confirmPayload = {
-          id: paymentResult._id,
-          confirmData: {
-            amountReceived: amountVal,
-            providerName:
-              selectedMethod !== "Cash" ? (providerName || selectedMethod) : null,
-            transactionCode:
-              selectedMethod !== "Cash" ? (transactionCode || null) : null,
-          },
-        };
-
-        const confirmedPayment = await dispatch(
-          confirmPaymentThunk(confirmPayload),
-        ).unwrap();
-
-        toast.success(
-          "Thanh toán thành công",
-          `Đơn hàng #${order.orderNumber} đã thanh toán xong và được lưu hóa đơn.`,
-        );
-        closeModal();
-
         if (onSuccess) {
-          onSuccess(confirmedPayment);
+          await onSuccess(confirmedPayment);
         }
-      } catch (err) {
-        const errMsg = getApiErrorMsg(PAYMENT_ERROR_MAP, err);
-        toast.error("Giao dịch thất bại", errMsg);
+      } catch (callbackError) {
+        console.error("Checkout success callback failed", callbackError);
       } finally {
-        setIsSubmitting(false);
+        resetModalState();
       }
+
+      return confirmedPayment;
     },
     [
-      order,
-      selectedMethod,
       cashReceived,
-      providerName,
-      transactionCode,
       dispatch,
+      order,
+      orderAmount,
+      providerName,
+      resetModalState,
+      selectedMethod,
       toast,
-      closeModal,
+      transactionCode,
     ],
   );
 
   return {
     isOpen,
     order,
+    activePayment: null,
     selectedMethod,
-    setSelectedMethod,
+    setSelectedMethod: handleSelectMethod,
     cashReceived,
     transactionCode,
     setTransactionCode,
     providerName,
     setProviderName,
     isSubmitting,
+    isMethodLocked: false,
     openModal,
     closeModal,
     appendDigit,

@@ -7,6 +7,7 @@ import * as paymentApi from "../../api/paymentApi";
 vi.mock("../../api/paymentApi", () => ({
   getPayments: vi.fn(),
   initiatePayment: vi.fn(),
+  checkoutPayment: vi.fn(),
   confirmPayment: vi.fn(),
   failPayment: vi.fn(),
 }));
@@ -44,7 +45,7 @@ describe("paymentSlice", () => {
         ],
         pagination: {
           page: 1,
-          limit: 200,
+          limit: 50,
           total: 3,
           totalPages: 2,
         },
@@ -61,7 +62,7 @@ describe("paymentSlice", () => {
         ],
         pagination: {
           page: 2,
-          limit: 200,
+          limit: 50,
           total: 3,
           totalPages: 2,
         },
@@ -73,11 +74,11 @@ describe("paymentSlice", () => {
     expect(result.type).toBe("payment/fetchPaymentKpis/fulfilled");
     expect(paymentApi.getPayments).toHaveBeenNthCalledWith(1, {
       page: 1,
-      limit: 200,
+      limit: 50,
     });
     expect(paymentApi.getPayments).toHaveBeenNthCalledWith(2, {
       page: 2,
-      limit: 200,
+      limit: 50,
     });
     expect(store.getState().payment.paymentKpis).toEqual({
       totalRevenue: 100000,

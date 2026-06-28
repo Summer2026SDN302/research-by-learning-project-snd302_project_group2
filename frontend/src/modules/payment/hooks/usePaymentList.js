@@ -7,6 +7,14 @@ import {
 } from "../redux/paymentSlice";
 import useAppToast from "@/hooks/useAppToast";
 
+const INITIAL_FILTERS = {
+  search: "",
+  paymentStatus: "",
+  paymentMethod: "",
+  page: 1,
+  limit: 10,
+};
+
 export const getPaymentDisplayDate = (payment) =>
   payment?.paymentStatus === "Paid"
     ? payment?.paidAt || payment?.createdAt || null
@@ -22,13 +30,7 @@ export const usePaymentList = () => {
   const error = useSelector((state) => state.payment.listError);
   const kpis = useSelector((state) => state.payment.paymentKpis);
 
-  const [filters, setFilters] = useState({
-    search: "",
-    paymentStatus: "",
-    paymentMethod: "",
-    page: 1,
-    limit: 10,
-  });
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
 
   const fetchPayments = useCallback(async () => {
     const queryParams = {
@@ -42,7 +44,7 @@ export const usePaymentList = () => {
     try {
       await dispatch(fetchPaymentsThunk(queryParams)).unwrap();
     } catch (err) {
-      toast.error("Lỗi", err?.message || "Không thể tải danh sách thanh toán.");
+      toast.error("Loi", err?.message || "Khong the tai danh sach thanh toan.");
     }
   }, [dispatch, filters, toast]);
 
@@ -74,6 +76,10 @@ export const usePaymentList = () => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   };
 
+  const clearFilters = () => {
+    setFilters(INITIAL_FILTERS);
+  };
+
   return {
     payments,
     loading: listStatus === "loading",
@@ -85,6 +91,7 @@ export const usePaymentList = () => {
     handleSearch,
     handlePageChange,
     handleFilterChange,
+    clearFilters,
     refetch: () => {
       void fetchPayments();
       void fetchKpis();

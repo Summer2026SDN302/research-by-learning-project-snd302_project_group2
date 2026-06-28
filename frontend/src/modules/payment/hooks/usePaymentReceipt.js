@@ -1,27 +1,27 @@
 import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  fetchReceiptThunk,
-  printReceiptThunk,
-  resetInvoiceState,
-} from "../redux/invoiceSlice";
+  fetchPaymentReceiptThunk,
+  printPaymentReceiptThunk,
+  resetPaymentReceiptState,
+} from "../redux/paymentSlice";
 import useAppToast from "@/hooks/useAppToast";
 
 const getErrorMessage = (error, fallback = null) =>
   error?.message || error || fallback;
 
-export const useReceipt = () => {
+export const usePaymentReceipt = () => {
   const dispatch = useDispatch();
   const { toast } = useAppToast();
 
-  const receipt = useSelector((state) => state.invoice.receipt);
-  const status = useSelector((state) => state.invoice.status);
-  const error = useSelector((state) => state.invoice.error);
+  const receipt = useSelector((state) => state.payment.receipt);
+  const status = useSelector((state) => state.payment.receiptStatus);
+  const error = useSelector((state) => state.payment.receiptError);
 
   const fetchReceipt = useCallback(
-    async (invoiceId) => {
+    async (paymentId) => {
       try {
-        await dispatch(fetchReceiptThunk(invoiceId)).unwrap();
+        await dispatch(fetchPaymentReceiptThunk(paymentId)).unwrap();
         return true;
       } catch (_error) {
         return null;
@@ -31,10 +31,10 @@ export const useReceipt = () => {
   );
 
   const handlePrint = useCallback(
-    async (invoiceId) => {
+    async (paymentId) => {
       try {
         window.print();
-        await dispatch(printReceiptThunk(invoiceId)).unwrap();
+        await dispatch(printPaymentReceiptThunk(paymentId)).unwrap();
         toast.success(
           "In bien lai thanh cong",
           "So lan in bien lai da duoc cap nhat.",
@@ -42,7 +42,7 @@ export const useReceipt = () => {
       } catch (err) {
         toast.error(
           "Loi khi ghi nhan in",
-          getErrorMessage(err, "Khong the cap nhat so lan in hoa don."),
+          getErrorMessage(err, "Khong the cap nhat so lan in bien lai."),
         );
       }
     },
@@ -50,7 +50,7 @@ export const useReceipt = () => {
   );
 
   const resetState = useCallback(() => {
-    dispatch(resetInvoiceState());
+    dispatch(resetPaymentReceiptState());
   }, [dispatch]);
 
   return {

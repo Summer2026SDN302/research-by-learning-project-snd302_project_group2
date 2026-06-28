@@ -9,6 +9,15 @@ import useAppToast from "@/hooks/useAppToast";
 
 const getTodayDateString = () => dayjs().format("YYYY-MM-DD");
 
+const INITIAL_FILTERS = {
+  orderStatus: "",
+  paymentStatus: "",
+  fromDate: "",
+  toDate: "",
+  page: 1,
+  limit: 10,
+};
+
 export const useOwnOrderHistory = () => {
   const dispatch = useDispatch();
   const { toast } = useAppToast();
@@ -19,45 +28,27 @@ export const useOwnOrderHistory = () => {
   const error = useSelector((state) => state.order.listError);
   const kpis = useSelector((state) => state.order.ownHistoryKpis);
 
-  const [filters, setFilters] = useState({
-    // [CHƯA CÓ BE] search — BE chưa hỗ trợ tìm kiếm theo keyword
-    orderStatus: "",
-    fromDate: "", // Lọc từ ngày
-    toDate: "",   // Lọc đến ngày
-    // [CHƯA CÓ BE] paymentStatus — BE chưa có field paymentStatus trong Order model
-    page: 1,
-    limit: 10,
-  });
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
 
   const clearFilters = () => {
-    setFilters({
-      orderStatus: "",
-      fromDate: "",
-      toDate: "",
-      page: 1,
-      limit: 10,
-    });
+    setFilters(INITIAL_FILTERS);
   };
 
-  /**
-   * Gọi GET /api/orders/my-orders — BE tự ép staffId = req.userId
-   * Khác với fetchOrdersThunk (GET /api/orders) chỉ dành cho Admin/Manager
-   */
   const fetchOrdersData = useCallback(async () => {
     const queryParams = {
       page: filters.page,
       limit: filters.limit,
     };
+
     if (filters.orderStatus) queryParams.orderStatus = filters.orderStatus;
+    if (filters.paymentStatus) queryParams.paymentStatus = filters.paymentStatus;
     if (filters.fromDate) queryParams.fromDate = filters.fromDate;
     if (filters.toDate) queryParams.toDate = filters.toDate;
-    // [CHƯA CÓ BE] search
-    // [CHƯA CÓ BE] paymentStatus
 
     try {
       await dispatch(fetchMyOrdersThunk(queryParams)).unwrap();
     } catch (err) {
-      toast.error("Lỗi", err?.message || "Không thể tải danh sách đơn hàng.");
+      toast.error("Loi", err?.message || "Khong the tai danh sach don hang.");
     }
   }, [dispatch, filters, toast]);
 
@@ -77,11 +68,6 @@ export const useOwnOrderHistory = () => {
     void fetchKpiData();
   }, [fetchKpiData]);
 
-  // [CHƯA CÓ BE] handleSearch — BE chưa hỗ trợ search query param
-  // const handleSearch = (searchKeyword) => {
-  //   setFilters((prev) => ({ ...prev, search: searchKeyword, page: 1 }));
-  // };
-
   const handlePageChange = (newPage) => {
     setFilters((prev) => ({ ...prev, page: newPage }));
   };
@@ -97,7 +83,6 @@ export const useOwnOrderHistory = () => {
     kpis,
     filters,
     pagination,
-    // [CHƯA CÓ BE] handleSearch,
     handlePageChange,
     handleFilterChange,
     clearFilters,

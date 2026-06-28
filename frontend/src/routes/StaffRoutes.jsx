@@ -15,7 +15,7 @@ const StaffRoutes = () => (
     <Route index element={<Navigate to="dashboard" replace />} />
     <Route path="dashboard" element={<PlaceholderPage title="Tổng quan Staff" />} />
     <Route path="pos" element={<StaffPosPage />} />
-    <Route path="receipts/:invoiceId" element={<StaffReceiptPage />} />
+    <Route path="receipts/:paymentId" element={<StaffReceiptPage />} />
     <Route path="my-orders" element={<OwnOrderHistoryPage />} />
     <Route path="profile" element={<ProfilePage />} />
     <Route path="change-password" element={<ChangePasswordPage />} />
