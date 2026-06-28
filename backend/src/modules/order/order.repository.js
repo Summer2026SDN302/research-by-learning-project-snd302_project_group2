@@ -6,71 +6,164 @@ const parseToUTCMidnight = (dateString) => {
   return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
 };
 
-/**
- * Trả về đầu ngày tiếp theo (UTC midnight của ngày + 1).
- * Dùng cho $lt khi query “≤ toDate” để bao gồm toàn bộ ngày toDate.
- */
 const parseToNextDayUTCMidnight = (dateString) => {
   const [year, month, day] = dateString.split("-");
   return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day) + 1));
 };
 
+const applyDefaultPopulates = (query) =>
+  query
+    .populate("items.foodItemId", "name")
+    .populate("staffId", "username fullName role");
+
+const buildBaseFilter = ({
+  staffId,
+  orderStatus,
+  date,
+  fromDate,
+  toDate,
+  orderIds = null,
+}) => {
+  const filter = {};
+
+  if (staffId) {
+    filter.staffId = toObjectId(staffId);
+  }
+
+  if (orderStatus) {
+    filter.orderStatus = orderStatus;
+  }
+
+  if (Array.isArray(orderIds)) {
+    if (orderIds.length === 0) {
+      filter._id = { $in: [] };
+    } else {
+      filter._id = { $in: orderIds.map(toObjectId) };
+    }
+  }
+
+  if (date) {
+    filter.orderDate = parseToUTCMidnight(date);
+  } else if (fromDate || toDate) {
+    filter.orderDate = {};
+
+    if (fromDate) {
+      filter.orderDate.$gte = parseToUTCMidnight(fromDate);
+    }
+
+    if (toDate) {
+      filter.orderDate.$lt = parseToNextDayUTCMidnight(toDate);
+    }
+  }
+
+  return filter;
+};
+
 const orderRepository = {
   async create(payload, session) {
-    // Fix #3: nhận session từ transaction để đảm bảo rollback nếu có lỗi
-    const [order] = await Order.create([payload], { session });
+    const [order] = await Order.create([payload], session ? { session } : {});
     return order;
   },
 
-  async findAll({ staffId, orderStatus, date, fromDate, toDate, page, limit }) {
-    const filter = {};
-
-    if (staffId) {
-      filter.staffId = toObjectId(staffId);
-    }
-
-    if (orderStatus) {
-      filter.orderStatus = orderStatus;
-    }
-
-    if (date) {
-      filter.orderDate = parseToUTCMidnight(date);
-    } else if (fromDate || toDate) {
-      filter.orderDate = {};
-      if (fromDate) filter.orderDate.$gte = parseToUTCMidnight(fromDate);
-      // Dùng $lt với ngày tiếp theo để bao gồm toàn bộ ngày toDate
-      // Ví dụ: toDate=2026-06-15 → $lt 2026-06-16T00:00Z (đúng)
-      // Nếu dùng $lte 2026-06-15T00:00Z → bỏ sót mọi order tạo sau midnight
-      if (toDate) filter.orderDate.$lt = parseToNextDayUTCMidnight(toDate);
-    }
+  async findAll({
+    staffId,
+    orderStatus,
+    date,
+    fromDate,
+    toDate,
+    page,
+    limit,
+  }) {
+    const filter = buildBaseFilter({
+      staffId,
+      orderStatus,
+      date,
+      fromDate,
+      toDate,
+    });
 
     const skip = (page - 1) * limit;
 
     const [items, total] = await Promise.all([
-      Order.find(filter)
-        .populate("items.foodItemId", "name") // Fix #7: populate để có tên món trong response
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+      applyDefaultPopulates(
+        Order.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+      ),
       Order.countDocuments(filter),
     ]);
 
     return { items, total };
   },
 
-  async findById(id) {
-    return Order.findOne({ _id: toObjectId(id) }).populate(
-      "items.foodItemId",
-      "name",
+  async findMatching({
+    staffId,
+    orderStatus,
+    date,
+    fromDate,
+    toDate,
+    orderIds = null,
+    session = null,
+  }) {
+    const query = applyDefaultPopulates(
+      Order.find(
+        buildBaseFilter({
+          staffId,
+          orderStatus,
+          date,
+          fromDate,
+          toDate,
+          orderIds,
+        }),
+      ).sort({ createdAt: -1 }),
     );
+
+    if (session) {
+      query.session(session);
+    }
+
+    return query;
   },
 
-  async updateStatusById(id, status) {
+  async findById(id, { session = null } = {}) {
+    const query = applyDefaultPopulates(Order.findOne({ _id: toObjectId(id) }));
+
+    if (session) {
+      query.session(session);
+    }
+
+    return query;
+  },
+
+  async findIdsByOrderNumberKeyword(keyword) {
+    const regex = new RegExp(keyword, "i");
+    const orders = await Order.find({ orderNumber: regex }).select("_id");
+    return orders.map((item) => item._id);
+  },
+
+  async updateStatusById(id, status, session = null) {
     return Order.findOneAndUpdate(
       { _id: toObjectId(id) },
       { $set: { orderStatus: status } },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true, session },
     );
+  },
+
+  async updateById(id, updates, session = null) {
+    const query = applyDefaultPopulates(
+      Order.findOneAndUpdate(
+        { _id: toObjectId(id) },
+        { $set: updates },
+        { new: true, runValidators: true },
+      ),
+    );
+
+    if (session) {
+      query.session(session);
+    }
+
+    return query;
   },
 
   async countByFoodItemId(foodItemId) {
@@ -81,4 +174,3 @@ const orderRepository = {
 };
 
 export default orderRepository;
-

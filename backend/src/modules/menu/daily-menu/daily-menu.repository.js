@@ -221,6 +221,45 @@ export const decrementSoldQuantity = async (
   );
 };
 
+export const adjustSoldQuantity = async (
+  menuId,
+  foodItemId,
+  quantityDelta,
+  session,
+) => {
+  if (!quantityDelta) {
+    return true;
+  }
+
+  const reserveQuantity = Math.abs(quantityDelta);
+  const arrayFilter =
+    quantityDelta > 0
+      ? {
+          "item.foodItemId": toObjectId(foodItemId),
+          "item.remainingQuantity": { $gte: reserveQuantity },
+        }
+      : {
+          "item.foodItemId": toObjectId(foodItemId),
+          "item.soldQuantity": { $gte: reserveQuantity },
+        };
+
+  const result = await DailyMenu.updateOne(
+    { _id: toObjectId(menuId) },
+    {
+      $inc: {
+        "items.$[item].soldQuantity": quantityDelta,
+        "items.$[item].remainingQuantity": -quantityDelta,
+      },
+    },
+    {
+      arrayFilters: [arrayFilter],
+      session,
+    },
+  );
+
+  return result.modifiedCount > 0;
+};
+
 export const setItemUnavailable = async (menuId, foodItemId) => {
   return DailyMenu.findByIdAndUpdate(
     menuId,

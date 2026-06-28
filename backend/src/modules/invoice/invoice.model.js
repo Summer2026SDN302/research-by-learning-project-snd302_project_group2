@@ -1,17 +1,14 @@
 import mongoose from "mongoose";
-import {
-  ORDER_STATUS,
-  TAX_PERCENT,
-} from "./order.constants.js";
+import { INVOICE_STATUS } from "./invoice.constants.js";
 
 const { Schema } = mongoose;
 
-const orderItemSchema = new Schema(
+const invoiceLineItemSchema = new Schema(
   {
     foodItemId: {
       type: Schema.Types.ObjectId,
       ref: "FoodItem",
-      required: true,
+      default: null,
     },
     name: {
       type: String,
@@ -42,21 +39,34 @@ const orderItemSchema = new Schema(
   { _id: false },
 );
 
-const orderSchema = new Schema(
+const invoiceSchema = new Schema(
   {
-    orderNumber: {
+    invoiceNumber: {
       type: String,
       required: true,
       unique: true,
+      index: true,
+    },
+    orderId: {
+      type: Schema.Types.ObjectId,
+      ref: "Order",
+      required: true,
+      index: true,
+    },
+    paymentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Payment",
+      required: true,
       index: true,
     },
     staffId: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
-    items: {
-      type: [orderItemSchema],
+    lineItems: {
+      type: [invoiceLineItemSchema],
       default: [],
     },
     notes: {
@@ -65,7 +75,7 @@ const orderSchema = new Schema(
       trim: true,
       maxlength: 1000,
     },
-    subTotal: {
+    subtotalAmount: {
       type: Number,
       required: true,
       min: 0,
@@ -79,27 +89,51 @@ const orderSchema = new Schema(
       type: Number,
       required: true,
       min: 0,
-      default: TAX_PERCENT,
     },
     taxAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    finalAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    paymentMethod: {
+      type: String,
+      required: true,
+    },
+    transactionCode: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 120,
+    },
+    invoiceStatus: {
+      type: String,
+      required: true,
+      enum: Object.values(INVOICE_STATUS),
+      default: INVOICE_STATUS.ISSUED,
+    },
+    issuedAt: {
+      type: Date,
+      required: true,
+      default: Date.now,
+    },
+    printCount: {
       type: Number,
       default: 0,
       min: 0,
     },
-    totalAmount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    orderStatus: {
-      type: String,
-      required: true,
-      enum: Object.values(ORDER_STATUS),
-      default: ORDER_STATUS.PENDING,
-    },
-    orderDate: {
+    lastPrintedAt: {
       type: Date,
-      required: true,
+      default: null,
+    },
+    lastPrintedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
   },
   {
@@ -107,4 +141,4 @@ const orderSchema = new Schema(
   },
 );
 
-export default mongoose.model("Order", orderSchema);
+export default mongoose.model("Invoice", invoiceSchema);
