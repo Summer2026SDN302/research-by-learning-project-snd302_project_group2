@@ -23,14 +23,17 @@ const FoodItemListPage = lazy(
 const DailyMenuPage = lazy(
   () => import("../modules/menu/pages/DailyMenuPage"),
 );
+const DashboardPage = lazy(
+  () => import("../modules/analytics/pages/DashboardPage"),
+);
+const RevenueReportPage = lazy(
+  () => import("../modules/analytics/pages/RevenueReportPage"),
+);
 
 const AdminRoutes = () => (
   <Route path="/admin" element={<MainLayout role="admin" />}>
     <Route index element={<Navigate to="dashboard" replace />} />
-    <Route
-      path="dashboard"
-      element={<PlaceholderPage title="Tổng quan Admin" />}
-    />
+    <Route path="dashboard" element={<DashboardPage />} />
     <Route path="users" element={<UserManagementPage />} />
     <Route
       path="categories"
@@ -41,6 +44,7 @@ const AdminRoutes = () => (
     <Route path="daily-menu" element={<DailyMenuPage />} />
     <Route path="orders" element={<PlaceholderPage title="Đơn hàng" />} />
     <Route path="payments" element={<PlaceholderPage title="Thanh toán" />} />
+    <Route path="revenue-report" element={<RevenueReportPage />} />
     <Route path="ai" element={<PlaceholderPage title="Phân tích & Dự báo" />} />
     <Route path="profile" element={<ProfilePage />} />
     <Route path="change-password" element={<ChangePasswordPage />} />

@@ -6,6 +6,7 @@ import authReducer from "../modules/auth/redux/authSlice";
 import userReducer from "../modules/user/redux/userSlice";
 import dailyMenuReducer from "../modules/menu/redux/dailyMenuSlice";
 import scheduledMenuReducer from "../modules/menu/redux/scheduledMenuSlice";
+import analyticsReducer from "../modules/analytics/redux/analyticsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,5 +17,6 @@ export const store = configureStore({
     scheduledMenu: scheduledMenuReducer,
     category: categoryReducer,
     foodItem: foodItemReducer,
+    analytics: analyticsReducer,
   },
 });
