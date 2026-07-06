@@ -1,4 +1,5 @@
 import { getPaymentCompletedAt } from "./payment.derived.js";
+import { TAX_PERCENT } from "../order/order.constants.js";
 
 const mapOrderReference = (order) => {
   if (!order) {
@@ -54,10 +55,7 @@ export const toPaymentListItem = (payment) => ({
   createdAt: payment.createdAt,
 });
 
-export const toPaymentResponse = (
-  payment,
-  { includeAuditTrail = false } = {},
-) => ({
+export const toPaymentResponse = (payment) => ({
   _id: payment._id,
   paymentNumber: payment.paymentNumber,
   orderId: mapOrderReference(payment.orderId),
@@ -79,11 +77,6 @@ export const toPaymentResponse = (
   refundReason: payment.refundReason ?? null,
   createdAt: payment.createdAt,
   updatedAt: payment.updatedAt,
-  ...(includeAuditTrail
-    ? {
-        auditTrail: payment.auditTrail ?? [],
-      }
-    : {}),
 });
 
 export const toPaymentReceiptResponse = (payment, order) => ({
@@ -108,7 +101,7 @@ export const toPaymentReceiptResponse = (payment, order) => ({
   notes: order?.notes ?? null,
   subtotalAmount: order?.subTotal ?? 0,
   discountAmount: order?.discountAmount ?? 0,
-  taxRate: order?.taxRate ?? 0,
+  taxRate: order?.taxRate ?? TAX_PERCENT,
   taxAmount: order?.taxAmount ?? 0,
   finalAmount: payment.finalAmount ?? order?.totalAmount ?? 0,
   paymentMethod: payment.paymentMethod,

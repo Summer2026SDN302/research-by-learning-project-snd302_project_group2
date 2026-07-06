@@ -8,10 +8,10 @@ import { generateReferenceNumber } from "../../shared/helpers/reference-number.h
 import { withTransaction } from "../../shared/helpers/transaction.helper.js";
 import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
 import {
-  ORDER_PAYMENT_STATUS,
   ORDER_STATUS,
   TAX_PERCENT,
 } from "../order/order.constants.js";
+import Order from "../order/order.model.js";
 import orderRepository from "../order/order.repository.js";
 import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.js";
 import { USER_ROLES } from "../user/user.constants.js";
@@ -19,7 +19,6 @@ import {
   PAYMENT_METHOD,
   PAYMENT_STATUS,
 } from "./payment.constants.js";
-import { deriveOrderPaymentStatus } from "./payment.derived.js";
 import {
   toPaymentListItem,
   toPaymentResponse,
@@ -29,6 +28,13 @@ import paymentRepository from "./payment.repository.js";
 
 const roundCurrency = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+
+const generateOrderNumber = () => {
+  const now = new Date();
+  const dateStr = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}${String(now.getUTCDate()).padStart(2, "0")}`;
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `ORD-${dateStr}-${random}`;
+};
 
 const normalizeEntityId = (entity) => {
   if (!entity) {
@@ -54,9 +60,6 @@ const normalizeOptionalText = (value) => {
   const normalized = String(value).trim();
   return normalized || null;
 };
-
-const parseVNDateToUTCDate = (dateString) =>
-  new Date(`${dateString}T00:00:00.000Z`);
 
 const assertNoDuplicateItems = (items = []) => {
   const seen = new Set();
@@ -115,7 +118,6 @@ const buildCheckoutLineItems = (requestedItems, menuItemMap) =>
     return {
       menuItem,
       requestedQty: requested.quantity,
-      note: requested.note ?? null,
     };
   });
 
@@ -123,7 +125,7 @@ const calculateOrderPricing = (lineItems) => {
   let subTotal = 0;
   let discountAmount = 0;
 
-  const orderItems = lineItems.map(({ menuItem, requestedQty, note }) => {
+  const orderItems = lineItems.map(({ menuItem, requestedQty }) => {
     const unitPrice = menuItem.currentPrice;
     const lineTotal = unitPrice * requestedQty;
     const discount =
@@ -137,21 +139,26 @@ const calculateOrderPricing = (lineItems) => {
       name: menuItem.foodItemId.name,
       unitPrice,
       quantity: requestedQty,
-      lineTotal: roundCurrency(lineTotal),
-      note,
+      lineTotal,
     };
   });
 
-  const taxAmount = roundCurrency(subTotal * TAX_PERCENT);
-  const totalAmount = roundCurrency(subTotal + taxAmount);
+  const taxAmount = Math.round(subTotal * TAX_PERCENT * 100) / 100;
+  const totalAmount = Math.round((subTotal + taxAmount) * 100) / 100;
 
   return {
     orderItems,
-    subTotal: roundCurrency(subTotal),
-    discountAmount: roundCurrency(discountAmount),
+    subTotal: Math.round(subTotal * 100) / 100,
+    discountAmount: Math.round(discountAmount * 100) / 100,
     taxAmount,
     totalAmount,
   };
+};
+
+const findOrderIdsByOrderNumberKeyword = async (keyword) => {
+  const regex = new RegExp(keyword, "i");
+  const orders = await Order.find({ orderNumber: regex }).select("_id");
+  return orders.map((item) => item._id);
 };
 
 const getPaymentOrThrow = async (id, options = {}) => {
@@ -162,26 +169,6 @@ const getPaymentOrThrow = async (id, options = {}) => {
   }
 
   return payment;
-};
-
-const getPayableOrderOrThrow = async (orderId) => {
-  const order = await orderRepository.findById(orderId);
-
-  if (!order) {
-    throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
-  }
-
-  if (
-    [ORDER_STATUS.CANCELLED, ORDER_STATUS.RETURNED].includes(order.orderStatus)
-  ) {
-    throw new AppError(
-      "Order is not eligible for payment",
-      400,
-      "ORDER_NOT_PAYABLE",
-    );
-  }
-
-  return order;
 };
 
 const getOrderByIdOrThrow = async (orderId) => {
@@ -203,16 +190,6 @@ const assertOrderAccess = (order, requestingUserId, requestingRole) => {
       "You do not have permission to access this payment",
       403,
       "INSUFFICIENT_PERMISSIONS",
-    );
-  }
-};
-
-const assertValidPaymentTransition = (payment, expectedStatus) => {
-  if (payment.paymentStatus !== expectedStatus) {
-    throw new AppError(
-      `Cannot transition payment from "${payment.paymentStatus}"`,
-      400,
-      "INVALID_PAYMENT_STATUS_TRANSITION",
     );
   }
 };
@@ -311,17 +288,15 @@ const paymentService = {
 
       const order = await orderRepository.create(
         {
-          orderNumber: generateReferenceNumber("ORD"),
+          orderNumber: generateOrderNumber(),
           staffId: requestingUserId,
           items: orderItems,
-          notes: body.notes ?? null,
           subTotal,
           discountAmount,
-          taxRate: TAX_PERCENT,
           taxAmount,
           totalAmount,
-          orderStatus: ORDER_STATUS.COMPLETED,
-          orderDate: parseVNDateToUTCDate(todayStr),
+          orderStatus: ORDER_STATUS.PENDING,
+          orderDate: new Date(todayStr),
         },
         session,
       );
@@ -350,139 +325,6 @@ const paymentService = {
     return toPaymentResponse(completedPayment);
   },
 
-  async initiatePayment(body, requestingUserId, requestingRole) {
-    const order = await getPayableOrderOrThrow(body.orderId);
-    assertOrderAccess(order, requestingUserId, requestingRole);
-    const latestPayment = await paymentRepository.findLatestByOrderId(order._id);
-
-    if (deriveOrderPaymentStatus(latestPayment) === ORDER_PAYMENT_STATUS.PAID) {
-      throw new AppError(
-        "Order has already been paid",
-        409,
-        "ORDER_ALREADY_PAID",
-      );
-    }
-
-    if (latestPayment?.paymentStatus === PAYMENT_STATUS.PENDING) {
-      throw new AppError(
-        "A payment is already in progress for this order",
-        409,
-        "PAYMENT_IN_PROGRESS",
-      );
-    }
-
-    const amountReceived =
-      body.paymentMethod === PAYMENT_METHOD.CASH
-        ? roundCurrency(body.amountReceived)
-        : roundCurrency(order.totalAmount);
-
-    const paymentId = await withTransaction(async (session) => {
-      const payment = await paymentRepository.create(
-        {
-          paymentNumber: generateReferenceNumber("PAY"),
-          orderId: order._id,
-          finalAmount: order.totalAmount,
-          paymentMethod: body.paymentMethod,
-          amountReceived,
-          changeReturned: 0,
-          transactionCode: null,
-          paymentStatus: PAYMENT_STATUS.PENDING,
-          refundedAt: null,
-          refundedBy: null,
-          refundReason: null,
-        },
-        session,
-      );
-
-      return payment._id;
-    });
-
-    const createdPayment = await paymentRepository.findById(paymentId);
-    return toPaymentResponse(createdPayment);
-  },
-
-  async confirmPayment(id, body, requestingUserId, requestingRole) {
-    const payment = await getPaymentOrThrow(id);
-    const order = await getPayableOrderOrThrow(
-      payment.orderId?._id ?? payment.orderId,
-    );
-
-    assertOrderAccess(order, requestingUserId, requestingRole);
-    assertValidPaymentTransition(payment, PAYMENT_STATUS.PENDING);
-
-    const transactionCode = await ensureUniqueTransactionCode(
-      body.transactionCode ?? payment.transactionCode,
-      payment._id,
-    );
-
-    const amountReceived =
-      payment.paymentMethod === PAYMENT_METHOD.CASH
-        ? roundCurrency(body.amountReceived ?? payment.amountReceived)
-        : roundCurrency(payment.finalAmount ?? order.totalAmount);
-    const finalAmount = roundCurrency(payment.finalAmount ?? order.totalAmount);
-
-    if (
-      payment.paymentMethod === PAYMENT_METHOD.CASH &&
-      amountReceived < finalAmount
-    ) {
-      throw new AppError(
-        "Cash received is insufficient",
-        400,
-        "INSUFFICIENT_CASH_RECEIVED",
-      );
-    }
-
-    const changeReturned =
-      payment.paymentMethod === PAYMENT_METHOD.CASH
-        ? roundCurrency(amountReceived - finalAmount)
-        : 0;
-
-    await withTransaction(async (session) => {
-      await paymentRepository.updateById(
-        payment._id,
-        {
-          amountReceived,
-          changeReturned,
-          transactionCode,
-          paymentStatus: PAYMENT_STATUS.PAID,
-        },
-        session,
-      );
-    });
-
-    const confirmedPayment = await paymentRepository.findById(payment._id);
-    return toPaymentResponse(confirmedPayment);
-  },
-
-  async failPayment(id, body, requestingUserId, requestingRole) {
-    const payment = await getPaymentOrThrow(id);
-    const order = await getPayableOrderOrThrow(
-      payment.orderId?._id ?? payment.orderId,
-    );
-
-    assertOrderAccess(order, requestingUserId, requestingRole);
-    assertValidPaymentTransition(payment, PAYMENT_STATUS.PENDING);
-
-    await withTransaction(async (session) => {
-      await paymentRepository.updateById(
-        payment._id,
-        {
-          paymentStatus: PAYMENT_STATUS.FAILED,
-        },
-        session,
-      );
-    });
-
-    const failedPayment = await paymentRepository.findById(payment._id);
-    return toPaymentResponse(failedPayment);
-  },
-
-  async getPaymentById(id, requestingUserId, requestingRole) {
-    const payment = await getPaymentOrThrow(id);
-    assertOrderAccess(payment.orderId, requestingUserId, requestingRole);
-    return toPaymentResponse(payment, { includeAuditTrail: true });
-  },
-
   async getPaymentReceipt(id, requestingUserId, requestingRole) {
     const payment = await getPaymentOrThrow(id);
     const order = await getOrderByIdOrThrow(payment.orderId?._id ?? payment.orderId);
@@ -507,7 +349,7 @@ const paymentService = {
     const { page, limit } = parsePagination(query);
     const searchKeyword = parseSearchQuery(query.search);
     const matchingOrderIds = searchKeyword
-      ? await orderRepository.findIdsByOrderNumberKeyword(searchKeyword)
+      ? await findOrderIdsByOrderNumberKeyword(searchKeyword)
       : [];
 
     const { items, total } = await paymentRepository.findAll({

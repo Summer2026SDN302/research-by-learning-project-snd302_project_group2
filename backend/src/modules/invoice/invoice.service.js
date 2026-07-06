@@ -1,9 +1,6 @@
 import AppError from "../../shared/exceptions/AppError.js";
 import { withTransaction } from "../../shared/helpers/transaction.helper.js";
 import { USER_ROLES } from "../user/user.constants.js";
-import paymentRepository from "../payment/payment.repository.js";
-import { PAYMENT_AUDIT_EVENT } from "../payment/payment.constants.js";
-import { createPaymentAuditEvent } from "../payment/payment.audit.js";
 import {
   toInvoiceReceiptResponse,
   toInvoiceResponse,
@@ -67,33 +64,11 @@ const invoiceService = {
     assertInvoiceAccess(invoice, requestingUserId, requestingRole);
 
     const updatedInvoice = await withTransaction(async (session) => {
-      const nextInvoice = await invoiceRepository.updatePrintAudit(
+      return invoiceRepository.updatePrintAudit(
         invoice._id,
         requestingUserId,
         session,
       );
-
-      if (invoice.paymentId) {
-        await paymentRepository.appendAuditEvents(
-          invoice.paymentId,
-          [
-            createPaymentAuditEvent({
-              eventType: PAYMENT_AUDIT_EVENT.RECEIPT_PRINTED,
-              actorId: requestingUserId,
-              note: `Receipt printed for ${invoice.invoiceNumber}`,
-              metadata: {
-                invoiceId: invoice._id.toString(),
-                invoiceNumber: invoice.invoiceNumber,
-                printCount: nextInvoice.printCount,
-              },
-              occurredAt: nextInvoice.lastPrintedAt ?? new Date(),
-            }),
-          ],
-          session,
-        );
-      }
-
-      return nextInvoice;
     });
 
     return toInvoiceReceiptResponse(updatedInvoice);

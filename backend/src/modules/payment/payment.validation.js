@@ -56,34 +56,6 @@ export const validateCheckoutPayment = [
   optionalString("transactionCode"),
 ];
 
-export const validateInitiatePayment = [
-  body("orderId").isMongoId().withMessage("Invalid order id"),
-  body("paymentMethod")
-    .isIn(Object.values(PAYMENT_METHOD))
-    .withMessage("Invalid payment method"),
-  body("amountReceived")
-    .isFloat({ min: 0 })
-    .withMessage("amountReceived must be a non-negative number"),
-  optionalString("transactionCode"),
-];
-
-export const validateConfirmPayment = [
-  param("id").isMongoId().withMessage("Invalid payment id"),
-  body("amountReceived")
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage("amountReceived must be a non-negative number"),
-  optionalString("transactionCode"),
-];
-
-export const validateFailPayment = [
-  param("id").isMongoId().withMessage("Invalid payment id"),
-  body("failureReason")
-    .optional()
-    .isString()
-    .withMessage("failureReason must be a string"),
-];
-
 export const validateGetPaymentById = [
   param("id").isMongoId().withMessage("Invalid payment id"),
 ];

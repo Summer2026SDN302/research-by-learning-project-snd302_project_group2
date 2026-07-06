@@ -2,7 +2,6 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import AppError from "../../../shared/exceptions/AppError.js";
 import { errorHandler } from "../../../middlewares/error.middleware.js";
 import paymentRoute from "../payment.route.js";
 import paymentService from "../payment.service.js";
@@ -10,11 +9,9 @@ import paymentService from "../payment.service.js";
 vi.mock("../payment.service.js", () => ({
   default: {
     getPayments: vi.fn(),
-    getPaymentById: vi.fn(),
+    getPaymentReceipt: vi.fn(),
     checkout: vi.fn(),
-    initiatePayment: vi.fn(),
-    confirmPayment: vi.fn(),
-    failPayment: vi.fn(),
+    printPaymentReceipt: vi.fn(),
   },
 }));
 
@@ -109,70 +106,27 @@ describe("payment routes", () => {
     });
   });
 
-  describe("GET /api/payments/:id", () => {
-    it("returns payment detail for manager users", async () => {
-      paymentService.getPaymentById.mockResolvedValue({
-        _id: PAYMENT_ID,
+  describe("GET /api/payments/:id/receipt", () => {
+    it("returns the payment receipt for manager users", async () => {
+      paymentService.getPaymentReceipt.mockResolvedValue({
+        paymentId: PAYMENT_ID,
         paymentNumber: "PAY-20260626-1234",
       });
 
       const response = await request(createApp())
-        .get(`/api/payments/${PAYMENT_ID}`)
+        .get(`/api/payments/${PAYMENT_ID}/receipt`)
         .set("x-test-role", "Manager");
 
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual({
-        _id: PAYMENT_ID,
+        paymentId: PAYMENT_ID,
         paymentNumber: "PAY-20260626-1234",
       });
-      expect(paymentService.getPaymentById).toHaveBeenCalledWith(
+      expect(paymentService.getPaymentReceipt).toHaveBeenCalledWith(
         PAYMENT_ID,
         "507f1f77bcf86cd799439099",
         "Manager",
       );
-    });
-  });
-
-  describe("POST /api/payments", () => {
-    it("initiates a payment for staff users", async () => {
-      const payload = {
-        orderId: "507f1f77bcf86cd799439012",
-        paymentMethod: "Cash",
-        amountReceived: 120000,
-      };
-
-      paymentService.initiatePayment.mockResolvedValue({
-        _id: PAYMENT_ID,
-        paymentStatus: "Pending",
-      });
-
-      const response = await request(createApp())
-        .post("/api/payments")
-        .set("x-test-role", "Staff")
-        .send(payload);
-
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-      expect(paymentService.initiatePayment).toHaveBeenCalledWith(
-        payload,
-        "507f1f77bcf86cd799439099",
-        "Staff",
-      );
-    });
-
-    it("validates the payment initiation payload", async () => {
-      const response = await request(createApp())
-        .post("/api/payments")
-        .set("x-test-role", "Manager")
-        .send({
-          orderId: "not-a-mongo-id",
-          paymentMethod: "Momo",
-          amountReceived: -1,
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error.code).toBe("VALIDATION_ERROR");
-      expect(paymentService.initiatePayment).not.toHaveBeenCalled();
     });
   });
 
@@ -209,51 +163,34 @@ describe("payment routes", () => {
     });
   });
 
-  describe("PATCH /api/payments/:id/confirm", () => {
-    it("propagates insufficient cash errors", async () => {
-      paymentService.confirmPayment.mockRejectedValue(
-        new AppError(
-          "Cash received is insufficient",
-          400,
-          "INSUFFICIENT_CASH_RECEIVED",
-        ),
-      );
-
-      const response = await request(createApp())
-        .patch(`/api/payments/${PAYMENT_ID}/confirm`)
-        .set("x-test-role", "Staff")
-        .send({
-          amountReceived: 1000,
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.error.code).toBe("INSUFFICIENT_CASH_RECEIVED");
-    });
-  });
-
-  describe("PATCH /api/payments/:id/fail", () => {
-    it("marks a payment as failed for manager users", async () => {
-      paymentService.failPayment.mockResolvedValue({
-        _id: PAYMENT_ID,
-        paymentStatus: "Failed",
-        failureReason: "Operator cancelled",
+  describe("POST /api/payments/:id/print", () => {
+    it("prepares the receipt for manager users", async () => {
+      paymentService.printPaymentReceipt.mockResolvedValue({
+        paymentId: PAYMENT_ID,
+        paymentNumber: "PAY-20260626-9999",
       });
 
       const response = await request(createApp())
-        .patch(`/api/payments/${PAYMENT_ID}/fail`)
-        .set("x-test-role", "Manager")
-        .send({
-          failureReason: "Operator cancelled",
-        });
+        .post(`/api/payments/${PAYMENT_ID}/print`)
+        .set("x-test-role", "Manager");
 
       expect(response.status).toBe(200);
-      expect(response.body.data.paymentStatus).toBe("Failed");
-      expect(paymentService.failPayment).toHaveBeenCalledWith(
+      expect(response.body.data.paymentId).toBe(PAYMENT_ID);
+      expect(paymentService.printPaymentReceipt).toHaveBeenCalledWith(
         PAYMENT_ID,
-        { failureReason: "Operator cancelled" },
         "507f1f77bcf86cd799439099",
         "Manager",
       );
+    });
+
+    it("validates the payment id before printing", async () => {
+      const response = await request(createApp())
+        .post("/api/payments/not-a-mongo-id/print")
+        .set("x-test-role", "Admin");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe("VALIDATION_ERROR");
+      expect(paymentService.printPaymentReceipt).not.toHaveBeenCalled();
     });
   });
 });
