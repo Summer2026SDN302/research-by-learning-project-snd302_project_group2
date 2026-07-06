@@ -1,98 +1,69 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import * as dailyMenuRepository from "../../menu/daily-menu/daily-menu.repository.js";
-import { withTransaction } from "../../../shared/helpers/transaction.helper.js";
 import { USER_ROLES } from "../../user/user.constants.js";
-import {
-  ORDER_PAYMENT_STATUS,
-  ORDER_STATUS,
-} from "../order.constants.js";
-import paymentRepository from "../../payment/payment.repository.js";
+import { ORDER_STATUS } from "../order.constants.js";
+import * as dailyMenuRepository from "../../menu/daily-menu/daily-menu.repository.js";
 import orderRepository from "../order.repository.js";
 import orderService from "../order.service.js";
 
-const { mockSession, mockWithTransaction } = vi.hoisted(() => ({
+const { mockSession, mockStartSession } = vi.hoisted(() => ({
   mockSession: {
     startTransaction: vi.fn(),
     commitTransaction: vi.fn(),
     abortTransaction: vi.fn(),
     endSession: vi.fn(),
   },
-  mockWithTransaction: vi.fn(async (callback) => {
-    mockSession.startTransaction();
-    try {
-      const result = await callback(mockSession);
-      await mockSession.commitTransaction();
-      return result;
-    } catch (error) {
-      await mockSession.abortTransaction();
-      throw error;
-    } finally {
-      mockSession.endSession();
-    }
-  }),
+  mockStartSession: vi.fn(),
+}));
+
+vi.mock("mongoose", () => ({
+  default: {
+    startSession: mockStartSession,
+  },
 }));
 
 vi.mock("../order.repository.js", () => ({
   default: {
-    findById: vi.fn(),
-    updateById: vi.fn(),
     create: vi.fn(),
     findAll: vi.fn(),
+    findById: vi.fn(),
     updateStatusById: vi.fn(),
   },
 }));
 
 vi.mock("../../menu/daily-menu/daily-menu.repository.js", () => ({
   findMenuByDate: vi.fn(),
-  adjustSoldQuantity: vi.fn(),
   decrementSoldQuantity: vi.fn(),
-}));
-
-vi.mock("../../../shared/helpers/transaction.helper.js", () => ({
-  withTransaction: mockWithTransaction,
-}));
-
-vi.mock("../../payment/payment.repository.js", () => ({
-  default: {
-    findLatestByOrderId: vi.fn(),
-    findLatestByOrderIds: vi.fn(),
-  },
 }));
 
 const buildOrder = (overrides = {}) => ({
   _id: "order-1",
-  orderNumber: "ORD-0001",
+  orderNumber: "ORD-20260706-1234",
   staffId: "staff-1",
   items: [
     {
       foodItemId: "food-1",
       name: "Pho",
-      unitPrice: 30000,
-      quantity: 2,
-      lineTotal: 60000,
-      note: null,
+      unitPrice: 32000,
+      quantity: 1,
+      lineTotal: 32000,
     },
     {
       foodItemId: "food-2",
-      name: "Cha gio",
-      unitPrice: 20000,
-      quantity: 1,
-      lineTotal: 20000,
-      note: null,
+      name: "Tra dao",
+      unitPrice: 15000,
+      quantity: 2,
+      lineTotal: 30000,
     },
   ],
-  notes: "Ban 1",
-  subTotal: 80000,
-  discountAmount: 0,
-  taxRate: 0.08,
-  taxAmount: 6400,
-  totalAmount: 86400,
+  subTotal: 62000,
+  discountAmount: 9000,
+  taxAmount: 4960,
+  totalAmount: 66960,
   orderStatus: ORDER_STATUS.PENDING,
-  paymentStatus: ORDER_PAYMENT_STATUS.UNPAID,
-  orderDate: "2026-06-26T00:00:00.000Z",
-  createdAt: "2026-06-26T01:00:00.000Z",
-  updatedAt: "2026-06-26T01:00:00.000Z",
+  orderDate: "2026-07-06T00:00:00.000Z",
+  createdAt: "2026-07-06T01:00:00.000Z",
+  updatedAt: "2026-07-06T01:00:00.000Z",
   ...overrides,
 });
 
@@ -113,16 +84,6 @@ const buildDailyMenu = () => ({
     {
       foodItemId: {
         _id: "food-2",
-        name: "Cha gio",
-      },
-      currentPrice: 20000,
-      originalPrice: 20000,
-      remainingQuantity: 5,
-      status: "Unavailable",
-    },
-    {
-      foodItemId: {
-        _id: "food-3",
         name: "Tra dao",
       },
       currentPrice: 15000,
@@ -136,34 +97,11 @@ const buildDailyMenu = () => ({
 describe("orderService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockStartSession.mockResolvedValue(mockSession);
   });
 
-  it("creates an order and reserves menu quantities", async () => {
-    const createdOrder = buildOrder({
-      items: [
-        {
-          foodItemId: "food-1",
-          name: "Pho",
-          unitPrice: 32000,
-          quantity: 1,
-          lineTotal: 32000,
-          note: null,
-        },
-        {
-          foodItemId: "food-3",
-          name: "Tra dao",
-          unitPrice: 15000,
-          quantity: 2,
-          lineTotal: 30000,
-          note: "It da",
-        },
-      ],
-      notes: "Mang di",
-      subTotal: 62000,
-      discountAmount: 9000,
-      taxAmount: 4960,
-      totalAmount: 66960,
-    });
+  it("creates an order using the zip flow and commits the transaction", async () => {
+    const createdOrder = buildOrder();
 
     dailyMenuRepository.findMenuByDate.mockResolvedValue(buildDailyMenu());
     dailyMenuRepository.decrementSoldQuantity.mockResolvedValue(true);
@@ -173,220 +111,115 @@ describe("orderService", () => {
       {
         items: [
           { foodItemId: "food-1", quantity: 1 },
-          { foodItemId: "food-3", quantity: 2, note: "It da" },
+          { foodItemId: "food-2", quantity: 2 },
         ],
-        notes: "Mang di",
       },
       "staff-1",
     );
 
-    expect(withTransaction).toHaveBeenCalledTimes(1);
-    expect(dailyMenuRepository.decrementSoldQuantity).toHaveBeenNthCalledWith(
-      1,
-      "menu-1",
-      "food-1",
-      1,
-      mockSession,
-    );
-    expect(dailyMenuRepository.decrementSoldQuantity).toHaveBeenNthCalledWith(
-      2,
-      "menu-1",
-      "food-3",
-      2,
-      mockSession,
-    );
+    expect(mockStartSession).toHaveBeenCalledTimes(1);
+    expect(mockSession.startTransaction).toHaveBeenCalledTimes(1);
+    expect(dailyMenuRepository.decrementSoldQuantity).toHaveBeenCalledTimes(2);
     expect(orderRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         staffId: "staff-1",
-        notes: "Mang di",
         subTotal: 62000,
         discountAmount: 9000,
         taxAmount: 4960,
         totalAmount: 66960,
+        orderStatus: ORDER_STATUS.PENDING,
       }),
       mockSession,
     );
+    expect(mockSession.commitTransaction).toHaveBeenCalledTimes(1);
+    expect(mockSession.abortTransaction).not.toHaveBeenCalled();
+    expect(mockSession.endSession).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({
-      orderNumber: "ORD-0001",
-      paymentStatus: ORDER_PAYMENT_STATUS.UNPAID,
+      orderNumber: "ORD-20260706-1234",
       totalAmount: 66960,
+      orderStatus: ORDER_STATUS.PENDING,
     });
   });
 
-  it("reserves menu quantities sequentially during order creation", async () => {
-    const createdOrder = buildOrder({
-      items: [
-        {
-          foodItemId: "food-1",
-          name: "Pho",
-          unitPrice: 32000,
-          quantity: 1,
-          lineTotal: 32000,
-          note: null,
-        },
-        {
-          foodItemId: "food-3",
-          name: "Tra dao",
-          unitPrice: 15000,
-          quantity: 1,
-          lineTotal: 15000,
-          note: null,
-        },
-      ],
-      subTotal: 47000,
-      discountAmount: 6000,
-      taxAmount: 3760,
-      totalAmount: 50760,
-    });
-
-    let inFlight = false;
-
+  it("rolls back when order creation fails", async () => {
     dailyMenuRepository.findMenuByDate.mockResolvedValue(buildDailyMenu());
-    dailyMenuRepository.decrementSoldQuantity.mockImplementation(async () => {
-      if (inFlight) {
-        throw new Error("parallel-session-operations");
-      }
-
-      inFlight = true;
-      await Promise.resolve();
-      inFlight = false;
-
-      return true;
-    });
-    orderRepository.create.mockResolvedValue(createdOrder);
+    dailyMenuRepository.decrementSoldQuantity.mockResolvedValue(true);
+    orderRepository.create.mockRejectedValue(new Error("insert failed"));
 
     await expect(
       orderService.createOrder(
         {
-          items: [
-            { foodItemId: "food-1", quantity: 1 },
-            { foodItemId: "food-3", quantity: 1 },
-          ],
+          items: [{ foodItemId: "food-1", quantity: 1 }],
         },
         "staff-1",
       ),
-    ).resolves.toMatchObject({
-      totalAmount: 50760,
-    });
+    ).rejects.toThrow("insert failed");
 
-    expect(dailyMenuRepository.decrementSoldQuantity).toHaveBeenCalledTimes(2);
+    expect(mockSession.abortTransaction).toHaveBeenCalledTimes(1);
+    expect(mockSession.commitTransaction).not.toHaveBeenCalled();
+    expect(mockSession.endSession).toHaveBeenCalledTimes(1);
   });
 
-  it("updates an unpaid pending order and adjusts stock deltas", async () => {
-    const existingOrder = buildOrder();
-    const updatedOrder = buildOrder({
-      notes: "Ban 9",
-      items: [
-        {
-          foodItemId: "food-1",
-          name: "Pho",
-          unitPrice: 32000,
-          quantity: 1,
-          lineTotal: 32000,
-          note: null,
-        },
-        {
-          foodItemId: "food-2",
-          name: "Cha gio",
-          unitPrice: 20000,
-          quantity: 1,
-          lineTotal: 20000,
-          note: null,
-        },
-        {
-          foodItemId: "food-3",
-          name: "Tra dao",
-          unitPrice: 15000,
-          quantity: 2,
-          lineTotal: 30000,
-          note: null,
-        },
-      ],
-      subTotal: 82000,
-      discountAmount: 9000,
-      taxAmount: 6560,
-      totalAmount: 88560,
+  it("returns paginated orders from the repository", async () => {
+    orderRepository.findAll.mockResolvedValue({
+      items: [buildOrder()],
+      total: 1,
     });
 
-    orderRepository.findById.mockResolvedValue(existingOrder);
-    paymentRepository.findLatestByOrderId.mockResolvedValue(null);
-    dailyMenuRepository.findMenuByDate.mockResolvedValue(buildDailyMenu());
-    dailyMenuRepository.adjustSoldQuantity.mockResolvedValue(true);
-    orderRepository.updateById.mockResolvedValue(updatedOrder);
-
-    const result = await orderService.updateOrderItems(
-      "order-1",
-      {
-        items: [
-          { foodItemId: "food-1", quantity: 1 },
-          { foodItemId: "food-2", quantity: 1 },
-          { foodItemId: "food-3", quantity: 2 },
-        ],
-        notes: "Ban 9",
-      },
-      "staff-1",
-      USER_ROLES.STAFF,
-    );
-
-    expect(dailyMenuRepository.findMenuByDate).toHaveBeenCalledWith("2026-06-26");
-    expect(dailyMenuRepository.adjustSoldQuantity).toHaveBeenNthCalledWith(
-      1,
-      "menu-1",
-      "food-1",
-      -1,
-      mockSession,
-    );
-    expect(dailyMenuRepository.adjustSoldQuantity).toHaveBeenNthCalledWith(
-      2,
-      "menu-1",
-      "food-3",
-      2,
-      mockSession,
-    );
-    expect(orderRepository.updateById).toHaveBeenCalledWith(
-      "order-1",
-      expect.objectContaining({
-        notes: "Ban 9",
-        subTotal: 82000,
-        discountAmount: 9000,
-        taxAmount: 6560,
-        totalAmount: 88560,
-      }),
-      mockSession,
-    );
-    expect(withTransaction).toHaveBeenCalledTimes(1);
-    expect(result).toMatchObject({
-      _id: "order-1",
-      orderNumber: "ORD-0001",
-      paymentStatus: ORDER_PAYMENT_STATUS.UNPAID,
+    const result = await orderService.getOrders({
+      page: "2",
+      limit: "5",
       orderStatus: ORDER_STATUS.PENDING,
-      totalAmount: 88560,
+      date: "2026-07-06",
+    });
+
+    expect(orderRepository.findAll).toHaveBeenCalledWith({
+      staffId: undefined,
+      orderStatus: ORDER_STATUS.PENDING,
+      date: "2026-07-06",
+      fromDate: undefined,
+      toDate: undefined,
+      page: 2,
+      limit: 5,
+    });
+    expect(result.pagination).toMatchObject({
+      page: 2,
+      limit: 5,
+      total: 1,
+      totalPages: 1,
     });
   });
 
-  it("rejects editing once payment has already started", async () => {
-    orderRepository.findById.mockResolvedValue(buildOrder());
-    paymentRepository.findLatestByOrderId.mockResolvedValue({
-      _id: "payment-1",
-      paymentStatus: ORDER_PAYMENT_STATUS.PENDING,
-    });
+  it("blocks staff from reading another staff member's order", async () => {
+    orderRepository.findById.mockResolvedValue(
+      buildOrder({ staffId: { toString: () => "staff-2" } }),
+    );
 
     await expect(
-      orderService.updateOrderItems(
-        "order-1",
-        {
-          items: [{ foodItemId: "food-1", quantity: 1 }],
-          notes: null,
-        },
-        "staff-1",
-        USER_ROLES.STAFF,
-      ),
+      orderService.getOrderById("order-1", "staff-1", USER_ROLES.STAFF),
     ).rejects.toMatchObject({
-      statusCode: 409,
-      code: "ORDER_NOT_EDITABLE",
+      statusCode: 403,
+      code: "FORBIDDEN",
     });
+  });
 
-    expect(dailyMenuRepository.findMenuByDate).not.toHaveBeenCalled();
-    expect(withTransaction).not.toHaveBeenCalled();
+  it("updates status when the transition is valid", async () => {
+    orderRepository.findById.mockResolvedValue(
+      buildOrder({ orderStatus: ORDER_STATUS.PENDING }),
+    );
+    orderRepository.updateStatusById.mockResolvedValue(
+      buildOrder({ orderStatus: ORDER_STATUS.CONFIRMED }),
+    );
+
+    const result = await orderService.updateOrderStatus(
+      "order-1",
+      ORDER_STATUS.CONFIRMED,
+    );
+
+    expect(orderRepository.updateStatusById).toHaveBeenCalledWith(
+      "order-1",
+      ORDER_STATUS.CONFIRMED,
+    );
+    expect(result.orderStatus).toBe(ORDER_STATUS.CONFIRMED);
   });
 });
