@@ -222,11 +222,20 @@ const orderService = {
     return toOrderResponse(order);
   },
 
-  // Fix #4: bỏ param `role` vì không dùng trong hàm này.
-  // Việc kiểm tra role (chỉ Manager/Admin mới cancel được) nên để ở middleware/router.
-  async updateOrderStatus(id, newStatus) {
+  async updateOrderStatus(id, newStatus, requestingUserId, requestingRole) {
     const order = await getOrderOrThrow(id);
     const currentStatus = order.orderStatus;
+
+    if (
+      requestingRole === USER_ROLES.STAFF &&
+      order.staffId.toString() !== requestingUserId
+    ) {
+      throw new AppError(
+        "You do not have permission to modify this order",
+        403,
+        "FORBIDDEN",
+      );
+    }
 
     const allowedNext = VALID_STATUS_TRANSITIONS[currentStatus] ?? [];
 

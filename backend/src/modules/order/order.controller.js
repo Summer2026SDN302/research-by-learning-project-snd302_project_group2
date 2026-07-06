@@ -31,10 +31,11 @@ export const createOrder = asyncHandler(async (req, res) => {
 });
 
 export const updateOrderStatus = asyncHandler(async (req, res) => {
-  // Fix #4: bỏ role — kiểm soát role đã được xử lý ở middleware authorize()
   const data = await orderService.updateOrderStatus(
     req.params.id,
     req.body.orderStatus,
+    req.userId,
+    req.user.role
   );
   return successResponse(res, data, "Order status updated successfully");
 });
