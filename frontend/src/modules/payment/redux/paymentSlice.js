@@ -102,17 +102,6 @@ export const fetchPaymentKpisThunk = createAsyncThunk(
   },
 );
 
-export const initiatePaymentThunk = createAsyncThunk(
-  "payment/initiatePayment",
-  async (paymentData, { rejectWithValue }) => {
-    try {
-      return await paymentApi.initiatePayment(paymentData);
-    } catch (error) {
-      return rejectWithValue(error);
-    }
-  },
-);
-
 export const checkoutPaymentThunk = createAsyncThunk(
   "payment/checkoutPayment",
   async (paymentData, { rejectWithValue }) => {
@@ -124,32 +113,7 @@ export const checkoutPaymentThunk = createAsyncThunk(
   },
 );
 
-export const confirmPaymentThunk = createAsyncThunk(
-  "payment/confirmPayment",
-  async ({ id, confirmData }, { rejectWithValue }) => {
-    try {
-      return await paymentApi.confirmPayment(id, confirmData);
-    } catch (error) {
-      return rejectWithValue(error);
-    }
-  },
-);
-
-export const failPaymentThunk = createAsyncThunk(
-  "payment/failPayment",
-  async ({ id, failData }, { rejectWithValue }) => {
-    try {
-      return await paymentApi.failPayment(id, failData);
-    } catch (error) {
-      return rejectWithValue(error);
-    }
-  },
-);
-
 const initialState = {
-  currentPayment: null,
-  status: "idle",
-  error: null,
   receipt: null,
   receiptStatus: "idle",
   receiptError: null,
@@ -166,11 +130,6 @@ const paymentSlice = createSlice({
   name: "payment",
   initialState,
   reducers: {
-    resetPaymentState(state) {
-      state.currentPayment = null;
-      state.status = "idle";
-      state.error = null;
-    },
     resetPaymentReceiptState(state) {
       state.receipt = null;
       state.receiptStatus = "idle";
@@ -229,61 +188,12 @@ const paymentSlice = createSlice({
         state.kpiError = action.payload ?? action.error;
       })
 
-      .addCase(initiatePaymentThunk.pending, (state) => {
-        state.status = "loading";
-        state.error = null;
-      })
-      .addCase(initiatePaymentThunk.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.currentPayment = action.payload;
-      })
-      .addCase(initiatePaymentThunk.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
-
-      .addCase(checkoutPaymentThunk.pending, (state) => {
-        state.status = "loading";
-        state.error = null;
-      })
-      .addCase(checkoutPaymentThunk.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.currentPayment = action.payload;
-      })
       .addCase(checkoutPaymentThunk.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
-
-      .addCase(confirmPaymentThunk.pending, (state) => {
-        state.status = "loading";
-        state.error = null;
-      })
-      .addCase(confirmPaymentThunk.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.currentPayment = action.payload;
-      })
-      .addCase(confirmPaymentThunk.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
-
-      .addCase(failPaymentThunk.pending, (state) => {
-        state.status = "loading";
-        state.error = null;
-      })
-      .addCase(failPaymentThunk.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.currentPayment = action.payload;
-      })
-      .addCase(failPaymentThunk.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
+        state.receiptError = action.payload ?? action.error;
       });
   },
 });
 
-export const { resetPaymentState, resetPaymentReceiptState } =
-  paymentSlice.actions;
+export const { resetPaymentReceiptState } = paymentSlice.actions;
 
 export default paymentSlice.reducer;

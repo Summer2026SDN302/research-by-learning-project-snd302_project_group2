@@ -25,9 +25,14 @@ const toDateKey = (value) => (value ? dayjs(value).format("YYYY-MM-DD") : null);
 
 const buildOwnHistoryKpis = (orders) => ({
   todayOrdersCount: orders.length,
-  personalRevenue: orders
-    .filter((item) => item.paymentStatus === "Paid")
-    .reduce((sum, item) => sum + (item.finalAmount || item.totalAmount || 0), 0),
+  personalRevenue: orders.reduce(
+    (sum, item) =>
+      sum +
+      (item.orderStatus === "Completed"
+        ? item.totalAmount || item.finalAmount || 0
+        : 0),
+    0,
+  ),
   completedOrdersCount: orders.filter((item) => item.orderStatus === "Completed").length,
   pendingOrdersCount: orders.filter((item) => item.orderStatus === "Pending").length,
 });

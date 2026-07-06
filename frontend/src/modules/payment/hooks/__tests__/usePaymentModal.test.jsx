@@ -8,11 +8,7 @@ import { getQuickCashOptions, usePaymentModal } from "../usePaymentModal";
 import * as paymentApi from "../../api/paymentApi";
 
 vi.mock("../../api/paymentApi", () => ({
-  getPayments: vi.fn(),
-  initiatePayment: vi.fn(),
   checkoutPayment: vi.fn(),
-  confirmPayment: vi.fn(),
-  failPayment: vi.fn(),
 }));
 
 const mockToast = {

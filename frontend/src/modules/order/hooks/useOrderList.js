@@ -5,7 +5,6 @@ import useAppToast from "@/hooks/useAppToast";
 
 const INITIAL_FILTERS = {
   orderStatus: "",
-  paymentStatus: "",
   fromDate: "",
   toDate: "",
   page: 1,
@@ -34,7 +33,6 @@ export const useOrderList = () => {
     };
 
     if (filters.orderStatus) queryParams.orderStatus = filters.orderStatus;
-    if (filters.paymentStatus) queryParams.paymentStatus = filters.paymentStatus;
     if (filters.fromDate) queryParams.fromDate = filters.fromDate;
     if (filters.toDate) queryParams.toDate = filters.toDate;
 

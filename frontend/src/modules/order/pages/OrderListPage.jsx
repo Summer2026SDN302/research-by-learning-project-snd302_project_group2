@@ -8,51 +8,64 @@ import { formatCurrency } from "@/utils/formatters";
 import { useOrderList } from "../hooks/useOrderList";
 import { clearCart } from "../redux/orderSlice";
 
-const PAYMENT_STATUS_OPTIONS = [
-  { value: "", label: "Tat ca thanh toan" },
-  { value: "Paid", label: "Da thanh toan" },
-  { value: "Unpaid", label: "Chua thanh toan" },
-  { value: "Pending", label: "Dang xu ly" },
-  { value: "Refunded", label: "Hoan tien" },
+const ORDER_STATUS_OPTIONS = [
+  { value: "", label: "Tat ca trang thai" },
+  { value: "Pending", label: "Cho xu ly" },
+  { value: "Confirmed", label: "Da xac nhan" },
+  { value: "Completed", label: "Hoan tat" },
+  { value: "Cancelled", label: "Da huy" },
+  { value: "Returned", label: "Da tra" },
 ];
 
-const getPaymentStatusBadge = (status) => {
+const getOrderStatusBadge = (status) => {
   switch (status) {
-    case "Paid":
+    case "Completed":
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary-container bg-secondary-container/25 px-2.5 py-1 text-[11px] font-bold text-secondary">
           <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-          Da thanh toan
+          Hoan tat
         </span>
       );
-    case "Refunded":
+    case "Confirmed":
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-outline bg-outline/15 px-2.5 py-1 text-[11px] font-bold text-on-surface-variant">
-          <span className="h-1.5 w-1.5 rounded-full bg-outline" />
-          Hoan tien
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-container bg-primary-container/25 px-2.5 py-1 text-[11px] font-bold text-primary">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+          Da xac nhan
         </span>
       );
     case "Pending":
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-tertiary-container bg-tertiary-container/25 px-2.5 py-1 text-[11px] font-bold text-tertiary">
           <span className="h-1.5 w-1.5 rounded-full bg-tertiary animate-pulse" />
-          Dang xu ly
+          Cho xu ly
         </span>
       );
-    case "Unpaid":
-    default:
+    case "Cancelled":
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-error-container bg-error-container/20 px-2.5 py-1 text-[11px] font-bold text-error">
           <span className="h-1.5 w-1.5 rounded-full bg-error" />
-          Chua thanh toan
+          Da huy
         </span>
       );
-    }
+    case "Returned":
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-outline bg-outline/15 px-2.5 py-1 text-[11px] font-bold text-on-surface-variant">
+          <span className="h-1.5 w-1.5 rounded-full bg-outline" />
+          Da tra
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-outline bg-outline/10 px-2.5 py-1 text-[11px] font-bold text-on-surface-variant">
+          <span className="h-1.5 w-1.5 rounded-full bg-outline" />
+          Khong xac dinh
+        </span>
+      );
+  }
 };
 
 const getOrderAmount = (order) => order.finalAmount || order.totalAmount || 0;
 const getOrderTimestamp = (order) => order.createdAt || order.orderDate;
-const getPaymentId = (order) => order?.paymentId?._id || order?.paymentId || null;
 
 const getShortOrderNumber = (orderNumber) => {
   const normalized = String(orderNumber ?? "").replace(/^#/, "");
@@ -95,17 +108,6 @@ const OrderListPage = () => {
     [filters.fromDate, filters.toDate],
   );
 
-  const handleOpenReceipt = React.useCallback(
-    (paymentId) => {
-      if (!paymentId) {
-        return;
-      }
-
-      navigate(`${roleBasePath}/receipts/${paymentId}`);
-    },
-    [navigate, roleBasePath],
-  );
-
   return (
     <div className="flex h-full flex-1 flex-col overflow-hidden bg-background p-container-p-mobile md:p-container-p-desktop">
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -114,7 +116,7 @@ const OrderListPage = () => {
             Lich su don hang
           </h2>
           <p className="mt-1 text-body-md text-on-surface-variant">
-            Quan ly va theo doi cac don hang da thanh toan trong he thong.
+            Quan ly va theo doi cac don hang trong he thong.
           </p>
         </div>
       </div>
@@ -162,7 +164,7 @@ const OrderListPage = () => {
 
           <div className="flex flex-1 flex-col justify-center rounded-2xl border border-outline-variant bg-white p-4">
             <span className="mb-3 text-[13px] font-semibold text-on-surface">
-              Thanh toan
+              Trang thai don
             </span>
             <div className="relative">
               <div
@@ -174,12 +176,11 @@ const OrderListPage = () => {
                 }`}
               >
                 <span className="material-symbols-outlined mr-2 text-[18px] text-on-surface-variant">
-                  payments
+                  assignment
                 </span>
                 <span className="flex-1 truncate text-[13px]">
-                  {PAYMENT_STATUS_OPTIONS.find(
-                    (opt) => opt.value === filters.paymentStatus,
-                  )?.label || "Tat ca thanh toan"}
+                  {ORDER_STATUS_OPTIONS.find((opt) => opt.value === filters.orderStatus)
+                    ?.label || "Tat ca trang thai"}
                 </span>
                 <span
                   className={`material-symbols-outlined text-[18px] text-on-surface-variant transition-transform ${
@@ -197,18 +198,15 @@ const OrderListPage = () => {
                     onClick={() => setStatusDropdownOpen(false)}
                   />
                   <div className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-xl border border-outline-variant bg-white py-1 shadow-lg">
-                    {PAYMENT_STATUS_OPTIONS.map((option) => (
+                    {ORDER_STATUS_OPTIONS.map((option) => (
                       <div
                         key={option.value}
                         onClick={() => {
-                          handleFilterChange({
-                            paymentStatus: option.value,
-                            orderStatus: "",
-                          });
+                          handleFilterChange({ orderStatus: option.value });
                           setStatusDropdownOpen(false);
                         }}
                         className={`cursor-pointer px-4 py-2.5 text-[13px] transition-colors ${
-                          filters.paymentStatus === option.value
+                          filters.orderStatus === option.value
                             ? "bg-primary-container font-semibold text-on-primary-container"
                             : "text-on-surface hover:bg-surface-container-low"
                         }`}
@@ -291,21 +289,13 @@ const OrderListPage = () => {
                     Tong tien
                   </th>
                   <th className="whitespace-nowrap px-6 py-4 text-label-md text-on-surface-variant">
-                    Thanh toan
-                  </th>
-                  <th className="whitespace-nowrap px-6 py-4 text-center text-label-md text-on-surface-variant">
-                    Thao tac
+                    Trang thai
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/50">
                 {orders.map((order) => {
                   const orderTimestamp = getOrderTimestamp(order);
-                  const paymentId = getPaymentId(order);
-                  const paymentStatus = order.paymentStatus || "Unpaid";
-                  const canOpenReceipt =
-                    Boolean(paymentId) &&
-                    ["Paid", "Refunded"].includes(paymentStatus);
 
                   return (
                     <tr
@@ -337,25 +327,7 @@ const OrderListPage = () => {
                         {formatCurrency(getOrderAmount(order))}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
-                        {getPaymentStatusBadge(paymentStatus)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          {canOpenReceipt ? (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenReceipt(paymentId)}
-                              className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-primary/10 hover:text-primary"
-                              title="Xem bien lai"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">
-                                visibility
-                              </span>
-                            </button>
-                          ) : (
-                            <span className="text-xs text-on-surface-variant">-</span>
-                          )}
-                        </div>
+                        {getOrderStatusBadge(order.orderStatus)}
                       </td>
                     </tr>
                   );

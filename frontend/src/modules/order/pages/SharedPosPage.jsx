@@ -59,7 +59,6 @@ const SharedPosPage = ({
     providerName,
     setProviderName,
     isSubmitting,
-    isMethodLocked,
     openModal,
     closeModal,
     appendDigit,
@@ -251,7 +250,6 @@ const SharedPosPage = ({
         providerName={providerName}
         setProviderName={setProviderName}
         isSubmitting={isSubmitting}
-        isMethodLocked={isMethodLocked}
         appendDigit={appendDigit}
         clearCash={clearCash}
         setCashReceivedAmount={setCashReceivedAmount}

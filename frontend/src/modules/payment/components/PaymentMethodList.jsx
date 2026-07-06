@@ -1,22 +1,17 @@
 import { PAYMENT_METHOD_OPTIONS } from "../constants/paymentConstants";
 
-const PaymentMethodList = ({
-  selectedMethod,
-  onSelectMethod,
-  disabled = false,
-}) => (
+const PaymentMethodList = ({ selectedMethod, onSelectMethod }) => (
   <div className="grid auto-rows-fr gap-4 select-none">
     {PAYMENT_METHOD_OPTIONS.map((method) => (
       <button
         key={method.value}
         type="button"
-        disabled={disabled}
         onClick={() => onSelectMethod(method.value)}
         className={`flex h-full min-h-[6.75rem] w-full items-center gap-4 rounded-2xl border-2 p-4 text-left outline-none transition-all ${
           selectedMethod === method.value
             ? "border-primary bg-primary/5 shadow-sm"
             : "border-outline-variant/60 bg-white hover:border-primary"
-        } ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
+        }`}
       >
         <div
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${method.tone}`}

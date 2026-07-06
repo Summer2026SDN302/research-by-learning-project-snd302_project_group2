@@ -21,7 +21,6 @@ const PaymentModal = ({
   providerName,
   setProviderName,
   isSubmitting,
-  isMethodLocked = false,
   appendDigit,
   clearCash,
   setCashReceivedAmount,
@@ -72,7 +71,6 @@ const PaymentModal = ({
             <PaymentMethodList
               selectedMethod={selectedMethod}
               onSelectMethod={setSelectedMethod}
-              disabled={isMethodLocked}
             />
           </div>
 

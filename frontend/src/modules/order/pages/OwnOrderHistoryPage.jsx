@@ -1,51 +1,64 @@
 import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import Datepicker from "react-tailwindcss-datepicker";
 import Spinner from "@/components/feedback/Spinner";
 import { formatCurrency } from "@/utils/formatters";
 import { useOwnOrderHistory } from "../hooks/useOwnOrderHistory";
 
-const PAYMENT_STATUS_OPTIONS = [
-  { value: "", label: "Tat ca thanh toan" },
-  { value: "Paid", label: "Da thanh toan" },
-  { value: "Unpaid", label: "Chua thanh toan" },
-  { value: "Pending", label: "Dang xu ly" },
-  { value: "Refunded", label: "Hoan tien" },
+const ORDER_STATUS_OPTIONS = [
+  { value: "", label: "Tat ca trang thai" },
+  { value: "Pending", label: "Cho xu ly" },
+  { value: "Confirmed", label: "Da xac nhan" },
+  { value: "Completed", label: "Hoan tat" },
+  { value: "Cancelled", label: "Da huy" },
+  { value: "Returned", label: "Da tra" },
 ];
 
-const getPaymentStatusBadge = (status) => {
+const getOrderStatusBadge = (status) => {
   switch (status) {
-    case "Paid":
+    case "Completed":
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary-container bg-secondary-container/25 px-2.5 py-1 text-[11px] font-bold text-secondary">
           <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-          Da thanh toan
+          Hoan tat
         </span>
       );
-    case "Refunded":
+    case "Confirmed":
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-outline bg-outline/15 px-2.5 py-1 text-[11px] font-bold text-on-surface-variant">
-          <span className="h-1.5 w-1.5 rounded-full bg-outline" />
-          Hoan tien
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-container bg-primary-container/25 px-2.5 py-1 text-[11px] font-bold text-primary">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+          Da xac nhan
         </span>
       );
     case "Pending":
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-tertiary-container bg-tertiary-container/25 px-2.5 py-1 text-[11px] font-bold text-tertiary">
           <span className="h-1.5 w-1.5 rounded-full bg-tertiary animate-pulse" />
-          Dang xu ly
+          Cho xu ly
         </span>
       );
-    case "Unpaid":
-    default:
+    case "Cancelled":
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-error-container bg-error-container/20 px-2.5 py-1 text-[11px] font-bold text-error">
           <span className="h-1.5 w-1.5 rounded-full bg-error" />
-          Chua thanh toan
+          Da huy
         </span>
       );
-    }
+    case "Returned":
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-outline bg-outline/15 px-2.5 py-1 text-[11px] font-bold text-on-surface-variant">
+          <span className="h-1.5 w-1.5 rounded-full bg-outline" />
+          Da tra
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-outline bg-outline/10 px-2.5 py-1 text-[11px] font-bold text-on-surface-variant">
+          <span className="h-1.5 w-1.5 rounded-full bg-outline" />
+          Khong xac dinh
+        </span>
+      );
+  }
 };
 
 const getOrderItemsSummary = (items) => {
@@ -60,7 +73,6 @@ const getOrderItemsSummary = (items) => {
 
 const getOrderAmount = (order) => order.finalAmount || order.totalAmount || 0;
 const getOrderTimestamp = (order) => order.createdAt || order.orderDate;
-const getPaymentId = (order) => order?.paymentId?._id || order?.paymentId || null;
 
 const getShortOrderNumber = (orderNumber) => {
   const normalized = String(orderNumber ?? "").replace(/^#/, "");
@@ -77,8 +89,6 @@ const getShortOrderNumber = (orderNumber) => {
 };
 
 const OwnOrderHistoryPage = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const {
     orders,
     loading,
@@ -91,8 +101,6 @@ const OwnOrderHistoryPage = () => {
   } = useOwnOrderHistory();
 
   const [statusDropdownOpen, setStatusDropdownOpen] = React.useState(false);
-  const roleBasePath =
-    location.pathname.startsWith("/manager") ? "/manager" : "/staff";
 
   const dateValue = React.useMemo(
     () => ({
@@ -100,17 +108,6 @@ const OwnOrderHistoryPage = () => {
       endDate: filters.toDate || null,
     }),
     [filters.fromDate, filters.toDate],
-  );
-
-  const handleOpenReceipt = React.useCallback(
-    (paymentId) => {
-      if (!paymentId) {
-        return;
-      }
-
-      navigate(`${roleBasePath}/receipts/${paymentId}`);
-    },
-    [navigate, roleBasePath],
   );
 
   return (
@@ -121,7 +118,7 @@ const OwnOrderHistoryPage = () => {
             Lich su don cua toi
           </h2>
           <p className="mt-1 text-body-md text-on-surface-variant">
-            Theo doi cac don da thanh toan va bien lai giao dich.
+            Theo doi cac don ban da tao va trang thai xu ly hien tai.
           </p>
         </div>
 
@@ -143,7 +140,7 @@ const OwnOrderHistoryPage = () => {
           <div className="flex items-start justify-between rounded-xl border border-outline-variant bg-surface p-6 shadow-soft">
             <div>
               <p className="mb-1 text-label-md uppercase tracking-wider text-on-surface-variant">
-                Doanh thu ca nhan
+                Doanh thu hoan tat
               </p>
               <h3 className="text-headline-md font-bold text-on-surface">
                 {formatCurrency(kpis.personalRevenue)}
@@ -157,7 +154,7 @@ const OwnOrderHistoryPage = () => {
           <div className="flex items-start justify-between rounded-xl border border-outline-variant bg-surface p-6 shadow-soft">
             <div>
               <p className="mb-1 text-label-md uppercase tracking-wider text-on-surface-variant">
-                Don da thanh toan
+                Don hoan tat
               </p>
               <h3 className="text-headline-md font-bold text-on-surface">
                 {kpis.completedOrdersCount ?? 0} don
@@ -217,12 +214,12 @@ const OwnOrderHistoryPage = () => {
                   }`}
                 >
                   <span className="material-symbols-outlined mr-2 text-[18px] text-on-surface-variant">
-                    payments
+                    assignment
                   </span>
                   <span className="flex-1 truncate pr-4 text-[13px]">
-                    {PAYMENT_STATUS_OPTIONS.find(
-                      (opt) => opt.value === filters.paymentStatus,
-                    )?.label || "Tat ca thanh toan"}
+                    {ORDER_STATUS_OPTIONS.find(
+                      (opt) => opt.value === filters.orderStatus,
+                    )?.label || "Tat ca trang thai"}
                   </span>
                   <span
                     className={`material-symbols-outlined text-[18px] text-on-surface-variant transition-transform ${
@@ -240,18 +237,15 @@ const OwnOrderHistoryPage = () => {
                       onClick={() => setStatusDropdownOpen(false)}
                     />
                     <div className="absolute left-0 right-0 top-full z-40 mt-2 min-w-[160px] overflow-hidden rounded-xl border border-outline-variant bg-white py-1 shadow-lg">
-                      {PAYMENT_STATUS_OPTIONS.map((option) => (
+                      {ORDER_STATUS_OPTIONS.map((option) => (
                         <div
                           key={option.value}
                           onClick={() => {
-                            handleFilterChange({
-                              paymentStatus: option.value,
-                              orderStatus: "",
-                            });
+                            handleFilterChange({ orderStatus: option.value });
                             setStatusDropdownOpen(false);
                           }}
                           className={`cursor-pointer px-4 py-2.5 text-[13px] transition-colors ${
-                            filters.paymentStatus === option.value
+                            filters.orderStatus === option.value
                               ? "bg-primary-container font-semibold text-on-primary-container"
                               : "text-on-surface hover:bg-surface-container-low"
                           }`}
@@ -294,7 +288,7 @@ const OwnOrderHistoryPage = () => {
                 Khong tim thay don hang nao
               </p>
               <p className="text-xs">
-                Hay thu doi bo loc hoac tu khoa tim kiem khac.
+                Hay thu doi bo loc hoac khoang ngay khac.
               </p>
             </div>
           ) : (
@@ -307,66 +301,39 @@ const OwnOrderHistoryPage = () => {
                     <th className="px-6 py-4 font-bold">Mon An</th>
                     <th className="px-6 py-4 text-right font-bold">Tong Tien</th>
                     <th className="whitespace-nowrap px-6 py-4 font-bold">
-                      Thanh Toan
+                      Trang Thai
                     </th>
-                    <th className="px-6 py-4 text-center font-bold">Thao Tac</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant text-sm text-body-sm">
-                  {orders.map((order) => {
-                    const paymentId = getPaymentId(order);
-                    const paymentStatus = order.paymentStatus || "Unpaid";
-                    const canOpenReceipt =
-                      Boolean(paymentId) &&
-                      ["Paid", "Refunded"].includes(paymentStatus);
-
-                    return (
-                      <tr
-                        key={order._id}
-                        className="transition-colors hover:bg-surface-container-low"
+                  {orders.map((order) => (
+                    <tr
+                      key={order._id}
+                      className="transition-colors hover:bg-surface-container-low"
+                    >
+                      <td
+                        className="whitespace-nowrap px-6 py-4 font-bold text-primary"
+                        title={`#${order.orderNumber}`}
                       >
-                        <td
-                          className="whitespace-nowrap px-6 py-4 font-bold text-primary"
-                          title={`#${order.orderNumber}`}
-                        >
-                          {getShortOrderNumber(order.orderNumber)}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                          {dayjs(getOrderTimestamp(order)).format("HH:mm - DD/MM/YYYY")}
-                        </td>
-                        <td
-                          className="max-w-xs truncate px-6 py-4"
-                          title={getOrderItemsSummary(order.items)}
-                        >
-                          {getOrderItemsSummary(order.items)}
-                        </td>
-                        <td className="px-6 py-4 text-right font-bold">
-                          {formatCurrency(getOrderAmount(order))}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                          {getPaymentStatusBadge(paymentStatus)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-2">
-                            {canOpenReceipt ? (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenReceipt(paymentId)}
-                                className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-primary/10 hover:text-primary"
-                                title="Xem bien lai"
-                              >
-                                <span className="material-symbols-outlined text-[20px]">
-                                  visibility
-                                </span>
-                              </button>
-                            ) : (
-                              <span className="text-xs text-on-surface-variant">-</span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        {getShortOrderNumber(order.orderNumber)}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {dayjs(getOrderTimestamp(order)).format("HH:mm - DD/MM/YYYY")}
+                      </td>
+                      <td
+                        className="max-w-xs truncate px-6 py-4"
+                        title={getOrderItemsSummary(order.items)}
+                      >
+                        {getOrderItemsSummary(order.items)}
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold">
+                        {formatCurrency(getOrderAmount(order))}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {getOrderStatusBadge(order.orderStatus)}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

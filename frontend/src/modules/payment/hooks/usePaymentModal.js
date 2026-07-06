@@ -189,7 +189,6 @@ export const usePaymentModal = () => {
       dispatch,
       order,
       orderAmount,
-      providerName,
       resetModalState,
       selectedMethod,
       toast,
@@ -200,7 +199,6 @@ export const usePaymentModal = () => {
   return {
     isOpen,
     order,
-    activePayment: null,
     selectedMethod,
     setSelectedMethod: handleSelectMethod,
     cashReceived,
@@ -209,7 +207,6 @@ export const usePaymentModal = () => {
     providerName,
     setProviderName,
     isSubmitting,
-    isMethodLocked: false,
     openModal,
     closeModal,
     appendDigit,

@@ -31,15 +31,6 @@ const unwrapResponse = (response) => {
   return payload.data;
 };
 
-export const getPaymentById = async (id) => {
-  try {
-    const response = await apiClient.get(`${BASE_PATH}/${id}`);
-    return unwrapResponse(response);
-  } catch (error) {
-    throw normalizeApiError(error);
-  }
-};
-
 export const getPaymentReceipt = async (id) => {
   try {
     const response = await apiClient.get(`${BASE_PATH}/${id}/receipt`);
@@ -49,36 +40,9 @@ export const getPaymentReceipt = async (id) => {
   }
 };
 
-export const initiatePayment = async (body) => {
-  try {
-    const response = await apiClient.post(BASE_PATH, body);
-    return unwrapResponse(response);
-  } catch (error) {
-    throw normalizeApiError(error);
-  }
-};
-
 export const checkoutPayment = async (body) => {
   try {
     const response = await apiClient.post(`${BASE_PATH}/checkout`, body);
-    return unwrapResponse(response);
-  } catch (error) {
-    throw normalizeApiError(error);
-  }
-};
-
-export const confirmPayment = async (id, body) => {
-  try {
-    const response = await apiClient.patch(`${BASE_PATH}/${id}/confirm`, body);
-    return unwrapResponse(response);
-  } catch (error) {
-    throw normalizeApiError(error);
-  }
-};
-
-export const failPayment = async (id, body) => {
-  try {
-    const response = await apiClient.patch(`${BASE_PATH}/${id}/fail`, body);
     return unwrapResponse(response);
   } catch (error) {
     throw normalizeApiError(error);
