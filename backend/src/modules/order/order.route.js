@@ -5,12 +5,10 @@ import {
   validateCreateOrder,
   validateGetOrderById,
   validateGetOrders,
-  validateUpdateOrderItems,
   validateUpdateStatus,
 } from "./order.validation.js";
 import {
   ORDER_CREATE_ROLES,
-  ORDER_EDIT_ROLES,
   ORDER_READ_ROLES,
   ORDER_READ_ALL_ROLES,
   ORDER_MY_ORDERS_ROLES,
@@ -22,8 +20,10 @@ import { validateRequest } from "../../middlewares/validate.middleware.js";
 
 const router = express.Router();
 
+// Apply authentication to all order routes
 router.use(authenticate);
 
+// GET /api/orders/my-orders - Staff/Manager xem order cua chinh minh
 router.get(
   "/my-orders",
   authorizeRoles(...ORDER_MY_ORDERS_ROLES),
@@ -32,6 +32,7 @@ router.get(
   orderController.getMyOrders,
 );
 
+// GET /api/orders - Manager/Admin xem tat ca order
 router.get(
   "/",
   authorizeRoles(...ORDER_READ_ALL_ROLES),
@@ -40,6 +41,7 @@ router.get(
   orderController.getOrders,
 );
 
+// GET /api/orders/:id
 router.get(
   "/:id",
   authorizeRoles(...ORDER_READ_ROLES),
@@ -48,6 +50,7 @@ router.get(
   orderController.getOrderById,
 );
 
+// POST /api/orders - Staff/Manager/Admin create order
 router.post(
   "/",
   authorizeRoles(...ORDER_CREATE_ROLES),
@@ -56,14 +59,7 @@ router.post(
   orderController.createOrder,
 );
 
-router.patch(
-  "/:id/items",
-  authorizeRoles(...ORDER_EDIT_ROLES),
-  validateUpdateOrderItems,
-  validateRequest,
-  orderController.updateOrderItems,
-);
-
+// PATCH /api/orders/:id/status - Manager/Admin manage status
 router.patch(
   "/:id/status",
   authorizeRoles(...ORDER_STATUS_MANAGE_ROLES),

@@ -14,13 +14,9 @@ export const ORDER_CREATE_ROLES = [
   USER_ROLES.STAFF,
 ];
 
-export const ORDER_EDIT_ROLES = [
-  USER_ROLES.MANAGER,
-  USER_ROLES.STAFF,
-];
-
 export const ORDER_STATUS_MANAGE_ROLES = [USER_ROLES.ADMIN, USER_ROLES.MANAGER];
 
+/** Thue VAT ap dung tren subTotal. 8% = 0.08 */
 export const TAX_PERCENT = 0.08;
 
 export const ORDER_STATUS = {
@@ -31,17 +27,10 @@ export const ORDER_STATUS = {
   RETURNED: "Returned",
 };
 
-export const ORDER_PAYMENT_STATUS = {
-  UNPAID: "Unpaid",
-  PENDING: "Pending",
-  PAID: "Paid",
-  REFUNDED: "Refunded",
-};
-
 export const VALID_STATUS_TRANSITIONS = {
-  [ORDER_STATUS.PENDING]: [ORDER_STATUS.CONFIRMED, ORDER_STATUS.CANCELLED],
-  [ORDER_STATUS.CONFIRMED]: [ORDER_STATUS.COMPLETED, ORDER_STATUS.RETURNED],
-  [ORDER_STATUS.COMPLETED]: [],
-  [ORDER_STATUS.CANCELLED]: [],
-  [ORDER_STATUS.RETURNED]: [],
+  Pending: ["Confirmed", "Cancelled"],
+  Confirmed: ["Completed", "Returned"],
+  Completed: [],
+  Cancelled: [],
+  Returned: [],
 };

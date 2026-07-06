@@ -10,11 +10,8 @@ import {
 import * as paymentController from "./payment.controller.js";
 import {
   validateCheckoutPayment,
-  validateConfirmPayment,
-  validateFailPayment,
   validateGetPaymentById,
   validateGetPayments,
-  validateInitiatePayment,
   validatePrintPaymentReceipt,
 } from "./payment.validation.js";
 
@@ -31,14 +28,6 @@ router.get(
 );
 
 router.get(
-  "/:id",
-  authorizeRoles(...PAYMENT_READ_ROLES),
-  validateGetPaymentById,
-  validateRequest,
-  paymentController.getPaymentById,
-);
-
-router.get(
   "/:id/receipt",
   authorizeRoles(...PAYMENT_READ_ROLES),
   validateGetPaymentById,
@@ -52,30 +41,6 @@ router.post(
   validateCheckoutPayment,
   validateRequest,
   paymentController.checkoutPayment,
-);
-
-router.post(
-  "/",
-  authorizeRoles(...PAYMENT_PROCESS_ROLES),
-  validateInitiatePayment,
-  validateRequest,
-  paymentController.initiatePayment,
-);
-
-router.patch(
-  "/:id/confirm",
-  authorizeRoles(...PAYMENT_PROCESS_ROLES),
-  validateConfirmPayment,
-  validateRequest,
-  paymentController.confirmPayment,
-);
-
-router.patch(
-  "/:id/fail",
-  authorizeRoles(...PAYMENT_PROCESS_ROLES),
-  validateFailPayment,
-  validateRequest,
-  paymentController.failPayment,
 );
 
 router.post(

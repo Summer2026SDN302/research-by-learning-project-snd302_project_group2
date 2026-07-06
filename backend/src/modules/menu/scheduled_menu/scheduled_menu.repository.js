@@ -31,7 +31,7 @@ const scheduledMenuRepository = {
   },
 
   async upsertByDay(day, menuItems, userId, options = {}) {
-    return ScheduledMenu.findOneAndUpdate(
+    const query = ScheduledMenu.findOneAndUpdate(
       { dayOfWeek: day },
       {
         $set: {
@@ -43,9 +43,15 @@ const scheduledMenuRepository = {
         },
       },
       { upsert: true, returnDocument: "after", runValidators: true, session: options.session },
-    )
-      .populate(FOOD_ITEM_POPULATE)
-      .lean();
+    );
+
+    // Avoid cross-collection populate while the transaction is holding locks.
+    // batchUpdateSchedule does not use the returned document payload anyway.
+    if (options.session) {
+      return query.lean();
+    }
+
+    return query.populate(FOOD_ITEM_POPULATE).lean();
   },
 
   async removeFoodItemFromAllSchedules(foodItemId) {
