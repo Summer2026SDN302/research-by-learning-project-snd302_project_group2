@@ -5,6 +5,9 @@ import dayjs from "dayjs";
 import Datepicker from "react-tailwindcss-datepicker";
 import { useOwnOrderHistory } from "../hooks/useOwnOrderHistory";
 import Spinner from "@/components/feedback/Spinner";
+import ConfirmDialog from "@/components/feedback/ConfirmDialog";
+import PaginationControl from "@/components/navigation/PaginationControl";
+import OrderDetailModal from "../components/OrderDetailModal";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Tất cả trạng thái" },
@@ -24,6 +27,7 @@ const OwnOrderHistoryPage = () => {
     kpis,
     filters,
     pagination,
+    executeCancelOrder,
     // [CHƯA CÓ BE] handleSearch — BE chưa hỗ trợ search
     handlePageChange,
     handleFilterChange,
@@ -31,6 +35,16 @@ const OwnOrderHistoryPage = () => {
   } = useOwnOrderHistory();
 
   const [statusDropdownOpen, setStatusDropdownOpen] = React.useState(false);
+  const [cancelOrderId, setCancelOrderId] = React.useState(null);
+  const [detailOrderId, setDetailOrderId] = React.useState(null);
+  const [isCanceling, setIsCanceling] = React.useState(false);
+
+  const confirmCancel = async () => {
+    setIsCanceling(true);
+    await executeCancelOrder(cancelOrderId);
+    setIsCanceling(false);
+    setCancelOrderId(null);
+  };
 
   const dateValue = React.useMemo(() => ({
     startDate: filters.fromDate || null,
@@ -271,8 +285,8 @@ const OwnOrderHistoryPage = () => {
                   <th className="px-6 py-4 font-bold">Món Ăn</th>
                   <th className="px-6 py-4 font-bold text-right">Tổng Tiền</th>
                   {/* [CHƯA CÓ BE] Cột "Thanh Toán" — paymentStatus chưa có trong Order model */}
-                  <th className="px-6 py-4 font-bold">Trạng Thái Đơn</th>
-                  {/* [CHƯA CÓ BE] Cột "Biên Lai" — module Invoice chưa có ở BE */}
+                  <th className="px-6 py-4 font-bold text-center">Trạng Thái Đơn</th>
+                  <th className="px-6 py-4 font-bold text-center">Biên Lai / Hành Động</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant text-body-sm text-sm">
@@ -298,13 +312,29 @@ const OwnOrderHistoryPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getPaymentStatusBadge(order.paymentStatus)}
                     </td> */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       {getStatusBadge(order.orderStatus)}
                     </td>
-                    {/* [CHƯA CÓ BE] Nút xem biên lai — module Invoice chưa có
                     <td className="px-6 py-4 text-center">
-                      <button onClick={() => navigate(`...`)}>...</button>
-                    </td> */}
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setDetailOrderId(order._id)}
+                          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant"
+                          title="Xem chi tiết đơn hàng"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">visibility</span>
+                        </button>
+                        {order.orderStatus === "Pending" && (
+                          <button
+                            onClick={() => setCancelOrderId(order._id)}
+                            className="px-3 py-1.5 bg-error-container text-on-error-container text-xs font-semibold rounded-lg hover:bg-error hover:text-white transition-colors"
+                            title="Huỷ đơn hàng"
+                          >
+                            Huỷ đơn
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -318,45 +348,34 @@ const OwnOrderHistoryPage = () => {
             <div className="text-xs text-on-surface-variant">
               Hiển thị <span className="font-semibold text-on-surface">{(pagination.page - 1) * pagination.limit + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)}</span> trong <span className="font-semibold text-on-surface">{pagination.total}</span> đơn hàng
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page <= 1}
-                className="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-              </button>
-              
-              <div className="flex items-center gap-1 text-xs">
-                {Array.from({ length: pagination.totalPages }, (_, index) => {
-                  const pNum = index + 1;
-                  return (
-                    <button
-                      key={pNum}
-                      onClick={() => handlePageChange(pNum)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-full font-bold transition-all ${
-                        pagination.page === pNum
-                          ? "bg-primary text-on-primary shadow-sm"
-                          : "hover:bg-surface-container text-on-surface"
-                      }`}
-                    >
-                      {pNum}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page >= pagination.totalPages}
-                className="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-              </button>
-            </div>
+            <PaginationControl
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+            />
           </div>
         )}
       </div>
+
+      {/* Cancel Order Confirm Dialog */}
+      <ConfirmDialog
+        open={!!cancelOrderId}
+        title="Huỷ đơn hàng"
+        description="Bạn có chắc chắn muốn huỷ đơn hàng này? Thao tác này không thể hoàn tác."
+        confirmLabel="Huỷ đơn"
+        cancelLabel="Đóng"
+        variant="danger"
+        isLoading={isCanceling}
+        onConfirm={confirmCancel}
+        onCancel={() => setCancelOrderId(null)}
+      />
+
+      {/* Order Detail Modal */}
+      <OrderDetailModal 
+        open={!!detailOrderId}
+        onClose={() => setDetailOrderId(null)}
+        orderId={detailOrderId}
+      />
     </div>
   );
 };

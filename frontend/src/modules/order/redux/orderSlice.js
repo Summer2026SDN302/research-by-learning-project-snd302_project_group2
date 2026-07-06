@@ -141,18 +141,17 @@ export const submitOrder = createAsyncThunk(
   },
 );
 
-// [CHƯA CÓ BE] cancelOrderThunk — BE chưa có endpoint PATCH /api/orders/:id/cancel.
-// Hiện tại để hủy đơn, dùng updateOrderStatus(id, "Cancelled") qua route PATCH /api/orders/:id/status.
-// export const cancelOrderThunk = createAsyncThunk(
-//   "order/cancelOrder",
-//   async (id, { rejectWithValue }) => {
-//     try {
-//       return await orderApi.cancelOrder(id);
-//     } catch (error) {
-//       return rejectWithValue(error);
-//     }
-//   },
-// );
+// Hủy đơn hàng (đã được BE hỗ trợ dùng updateOrderStatus)
+export const cancelOrderThunk = createAsyncThunk(
+  "order/cancelOrder",
+  async (id, { rejectWithValue }) => {
+    try {
+      return await orderApi.updateOrderStatus(id, "Cancelled");
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  },
+);
 
 const initialState = {
   cart: {

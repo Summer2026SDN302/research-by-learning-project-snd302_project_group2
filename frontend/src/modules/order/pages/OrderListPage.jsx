@@ -9,7 +9,9 @@ import Spinner from "@/components/feedback/Spinner";
 // [CHƯA CÓ BE] formatCurrency — dùng toLocaleString trực tiếp
 // import { formatCurrency } from "@/utils/formatters";
 import { useOrderList } from "../hooks/useOrderList";
+import OrderDetailModal from "../components/OrderDetailModal";
 import Datepicker from "react-tailwindcss-datepicker";
+import PaginationControl from "@/components/navigation/PaginationControl";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Tất cả trạng thái" },
@@ -53,10 +55,6 @@ const getRoleLabel = (role) => {
   }
 };
 
-/**
- * Badge trạng thái đơn hàng — khớp với BE ORDER_STATUS:
- * Pending, Confirmed, Completed, Cancelled, Returned
- */
 const getOrderStatusBadge = (status) => {
   switch (status) {
     case "Completed":
@@ -125,6 +123,7 @@ const OrderListPage = () => {
   } = useOrderList();
 
   const [statusDropdownOpen, setStatusDropdownOpen] = React.useState(false);
+  const [detailOrderId, setDetailOrderId] = React.useState(null);
   const roleBasePath = location.pathname.startsWith("/manager") ? "/manager" : "/admin";
 
   const dateValue = React.useMemo(() => ({
@@ -306,9 +305,9 @@ const OrderListPage = () => {
                   <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
                     Người tạo
                   </th>
-                  {/* [CHƯA CÓ BE] staffId chưa populate ở BE DTO nên không lấy được role.
-                      Tạm ẩn cột "Loại tài khoản" */}
-                  {/* <th>Loại tài khoản</th> */}
+                  <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
+                    Vai trò
+                  </th>
                   <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap text-right">
                     Tổng tiền
                   </th>
@@ -316,7 +315,9 @@ const OrderListPage = () => {
                   <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
                     Trạng thái đơn
                   </th>
-                  {/* [CHƯA CÓ BE] Cột "Thao tác" (xem biên lai) — module Invoice chưa có */}
+                  <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap text-center">
+                    Thao tác
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/50">
@@ -343,10 +344,9 @@ const OrderListPage = () => {
                       <td className="py-4 px-6 font-body-md text-body-md text-on-surface whitespace-nowrap">
                         {order.staffId?.fullName || order.staffId?.username || (typeof order.staffId === "string" ? order.staffId.slice(-6) : "N/A")}
                       </td>
-                      {/* [CHƯA CÓ BE] Cột role
                       <td className="py-4 px-6 whitespace-nowrap">
                         {getRoleLabel(order.staffId?.role)}
-                      </td> */}
+                      </td>
                       {/* Dùng totalAmount — BE DTO trả totalAmount (không có finalAmount) */}
                       <td className="py-4 px-6 font-body-md text-body-md text-on-surface font-semibold text-right">
                         {(order.totalAmount || 0).toLocaleString("vi-VN")}₫
@@ -358,10 +358,15 @@ const OrderListPage = () => {
                       <td className="py-4 px-6 whitespace-nowrap">
                         {getOrderStatusBadge(order.orderStatus)}
                       </td>
-                      {/* [CHƯA CÓ BE] Nút xem biên lai — module Invoice chưa có
                       <td className="py-4 px-6 text-center">
-                        <button onClick={() => handleOpenReceipt(order)}>...</button>
-                      </td> */}
+                        <button 
+                          onClick={() => setDetailOrderId(order._id)}
+                          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant mx-auto"
+                          title="Xem chi tiết đơn hàng"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">visibility</span>
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -382,53 +387,20 @@ const OrderListPage = () => {
               <span className="font-semibold text-on-surface">{pagination.total}</span>{" "}
               đơn hàng
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page <= 1}
-                className="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  chevron_left
-                </span>
-              </button>
-
-              <div className="flex items-center gap-1 text-xs">
-                {Array.from({ length: pagination.totalPages }, (_, index) => {
-                  const pageNumber = index + 1;
-
-                  return (
-                    <button
-                      key={pageNumber}
-                      type="button"
-                      onClick={() => handlePageChange(pageNumber)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-full font-bold transition-all ${
-                        pagination.page === pageNumber
-                          ? "bg-primary text-on-primary shadow-sm"
-                          : "hover:bg-surface-container text-on-surface"
-                      }`}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page >= pagination.totalPages}
-                className="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-full text-on-surface-variant hover:bg-surface-container disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  chevron_right
-                </span>
-              </button>
-            </div>
+            <PaginationControl
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+            />
           </div>
         )}
       </div>
+
+      <OrderDetailModal 
+        open={!!detailOrderId}
+        onClose={() => setDetailOrderId(null)}
+        orderId={detailOrderId}
+      />
     </div>
   );
 };

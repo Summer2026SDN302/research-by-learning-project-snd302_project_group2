@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchMyOrdersThunk,
   fetchOwnOrderKpisThunk,
+  cancelOrderThunk,
 } from "../redux/orderSlice";
 import useAppToast from "@/hooks/useAppToast";
 
@@ -90,6 +91,19 @@ export const useOwnOrderHistory = () => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   };
 
+  const executeCancelOrder = async (orderId) => {
+    try {
+      await dispatch(cancelOrderThunk(orderId)).unwrap();
+      toast.success("Thành công", "Đã huỷ đơn hàng thành công!");
+      fetchOrdersData();
+      fetchKpiData();
+      return true;
+    } catch (err) {
+      toast.error("Lỗi", err?.message || "Không thể huỷ đơn hàng.");
+      return false;
+    }
+  };
+
   return {
     orders,
     loading: listStatus === "loading",
@@ -97,6 +111,7 @@ export const useOwnOrderHistory = () => {
     kpis,
     filters,
     pagination,
+    executeCancelOrder,
     // [CHƯA CÓ BE] handleSearch,
     handlePageChange,
     handleFilterChange,
