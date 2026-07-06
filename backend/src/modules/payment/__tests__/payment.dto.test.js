@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { createPaymentAuditEvent } from "../payment.audit.js";
 import {
   toPaymentListItem,
   toPaymentReceiptResponse,
@@ -46,7 +45,7 @@ describe("payment.dto", () => {
     });
   });
 
-  it("includes audit trail only when requested", () => {
+  it("maps payment detail responses without legacy audit payloads", () => {
     const payment = {
       _id: "pay-2",
       paymentNumber: "PAY-20260626-5678",
@@ -95,28 +94,9 @@ describe("payment.dto", () => {
       failureReason: null,
       createdAt: "2026-06-26T02:45:00.000Z",
       updatedAt: "2026-06-26T03:15:00.000Z",
-      auditTrail: [
-        {
-          eventType: "receipt_printed",
-          actorId: {
-            _id: "cashier-1",
-            username: "cashier.one",
-            fullName: "Cashier One",
-            role: "Staff",
-          },
-          note: "Receipt printed for payment PAY-20260626-5678",
-          metadata: {
-            paymentId: "pay-2",
-            paymentNumber: "PAY-20260626-5678",
-            printCount: 1,
-          },
-          occurredAt: "2026-06-26T03:15:00.000Z",
-        },
-      ],
     };
 
-    expect(toPaymentResponse(payment)).not.toHaveProperty("auditTrail");
-    expect(toPaymentResponse(payment, { includeAuditTrail: true })).toMatchObject({
+    expect(toPaymentResponse(payment)).toMatchObject({
       _id: "pay-2",
       printCount: 1,
       lastPrintedAt: "2026-06-26T03:15:00.000Z",
@@ -126,24 +106,6 @@ describe("payment.dto", () => {
         fullName: "Cashier One",
         role: "Staff",
       },
-      auditTrail: [
-        {
-          eventType: "receipt_printed",
-          actorId: {
-            _id: "cashier-1",
-            username: "cashier.one",
-            fullName: "Cashier One",
-            role: "Staff",
-          },
-          note: "Receipt printed for payment PAY-20260626-5678",
-          metadata: {
-            paymentId: "pay-2",
-            paymentNumber: "PAY-20260626-5678",
-            printCount: 1,
-          },
-          occurredAt: "2026-06-26T03:15:00.000Z",
-        },
-      ],
     });
   });
 
@@ -240,26 +202,6 @@ describe("payment.dto", () => {
         fullName: "Staff Three",
         role: "Staff",
       },
-    });
-  });
-});
-
-describe("payment.audit", () => {
-  it("normalizes optional audit note content", () => {
-    const result = createPaymentAuditEvent({
-      eventType: "initiated",
-      actorId: "staff-3",
-      note: "   ",
-      metadata: { paymentMethod: "QR" },
-      occurredAt: "2026-06-26T04:00:00.000Z",
-    });
-
-    expect(result).toEqual({
-      eventType: "initiated",
-      actorId: "staff-3",
-      note: null,
-      metadata: { paymentMethod: "QR" },
-      occurredAt: "2026-06-26T04:00:00.000Z",
     });
   });
 });

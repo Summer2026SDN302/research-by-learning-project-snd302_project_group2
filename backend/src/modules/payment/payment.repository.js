@@ -1,8 +1,5 @@
 import { toObjectId } from "../../shared/helpers/mongo.helper.js";
-import {
-  PAYMENT_TRANSACTION_CODE_LOCKED_STATUSES,
-} from "./payment.constants.js";
-import { mapLatestPaymentsByOrderId } from "./payment.derived.js";
+import { PAYMENT_TRANSACTION_CODE_LOCKED_STATUSES } from "./payment.constants.js";
 import Payment from "./payment.model.js";
 
 const applyListPopulates = (query) =>
@@ -23,61 +20,6 @@ const paymentRepository = {
     const query = populate
       ? applyListPopulates(Payment.findOne({ _id: toObjectId(id) }))
       : Payment.findOne({ _id: toObjectId(id) });
-
-    if (session) {
-      query.session(session);
-    }
-
-    return query;
-  },
-
-  async findLatestByOrderId(orderId, { session = null, populate = false } = {}) {
-    const query = Payment.findOne({ orderId: toObjectId(orderId) }).sort({
-      createdAt: -1,
-      updatedAt: -1,
-    });
-
-    if (populate) {
-      applyListPopulates(query);
-    }
-
-    if (session) {
-      query.session(session);
-    }
-
-    return query;
-  },
-
-  async findLatestByOrderIds(orderIds = [], { session = null, populate = false } = {}) {
-    if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      return new Map();
-    }
-
-    const normalizedOrderIds = orderIds.map(toObjectId);
-    const query = Payment.find({
-      orderId: { $in: normalizedOrderIds },
-    }).sort({
-      createdAt: -1,
-      updatedAt: -1,
-    });
-
-    if (populate) {
-      applyListPopulates(query);
-    }
-
-    if (session) {
-      query.session(session);
-    }
-
-    const payments = await query;
-    return mapLatestPaymentsByOrderId(payments);
-  },
-
-  async findPendingByOrderId(orderId, { session = null } = {}) {
-    const query = Payment.findOne({
-      orderId: toObjectId(orderId),
-      paymentStatus: "Pending",
-    }).sort({ createdAt: -1 });
 
     if (session) {
       query.session(session);
@@ -110,15 +52,6 @@ const paymentRepository = {
     const existing = await Payment.findOne(filter).select("_id");
     return Boolean(existing);
   },
-
-  async updateById(id, updates, session = null) {
-    return Payment.findOneAndUpdate(
-      { _id: toObjectId(id) },
-      { $set: updates },
-      { new: true, runValidators: true, session },
-    );
-  },
-
   async findAll({
     searchKeyword,
     matchingOrderIds = [],

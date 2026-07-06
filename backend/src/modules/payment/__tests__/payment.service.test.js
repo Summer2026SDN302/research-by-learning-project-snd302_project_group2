@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ORDER_PAYMENT_STATUS, ORDER_STATUS } from "../../order/order.constants.js";
+import { ORDER_STATUS } from "../../order/order.constants.js";
 import orderRepository from "../../order/order.repository.js";
 import * as dailyMenuRepository from "../../menu/daily-menu/daily-menu.repository.js";
 import { USER_ROLES } from "../../user/user.constants.js";
-import { withTransaction } from "../../../shared/helpers/transaction.helper.js";
 import {
   PAYMENT_METHOD,
   PAYMENT_STATUS,
@@ -12,7 +11,8 @@ import {
 import paymentRepository from "../payment.repository.js";
 import paymentService from "../payment.service.js";
 
-const { mockSession, mockWithTransaction } = vi.hoisted(() => ({
+const { mockOrderFind, mockSession, mockWithTransaction } = vi.hoisted(() => ({
+  mockOrderFind: vi.fn(),
   mockSession: {
     startTransaction: vi.fn(),
     commitTransaction: vi.fn(),
@@ -38,7 +38,12 @@ vi.mock("../../order/order.repository.js", () => ({
   default: {
     create: vi.fn(),
     findById: vi.fn(),
-    findIdsByOrderNumberKeyword: vi.fn(),
+  },
+}));
+
+vi.mock("../../order/order.model.js", () => ({
+  default: {
+    find: mockOrderFind,
   },
 }));
 
@@ -51,10 +56,7 @@ vi.mock("../payment.repository.js", () => ({
   default: {
     create: vi.fn(),
     findById: vi.fn(),
-    findLatestByOrderId: vi.fn(),
-    findPendingByOrderId: vi.fn(),
     isTransactionCodeTaken: vi.fn(),
-    updateById: vi.fn(),
     findAll: vi.fn(),
   },
 }));
@@ -70,11 +72,9 @@ const buildOrder = (overrides = {}) => ({
   orderStatus: ORDER_STATUS.PENDING,
   subTotal: 100000,
   discountAmount: 5000,
-  taxRate: 0.08,
   taxAmount: 7600,
   totalAmount: 102600,
   items: [],
-  notes: null,
   ...overrides,
 });
 
@@ -111,18 +111,17 @@ const buildPayment = (overrides = {}) => ({
   orderId: "order-1",
   finalAmount: 102600,
   paymentMethod: PAYMENT_METHOD.CASH,
-  paymentStatus: PAYMENT_STATUS.PENDING,
+  paymentStatus: PAYMENT_STATUS.PAID,
   amountReceived: 102600,
   changeReturned: 0,
   transactionCode: null,
   printCount: 0,
   lastPrintedAt: null,
   lastPrintedBy: null,
-  paidAt: null,
+  paidAt: "2026-06-26T01:00:00.000Z",
   failureReason: null,
   createdAt: "2026-06-26T01:00:00.000Z",
   updatedAt: "2026-06-26T01:00:00.000Z",
-  auditTrail: [],
   ...overrides,
 });
 
@@ -131,35 +130,10 @@ describe("paymentService", () => {
     vi.clearAllMocks();
   });
 
-  it("blocks initiating a payment when another pending payment already exists", async () => {
-    orderRepository.findById.mockResolvedValue(buildOrder());
-    paymentRepository.findLatestByOrderId.mockResolvedValue(
-      buildPayment({ _id: "payment-older" }),
-    );
-
-    await expect(
-      paymentService.initiatePayment(
-        {
-          orderId: "order-1",
-          paymentMethod: PAYMENT_METHOD.CASH,
-          amountReceived: 105000,
-        },
-        "staff-1",
-        USER_ROLES.STAFF,
-      ),
-    ).rejects.toMatchObject({
-      statusCode: 409,
-      code: "PAYMENT_IN_PROGRESS",
-    });
-
-    expect(paymentRepository.create).not.toHaveBeenCalled();
-  });
-
-  it("creates a completed paid order and payment during checkout", async () => {
+  it("creates a paid payment during checkout", async () => {
     const createdOrder = buildOrder({
       _id: "order-checkout-1",
       orderNumber: "ORD-20260628-001",
-      orderStatus: ORDER_STATUS.COMPLETED,
       subTotal: 72000,
       discountAmount: 3000,
       taxAmount: 5760,
@@ -171,7 +145,6 @@ describe("paymentService", () => {
           unitPrice: 32000,
           quantity: 1,
           lineTotal: 32000,
-          note: null,
         },
         {
           foodItemId: "food-2",
@@ -179,15 +152,13 @@ describe("paymentService", () => {
           unitPrice: 40000,
           quantity: 1,
           lineTotal: 40000,
-          note: null,
         },
       ],
-      notes: "Mang di",
     });
     const createdPayment = buildPayment({
       _id: "payment-checkout-1",
       orderId: createdOrder._id,
-      paymentStatus: PAYMENT_STATUS.PAID,
+      finalAmount: 77760,
       amountReceived: 80000,
       changeReturned: 2240,
       paidAt: "2026-06-28T09:00:00.000Z",
@@ -237,8 +208,7 @@ describe("paymentService", () => {
     );
     expect(orderRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        orderStatus: ORDER_STATUS.COMPLETED,
-        notes: "Mang di",
+        orderStatus: ORDER_STATUS.PENDING,
         totalAmount: 77760,
       }),
       mockSession,
@@ -261,137 +231,31 @@ describe("paymentService", () => {
     });
   });
 
-  it("does not reserve transaction codes during payment initiation", async () => {
-    const createdPayment = buildPayment({
-      paymentMethod: PAYMENT_METHOD.QR,
-      transactionCode: null,
-    });
-
-    orderRepository.findById.mockResolvedValue(buildOrder());
-    paymentRepository.findLatestByOrderId.mockResolvedValue(null);
-    paymentRepository.create.mockResolvedValue(createdPayment);
-    paymentRepository.findById.mockResolvedValue(createdPayment);
-
-    const result = await paymentService.initiatePayment(
-      {
-        orderId: "order-1",
-        paymentMethod: PAYMENT_METHOD.QR,
-        amountReceived: 0,
-        transactionCode: "BANK-TXN-001",
-      },
-      "staff-1",
-      USER_ROLES.STAFF,
-    );
-
-    expect(paymentRepository.isTransactionCodeTaken).not.toHaveBeenCalled();
-    expect(paymentRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        paymentMethod: PAYMENT_METHOD.QR,
-        transactionCode: null,
-      }),
-      mockSession,
-    );
-    expect(result.transactionCode).toBeNull();
-  });
-
-  it("rejects duplicate transaction codes during confirmation", async () => {
-    paymentRepository.findById.mockResolvedValue(buildPayment());
-    orderRepository.findById.mockResolvedValue(
-      buildOrder({ paymentStatus: ORDER_PAYMENT_STATUS.PENDING }),
-    );
+  it("rejects duplicate transaction codes during checkout", async () => {
+    dailyMenuRepository.findMenuByDate.mockResolvedValue(buildDailyMenu());
     paymentRepository.isTransactionCodeTaken.mockResolvedValue(true);
 
     await expect(
-      paymentService.confirmPayment(
-        "payment-1",
+      paymentService.checkout(
         {
-          amountReceived: 105000,
-          transactionCode: "TXN-001",
+          items: [{ foodItemId: "food-1", quantity: 1 }],
+          paymentMethod: PAYMENT_METHOD.QR,
+          amountReceived: 0,
+          transactionCode: "BANK-TXN-001",
         },
         "staff-1",
-        USER_ROLES.STAFF,
       ),
     ).rejects.toMatchObject({
       statusCode: 409,
       code: "PAYMENT_TRANSACTION_CODE_EXISTS",
     });
 
-    expect(withTransaction).not.toHaveBeenCalled();
-  });
-
-  it("rejects insufficient cash during confirmation", async () => {
-    paymentRepository.findById.mockResolvedValue(buildPayment());
-    orderRepository.findById.mockResolvedValue(
-      buildOrder({ paymentStatus: ORDER_PAYMENT_STATUS.PENDING }),
-    );
-    paymentRepository.isTransactionCodeTaken.mockResolvedValue(false);
-
-    await expect(
-      paymentService.confirmPayment(
-        "payment-1",
-        {
-          amountReceived: 100000,
-        },
-        "staff-1",
-        USER_ROLES.STAFF,
-      ),
-    ).rejects.toMatchObject({
-      statusCode: 400,
-      code: "INSUFFICIENT_CASH_RECEIVED",
-    });
-
-    expect(withTransaction).not.toHaveBeenCalled();
-  });
-
-  it("calculates cash change and marks the payment as paid when confirmation succeeds", async () => {
-    const pendingPayment = buildPayment();
-    const payableOrder = buildOrder({ paymentStatus: ORDER_PAYMENT_STATUS.PENDING });
-    const finalPayment = buildPayment({
-      paymentStatus: PAYMENT_STATUS.PAID,
-      amountReceived: 110000,
-      changeReturned: 7400,
-      paidAt: "2026-06-26T02:00:00.000Z",
-      orderId: {
-        _id: "order-1",
-        orderNumber: "ORD-0001",
-        staffId: "staff-1",
-      },
-    });
-
-    paymentRepository.findById
-      .mockResolvedValueOnce(pendingPayment)
-      .mockResolvedValueOnce(finalPayment);
-    orderRepository.findById.mockResolvedValue(payableOrder);
-    paymentRepository.isTransactionCodeTaken.mockResolvedValue(false);
-    paymentRepository.updateById.mockResolvedValue(finalPayment);
-
-    const result = await paymentService.confirmPayment(
-      "payment-1",
-      {
-        amountReceived: 110000,
-      },
-      "staff-1",
-      USER_ROLES.STAFF,
-    );
-
-    expect(paymentRepository.updateById).toHaveBeenCalledWith(
-      "payment-1",
-      expect.objectContaining({
-        amountReceived: 110000,
-        changeReturned: 7400,
-        paymentStatus: PAYMENT_STATUS.PAID,
-      }),
-      mockSession,
-    );
-    expect(withTransaction).toHaveBeenCalledTimes(1);
-    expect(result.changeReturned).toBe(7400);
-    expect(result.printCount).toBe(0);
+    expect(mockWithTransaction).not.toHaveBeenCalled();
   });
 
   it("builds receipt payloads directly from payment and order data", async () => {
     paymentRepository.findById.mockResolvedValue(
       buildPayment({
-        paymentStatus: PAYMENT_STATUS.PAID,
         paymentNumber: "PAY-20260626-8888",
         paidAt: "2026-06-26T06:00:00.000Z",
       }),
@@ -434,30 +298,39 @@ describe("paymentService", () => {
     });
   });
 
-  it("updates print audit on payment receipts", async () => {
-    const paidPayment = buildPayment({
-      paymentStatus: PAYMENT_STATUS.PAID,
-      paymentNumber: "PAY-20260626-9999",
-    });
-    const order = buildOrder({
-      orderNumber: "ORD-0009",
-      items: [],
-    });
-    const printedPayment = buildPayment({
-      paymentStatus: PAYMENT_STATUS.PAID,
-      paymentNumber: "PAY-20260626-9999",
-      printCount: 1,
-      lastPrintedAt: "2026-06-26T07:00:00.000Z",
-      lastPrintedBy: {
-        _id: "staff-1",
-        username: "staff.one",
-        fullName: "Staff One",
-        role: "Staff",
-      },
-    });
+  it("blocks receipt access for unpaid transactions", async () => {
+    paymentRepository.findById.mockResolvedValue(
+      buildPayment({
+        paymentStatus: PAYMENT_STATUS.PENDING,
+        paidAt: null,
+      }),
+    );
+    orderRepository.findById.mockResolvedValue(buildOrder());
 
-    paymentRepository.findById.mockResolvedValue(paidPayment);
-    orderRepository.findById.mockResolvedValue(order);
+    await expect(
+      paymentService.getPaymentReceipt(
+        "payment-1",
+        "staff-1",
+        USER_ROLES.STAFF,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: "PAYMENT_RECEIPT_NOT_AVAILABLE",
+    });
+  });
+
+  it("returns printable receipt data without mutating payment state", async () => {
+    paymentRepository.findById.mockResolvedValue(
+      buildPayment({
+        paymentNumber: "PAY-20260626-9999",
+      }),
+    );
+    orderRepository.findById.mockResolvedValue(
+      buildOrder({
+        orderNumber: "ORD-0009",
+        items: [],
+      }),
+    );
 
     const result = await paymentService.printPaymentReceipt(
       "payment-1",
@@ -465,7 +338,7 @@ describe("paymentService", () => {
       USER_ROLES.STAFF,
     );
 
-    expect(withTransaction).not.toHaveBeenCalled();
+    expect(mockWithTransaction).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       paymentId: "payment-1",
       printCount: 0,
@@ -474,7 +347,8 @@ describe("paymentService", () => {
   });
 
   it("builds payment list queries with trimmed search and mapped list items", async () => {
-    orderRepository.findIdsByOrderNumberKeyword.mockResolvedValue(["order-9"]);
+    const select = vi.fn().mockResolvedValue([{ _id: "order-9" }]);
+    mockOrderFind.mockReturnValue({ select });
     paymentRepository.findAll.mockResolvedValue({
       items: [
         {
@@ -506,9 +380,9 @@ describe("paymentService", () => {
       limit: "5",
     });
 
-    expect(orderRepository.findIdsByOrderNumberKeyword).toHaveBeenCalledWith(
-      "ORD-0009",
-    );
+    expect(mockOrderFind).toHaveBeenCalledWith({
+      orderNumber: /ORD-0009/i,
+    });
     expect(paymentRepository.findAll).toHaveBeenCalledWith({
       searchKeyword: "ORD-0009",
       matchingOrderIds: ["order-9"],
