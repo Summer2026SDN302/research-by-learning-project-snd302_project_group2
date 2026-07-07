@@ -20,8 +20,6 @@ describe("payment.dto", () => {
       paymentStatus: "Paid",
       finalAmount: 125000,
       transactionCode: "TXN-123",
-      printCount: 2,
-      lastPrintedAt: "2026-06-26T02:00:00.000Z",
       paidAt: "2026-06-26T01:30:00.000Z",
       createdAt: "2026-06-26T01:00:00.000Z",
     });
@@ -38,8 +36,6 @@ describe("payment.dto", () => {
       paymentStatus: "Paid",
       finalAmount: 125000,
       transactionCode: "TXN-123",
-      printCount: 2,
-      lastPrintedAt: "2026-06-26T02:00:00.000Z",
       paidAt: "2026-06-26T01:30:00.000Z",
       createdAt: "2026-06-26T01:00:00.000Z",
     });
@@ -70,42 +66,33 @@ describe("payment.dto", () => {
       changeReturned: 7400,
       transactionCode: null,
       paymentStatus: "Paid",
-      initiatedBy: {
-        _id: "manager-1",
-        username: "manager.one",
-        fullName: "Manager One",
-        role: "Manager",
-      },
-      confirmedBy: {
-        _id: "cashier-1",
-        username: "cashier.one",
-        fullName: "Cashier One",
-        role: "Staff",
-      },
-      printCount: 1,
-      lastPrintedAt: "2026-06-26T03:15:00.000Z",
-      lastPrintedBy: {
-        _id: "cashier-1",
-        username: "cashier.one",
-        fullName: "Cashier One",
-        role: "Staff",
-      },
       paidAt: "2026-06-26T03:00:00.000Z",
-      failureReason: null,
       createdAt: "2026-06-26T02:45:00.000Z",
       updatedAt: "2026-06-26T03:15:00.000Z",
     };
 
     expect(toPaymentResponse(payment)).toMatchObject({
       _id: "pay-2",
-      printCount: 1,
-      lastPrintedAt: "2026-06-26T03:15:00.000Z",
-      lastPrintedBy: {
-        _id: "cashier-1",
-        username: "cashier.one",
-        fullName: "Cashier One",
-        role: "Staff",
+      paymentNumber: "PAY-20260626-5678",
+      orderId: {
+        _id: "order-2",
+        orderNumber: "ORD-0002",
+        staffId: {
+          _id: "staff-2",
+          username: "staff.two",
+          fullName: "Staff Two",
+          role: "Staff",
+        },
       },
+      finalAmount: 102600,
+      paymentMethod: "Cash",
+      amountReceived: 110000,
+      changeReturned: 7400,
+      transactionCode: null,
+      paymentStatus: "Paid",
+      paidAt: "2026-06-26T03:00:00.000Z",
+      createdAt: "2026-06-26T02:45:00.000Z",
+      updatedAt: "2026-06-26T03:15:00.000Z",
     });
   });
 
@@ -124,14 +111,6 @@ describe("payment.dto", () => {
         taxRate: 0.08,
         taxAmount: 7600,
         finalAmount: 102600,
-        printCount: 1,
-        lastPrintedAt: "2026-06-26T06:00:00.000Z",
-        lastPrintedBy: {
-          _id: "staff-3",
-          username: "staff.three",
-          fullName: "Staff Three",
-          role: "Staff",
-        },
         paidAt: "2026-06-26T05:30:00.000Z",
       },
       {
@@ -194,14 +173,6 @@ describe("payment.dto", () => {
       amountReceived: 120000,
       changeReturned: 17400,
       transactionCode: null,
-      printCount: 1,
-      lastPrintedAt: "2026-06-26T06:00:00.000Z",
-      lastPrintedBy: {
-        _id: "staff-3",
-        username: "staff.three",
-        fullName: "Staff Three",
-        role: "Staff",
-      },
     });
   });
 });

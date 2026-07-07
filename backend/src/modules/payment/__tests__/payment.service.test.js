@@ -341,8 +341,6 @@ describe("paymentService", () => {
     expect(mockWithTransaction).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       paymentId: "payment-1",
-      printCount: 0,
-      lastPrintedAt: null,
     });
   });
 
@@ -395,8 +393,6 @@ describe("paymentService", () => {
       items: [
         expect.objectContaining({
           paymentNumber: "PAY-20260626-9999",
-          printCount: 3,
-          lastPrintedAt: "2026-06-26T05:00:00.000Z",
         }),
       ],
       pagination: {
