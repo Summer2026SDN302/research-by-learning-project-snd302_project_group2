@@ -48,7 +48,8 @@ const orderRepository = {
 
     const [items, total] = await Promise.all([
       Order.find(filter)
-        .populate("items.foodItemId", "name") // Fix #7: populate de co ten mon trong response
+        .populate("items.foodItemId", "name") // Fix #7: populate để có tên món trong response
+        .populate("staffId", "fullName username role")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -59,10 +60,9 @@ const orderRepository = {
   },
 
   async findById(id) {
-    return Order.findOne({ _id: toObjectId(id) }).populate(
-      "items.foodItemId",
-      "name",
-    );
+    return Order.findOne({ _id: toObjectId(id) })
+      .populate("items.foodItemId", "name")
+      .populate("staffId", "fullName username role");
   },
 
   async updateStatusById(id, status) {

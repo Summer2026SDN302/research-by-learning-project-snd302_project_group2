@@ -48,7 +48,8 @@ const calculateOrderPricing = (lineItems) => {
   const orderItems = lineItems.map(({ menuItem, requestedQty }) => {
     const unitPrice = menuItem.currentPrice;
     const lineTotal = unitPrice * requestedQty;
-    const discount = (menuItem.originalPrice - menuItem.currentPrice) * requestedQty;
+    const discount =
+      (menuItem.originalPrice - menuItem.currentPrice) * requestedQty;
 
     subTotal += lineTotal;
     discountAmount += discount;
@@ -153,7 +154,12 @@ const orderService = {
       // Fix #2: decrementSoldQuantity gio co atomic guard ($gte) va nhan session
       await Promise.all(
         body.items.map(({ foodItemId, quantity }) =>
-          dailyMenuRepository.decrementSoldQuantity(dailyMenu._id, foodItemId, quantity, session),
+          dailyMenuRepository.decrementSoldQuantity(
+            dailyMenu._id,
+            foodItemId,
+            quantity,
+            session,
+          ),
         ),
       );
 
@@ -220,11 +226,20 @@ const orderService = {
     return toOrderResponse(order);
   },
 
-  // Fix #4: bo param `role` vi khong dung trong ham nay.
-  // Viec kiem tra role (chi Manager/Admin moi cancel duoc) nen de o middleware/router.
-  async updateOrderStatus(id, newStatus) {
+  async updateOrderStatus(id, newStatus, requestingUserId, requestingRole) {
     const order = await getOrderOrThrow(id);
     const currentStatus = order.orderStatus;
+
+    if (
+      requestingRole === USER_ROLES.STAFF &&
+      order.staffId.toString() !== requestingUserId
+    ) {
+      throw new AppError(
+        "You do not have permission to modify this order",
+        403,
+        "FORBIDDEN",
+      );
+    }
 
     const allowedNext = VALID_STATUS_TRANSITIONS[currentStatus] ?? [];
 
