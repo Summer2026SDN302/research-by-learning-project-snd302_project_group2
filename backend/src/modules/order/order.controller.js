@@ -19,7 +19,11 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 });
 
 export const getOrderById = asyncHandler(async (req, res) => {
-  const data = await orderService.getOrderById(req.params.id, req.userId, req.user.role);
+  const data = await orderService.getOrderById(
+    req.params.id,
+    req.userId,
+    req.user.role,
+  );
   return successResponse(res, data, "Order retrieved successfully");
 });
 
@@ -29,10 +33,11 @@ export const createOrder = asyncHandler(async (req, res) => {
 });
 
 export const updateOrderStatus = asyncHandler(async (req, res) => {
-  // Fix #4: bo role viem kiem soat role da duoc xu ly o middleware authorize()
   const data = await orderService.updateOrderStatus(
     req.params.id,
     req.body.orderStatus,
+    req.userId,
+    req.user.role,
   );
   return successResponse(res, data, "Order status updated successfully");
 });
