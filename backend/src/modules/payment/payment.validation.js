@@ -30,23 +30,9 @@ const validateOptionalNote = (value) => {
 };
 
 export const validateCheckoutPayment = [
-  body("items")
-    .isArray({ min: 1 })
-    .withMessage("Checkout must have at least one item"),
-  body("items.*.foodItemId")
+  body("orderId")
     .isMongoId()
-    .withMessage("Invalid food item id"),
-  body("items.*.quantity")
-    .isInt({ min: 1 })
-    .withMessage("Quantity must be at least 1"),
-  body("items.*.note")
-    .optional()
-    .custom(validateOptionalNote)
-    .withMessage("Item note must be a string"),
-  body("notes")
-    .optional()
-    .custom(validateOptionalNote)
-    .withMessage("Checkout notes must be a string"),
+    .withMessage("Invalid order id"),
   body("paymentMethod")
     .isIn(Object.values(PAYMENT_METHOD))
     .withMessage("Invalid payment method"),

@@ -18,7 +18,7 @@ export const getPaymentReceipt = asyncHandler(async (req, res) => {
 });
 
 export const checkoutPayment = asyncHandler(async (req, res) => {
-  const data = await paymentService.checkout(req.body, req.userId);
+  const data = await paymentService.checkout(req.body, req.userId, req.user.role);
   return successResponse(res, data, "Checkout completed successfully", 201);
 });
 

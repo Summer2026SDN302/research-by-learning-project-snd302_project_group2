@@ -133,13 +133,7 @@ describe("payment routes", () => {
   describe("POST /api/payments/checkout", () => {
     it("completes a checkout for staff users", async () => {
       const payload = {
-        items: [
-          {
-            foodItemId: "507f1f77bcf86cd799439012",
-            quantity: 2,
-          },
-        ],
-        notes: "Mang di",
+        orderId: "507f1f77bcf86cd799439012",
         paymentMethod: "Cash",
         amountReceived: 120000,
       };
@@ -159,6 +153,7 @@ describe("payment routes", () => {
       expect(paymentService.checkout).toHaveBeenCalledWith(
         payload,
         "507f1f77bcf86cd799439099",
+        "Staff",
       );
     });
   });

@@ -6,7 +6,7 @@ import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.j
 import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
 import orderRepository from "./order.repository.js";
 import { toOrderResponse } from "./order.dto.js";
-import { VALID_STATUS_TRANSITIONS, TAX_PERCENT } from "./order.constants.js";
+import { ORDER_STATUS, VALID_STATUS_TRANSITIONS, TAX_PERCENT } from "./order.constants.js";
 import { USER_ROLES } from "../user/user.constants.js";
 
 // Helpers
@@ -77,7 +77,7 @@ const calculateOrderPricing = (lineItems) => {
 
 const orderService = {
   async createOrder(body, staffId) {
-    const todayStr = getTodayVNDateString(); // "YYYY-MM-DD" theo mui gio VN
+    const todayStr = getTodayVNDateString();
     const seen = new Set();
     for (const item of body.items) {
       if (seen.has(item.foodItemId)) {
@@ -90,7 +90,6 @@ const orderService = {
       seen.add(item.foodItemId);
     }
 
-    // Fix #1: findByDate gio populate items.foodItemId voi field "name"
     const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr);
 
     if (!dailyMenu || !dailyMenu.isConfigured) {
@@ -101,13 +100,11 @@ const orderService = {
       );
     }
 
-    // Build lookup map - sau khi populate, foodItemId la FoodItem object
     const menuItemMap = {};
     for (const item of dailyMenu.items) {
       menuItemMap[item.foodItemId._id.toString()] = item;
     }
 
-    // Validate tung item va collect lineItems de tinh gia
     const lineItems = [];
 
     for (const requested of body.items) {
@@ -137,21 +134,16 @@ const orderService = {
         );
       }
 
-      // Thu thap du lieu de truyen vao calculateOrderPricing
       lineItems.push({ menuItem, requestedQty: requested.quantity });
     }
 
-    // Tinh toan gia tri don hang
     const { orderItems, subTotal, discountAmount, taxAmount, totalAmount } =
       calculateOrderPricing(lineItems);
 
-    // Fix #3: dung Mongoose session + transaction de dam bao rollback neu co loi.
-    // Neu orderRepository.create that bai, cac deduct da lam se bi rollback.
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      // Fix #2: decrementSoldQuantity gio co atomic guard ($gte) va nhan session
       await Promise.all(
         body.items.map(({ foodItemId, quantity }) =>
           dailyMenuRepository.decrementSoldQuantity(
@@ -172,7 +164,7 @@ const orderService = {
           discountAmount,
           taxAmount,
           totalAmount,
-          orderStatus: "Pending",
+          orderStatus: ORDER_STATUS.PENDING,
           orderDate: new Date(todayStr),
         },
         session,
