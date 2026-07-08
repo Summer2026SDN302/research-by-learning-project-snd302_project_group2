@@ -1,5 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../../../config/payos.js", () => ({
+  default: {
+    paymentRequests: {
+      create: vi.fn(),
+      get: vi.fn(),
+    },
+    webhooks: {
+      verify: vi.fn(),
+    },
+  },
+}));
+
 import { ORDER_STATUS } from "../../order/order.constants.js";
 import orderRepository from "../../order/order.repository.js";
 import * as dailyMenuRepository from "../../menu/daily-menu/daily-menu.repository.js";
@@ -66,6 +78,7 @@ vi.mock("../../../shared/helpers/transaction.helper.js", () => ({
   withTransaction: mockWithTransaction,
 }));
 
+
 const buildOrder = (overrides = {}) => {
   const orderObj = {
     _id: "order-1",
@@ -74,8 +87,7 @@ const buildOrder = (overrides = {}) => {
     orderStatus: ORDER_STATUS.PENDING,
     subTotal: 100000,
     discountAmount: 5000,
-    taxAmount: 7600,
-    totalAmount: 102600,
+    totalAmount: 100000,
     items: [],
     save: vi.fn().mockResolvedValue(true),
     ...overrides,
@@ -224,7 +236,7 @@ describe("paymentService", () => {
       paymentService.checkout(
         {
           orderId: createdOrder._id,
-          paymentMethod: PAYMENT_METHOD.QR,
+          paymentMethod: PAYMENT_METHOD.CARD,
           amountReceived: 0,
           transactionCode: "BANK-TXN-001",
         },
@@ -384,6 +396,57 @@ describe("paymentService", () => {
         total: 1,
         totalPages: 1,
       },
+    });
+  });
+
+  it("creates a pending payment and payos link during QR checkout", async () => {
+    const createdOrder = buildOrder({
+      _id: "order-checkout-qr",
+      orderNumber: "ORD-20260628-002",
+      totalAmount: 150000,
+    });
+    const createdPayment = buildPayment({
+      _id: "payment-checkout-qr",
+      orderId: createdOrder._id,
+      finalAmount: 150000,
+      paymentMethod: PAYMENT_METHOD.QR,
+      paymentStatus: PAYMENT_STATUS.PENDING,
+    });
+
+    const payosMock = (await import("../../../config/payos.js")).default;
+    payosMock.paymentRequests.create.mockResolvedValue({
+      checkoutUrl: "https://checkout.payos.vn/payment-link-123",
+    });
+
+    orderRepository.findById.mockResolvedValue(createdOrder);
+    paymentRepository.create.mockResolvedValue(createdPayment);
+    paymentRepository.findById.mockResolvedValue(createdPayment);
+
+    const result = await paymentService.checkout(
+      {
+        orderId: createdOrder._id,
+        paymentMethod: PAYMENT_METHOD.QR,
+      },
+      "staff-1",
+      USER_ROLES.STAFF,
+    );
+
+    expect(payosMock.paymentRequests.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderCode: 20260628002,
+        amount: 150000,
+      })
+    );
+    expect(paymentRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderId: createdOrder._id,
+        paymentStatus: PAYMENT_STATUS.PENDING,
+      }),
+      mockSession,
+    );
+    expect(result).toMatchObject({
+      _id: "payment-checkout-qr",
+      checkoutUrl: "https://checkout.payos.vn/payment-link-123",
     });
   });
 });
