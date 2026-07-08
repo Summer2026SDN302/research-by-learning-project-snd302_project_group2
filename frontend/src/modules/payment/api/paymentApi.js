@@ -66,3 +66,12 @@ export const getPayments = async (params = {}) => {
     throw normalizeApiError(error);
   }
 };
+
+export const confirmPayment = async (id, body = {}) => {
+  try {
+    const response = await apiClient.post(`${BASE_PATH}/${id}/confirm`, body);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+};

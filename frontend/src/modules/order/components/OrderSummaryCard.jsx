@@ -92,14 +92,7 @@ const OrderSummaryCard = ({
               {formatCurrency(totals.subtotal)}
             </span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="font-body-sm text-on-surface-variant">
-              Thue ({(totals.taxRate * 100).toFixed(0)}%)
-            </span>
-            <span className="font-body-sm text-on-surface font-medium">
-              {formatCurrency(totals.taxAmount)}
-            </span>
-          </div>
+
           <div className="flex justify-between items-center pt-2 border-t border-outline-variant/30">
             <span className="font-body-md font-bold text-on-surface">
               Tong cong

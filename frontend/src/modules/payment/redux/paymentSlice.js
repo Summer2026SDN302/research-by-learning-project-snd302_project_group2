@@ -35,7 +35,7 @@ const buildPaymentKpis = (payments) => ({
 const fetchAllPayments = async (params = {}) => {
   const items = [];
   let page = 1;
-  let totalPages = 1;
+  let totalPages;
 
   do {
     const result = await paymentApi.getPayments({
@@ -107,6 +107,17 @@ export const checkoutPaymentThunk = createAsyncThunk(
   async (paymentData, { rejectWithValue }) => {
     try {
       return await paymentApi.checkoutPayment(paymentData);
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  },
+);
+
+export const confirmPaymentThunk = createAsyncThunk(
+  "payment/confirmPayment",
+  async ({ paymentId, transactionCode }, { rejectWithValue }) => {
+    try {
+      return await paymentApi.confirmPayment(paymentId, { transactionCode });
     } catch (error) {
       return rejectWithValue(error);
     }

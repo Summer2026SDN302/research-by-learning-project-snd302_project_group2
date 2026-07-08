@@ -1,5 +1,3 @@
-import { ORDER_PREVIEW_TAX_RATE } from "../constants/orderPreviewConstants";
-
 const roundCurrency = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
@@ -11,13 +9,10 @@ export const buildCartPreviewTotals = (items = []) => {
       0,
     ),
   );
-  const taxAmount = roundCurrency(subtotal * ORDER_PREVIEW_TAX_RATE);
-  const totalAmount = roundCurrency(subtotal + taxAmount);
+  const totalAmount = subtotal;
 
   return {
     subtotal,
-    taxRate: ORDER_PREVIEW_TAX_RATE,
-    taxAmount,
     totalAmount,
   };
 };
@@ -36,8 +31,6 @@ export const buildCheckoutPreviewOrder = ({
   })),
   notes,
   subTotal: totals.subtotal,
-  taxRate: totals.taxRate,
-  taxAmount: totals.taxAmount,
   totalAmount: totals.totalAmount,
   finalAmount: totals.totalAmount,
 });

@@ -1,6 +1,9 @@
 import { useState, useCallback, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { checkoutPaymentThunk } from "../redux/paymentSlice";
+import {
+  checkoutPaymentThunk,
+  confirmPaymentThunk,
+} from "../redux/paymentSlice";
 import {
   DEFAULT_PAYMENT_METHOD,
   getDefaultPaymentProviderName,
@@ -11,13 +14,6 @@ import { PAYMENT_ERROR_MAP } from "../constants/paymentConstants";
 
 const getOrderAmount = (order) =>
   Number(order?.finalAmount ?? order?.totalAmount ?? 0);
-
-const normalizeOrderItems = (items = []) =>
-  items.map((item) => ({
-    foodItemId: item.foodItemId?._id ?? item.foodItemId,
-    quantity: Number(item.quantity || 0),
-    note: normalizeText(item.note),
-  }));
 
 const normalizeText = (value) => {
   const normalized = String(value ?? "").trim();
@@ -46,11 +42,15 @@ export const usePaymentModal = () => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [order, setOrder] = useState(null);
-  const [selectedMethod, setSelectedMethodState] = useState(DEFAULT_PAYMENT_METHOD);
+  const [selectedMethod, setSelectedMethodState] = useState(
+    DEFAULT_PAYMENT_METHOD,
+  );
   const [cashReceived, setCashReceived] = useState("0");
   const [transactionCode, setTransactionCode] = useState("");
   const [providerName, setProviderName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState(null);
+  const [confirmedPaymentData, setConfirmedPaymentData] = useState(null);
 
   const resetModalState = useCallback(() => {
     setIsOpen(false);
@@ -60,6 +60,8 @@ export const usePaymentModal = () => {
     setTransactionCode("");
     setProviderName("");
     setIsSubmitting(false);
+    setCheckoutUrl(null);
+    setConfirmedPaymentData(null);
   }, []);
 
   const openModal = useCallback((orderData, initialMethod = "Cash") => {
@@ -75,13 +77,10 @@ export const usePaymentModal = () => {
     resetModalState();
   }, [resetModalState]);
 
-  const handleSelectMethod = useCallback(
-    (method) => {
-      setSelectedMethodState(method);
-      setProviderName(getDefaultPaymentProviderName(method));
-    },
-    [],
-  );
+  const handleSelectMethod = useCallback((method) => {
+    setSelectedMethodState(method);
+    setProviderName(getDefaultPaymentProviderName(method));
+  }, []);
 
   const appendDigit = useCallback((digit) => {
     setCashReceived((prev) => {
@@ -149,8 +148,7 @@ export const usePaymentModal = () => {
       try {
         confirmedPayment = await dispatch(
           checkoutPaymentThunk({
-            items: normalizeOrderItems(order.items),
-            notes: normalizeText(order.notes),
+            orderId: order._id,
             paymentMethod: selectedMethod,
             amountReceived: amountVal,
             transactionCode: normalizedTransactionCode,
@@ -160,14 +158,28 @@ export const usePaymentModal = () => {
         const orderNumber =
           confirmedPayment?.orderId?.orderNumber || order?.orderNumber || null;
 
-        toast.success(
-          "Thanh toán thành công",
-          orderNumber
-            ? `Đơn hàng #${orderNumber} đã thanh toán xong và được lưu biên lai.`
-            : "Giao dịch đã thanh toán xong và được lưu biên lai.",
-        );
+        if (confirmedPayment?.checkoutUrl) {
+          setCheckoutUrl(confirmedPayment.checkoutUrl);
+          setConfirmedPaymentData(confirmedPayment);
+          setIsSubmitting(false);
+          toast.info(
+            "Đã tạo liên kết thanh toán PayOS",
+            "Vui lòng quét mã QR.",
+          );
+          return confirmedPayment;
+        } else {
+          toast.success(
+            "Thanh toán thành công",
+            orderNumber
+              ? `Đơn hàng #${orderNumber} đã thanh toán xong và được lưu biên lai.`
+              : "Giao dịch đã thanh toán xong và được lưu biên lai.",
+          );
+        }
       } catch (err) {
-        toast.error("Giao dịch thất bại", getApiErrorMsg(PAYMENT_ERROR_MAP, err));
+        toast.error(
+          "Giao dịch thất bại",
+          getApiErrorMsg(PAYMENT_ERROR_MAP, err),
+        );
         setIsSubmitting(false);
         return null;
       }
@@ -196,6 +208,31 @@ export const usePaymentModal = () => {
     ],
   );
 
+  const confirmPaymentOffline = useCallback(
+    async (paymentId, transactionCode) => {
+      setIsSubmitting(true);
+      try {
+        const confirmed = await dispatch(
+          confirmPaymentThunk({ paymentId, transactionCode }),
+        ).unwrap();
+        toast.success(
+          "Thanh toán thành công",
+          "Giao dịch đã được xác nhận ngoại tuyến thành công.",
+        );
+        resetModalState();
+        return confirmed;
+      } catch (err) {
+        toast.error(
+          "Xác nhận thất bại",
+          getApiErrorMsg(PAYMENT_ERROR_MAP, err),
+        );
+        setIsSubmitting(false);
+        return null;
+      }
+    },
+    [dispatch, toast, resetModalState],
+  );
+
   return {
     isOpen,
     order,
@@ -216,5 +253,9 @@ export const usePaymentModal = () => {
     isCashValid,
     quickCashOptions,
     submitCheckout,
+    confirmPaymentOffline,
+    checkoutUrl,
+    confirmedPaymentData,
+    resetModalState,
   };
 };

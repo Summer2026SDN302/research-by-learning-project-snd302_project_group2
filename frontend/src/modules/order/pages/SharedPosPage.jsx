@@ -9,7 +9,6 @@ import CategoryFilterBar from "../components/CategoryFilterBar";
 import OrderSummaryCard from "../components/OrderSummaryCard";
 import PosMenuGrid from "../components/PosMenuGrid";
 import { useStaffPos } from "../hooks/useStaffPos";
-import { buildCheckoutPreviewOrder } from "../utils/orderPreview";
 
 const getPaymentReceiptId = (payment) => payment?._id || null;
 
@@ -45,6 +44,7 @@ const SharedPosPage = ({
     handleRemoveItem,
     handleUpdateQuantity,
     handleClearCart,
+    handleSubmitOrder,
     refetchMenu,
   } = staffPos;
 
@@ -68,6 +68,9 @@ const SharedPosPage = ({
     isCashValid,
     quickCashOptions,
     submitCheckout,
+    confirmPaymentOffline,
+    checkoutUrl,
+    confirmedPaymentData,
   } = paymentModal;
 
   const handlePaymentSuccess = useCallback(
@@ -95,24 +98,41 @@ const SharedPosPage = ({
     [handleClearCart, navigate, receiptBasePath, refetchMenu, toast],
   );
 
-  const handleCheckoutClick = useCallback(() => {
+  const handleCheckoutClick = useCallback(async () => {
     if (cart.items.length === 0) {
       return;
     }
 
-    openModal(
-      buildCheckoutPreviewOrder({
-        items: cart.items,
-        notes: orderNotes.trim() || null,
-        totals: cartTotals,
-      }),
-      DEFAULT_PAYMENT_METHOD,
-    );
-  }, [cart.items, cartTotals, openModal, orderNotes]);
+    // 1. Submit the order to backend first to get the created order with _id
+    const createdOrder = await handleSubmitOrder({ showSuccessToast: false });
+    if (!createdOrder) {
+      return; // Order creation failed (e.g. out of stock)
+    }
 
-  const handlePaymentConfirm = useCallback(() => {
+    // 2. Open payment modal with the created order
+    openModal(createdOrder, DEFAULT_PAYMENT_METHOD);
+  }, [cart.items, handleSubmitOrder, openModal]);
+
+  const handlePaymentConfirm = useCallback(async () => {
+    if (checkoutUrl) {
+      const confirmed = await confirmPaymentOffline(
+        confirmedPaymentData._id,
+        transactionCode,
+      );
+      if (confirmed) {
+        await handlePaymentSuccess(confirmed);
+      }
+      return;
+    }
     void submitCheckout(handlePaymentSuccess);
-  }, [handlePaymentSuccess, submitCheckout]);
+  }, [
+    handlePaymentSuccess,
+    submitCheckout,
+    confirmPaymentOffline,
+    checkoutUrl,
+    confirmedPaymentData,
+    transactionCode,
+  ]);
 
   const handlePaymentClose = useCallback(() => {
     closeModal();
@@ -256,6 +276,7 @@ const SharedPosPage = ({
         changeReturned={changeReturned}
         isCashValid={isCashValid}
         quickCashOptions={quickCashOptions}
+        checkoutUrl={checkoutUrl}
       />
     </>
   );

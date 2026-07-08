@@ -17,8 +17,6 @@ const PaymentModal = ({
   cashReceived,
   transactionCode,
   setTransactionCode,
-  providerName,
-  setProviderName,
   isSubmitting,
   appendDigit,
   clearCash,
@@ -26,6 +24,7 @@ const PaymentModal = ({
   changeReturned,
   isCashValid,
   quickCashOptions,
+  checkoutUrl,
 }) => {
   if (!open || !order) return null;
 
@@ -85,17 +84,22 @@ const PaymentModal = ({
                 onClearCash={clearCash}
                 onSetCashAmount={setCashReceivedAmount}
               />
+            ) : checkoutUrl ? (
+              <div className="w-full h-full min-h-[34rem] bg-white rounded-2xl overflow-hidden border border-outline-variant/60 flex flex-col">
+                <iframe
+                  src={checkoutUrl}
+                  title="PayOS Payment Checkout"
+                  className="w-full h-full border-none flex-1"
+                />
+              </div>
             ) : (
               <QrPaymentPanel
-                selectedMethod={selectedMethod}
                 order={{
                   ...order,
                   finalAmount: orderAmount,
                 }}
                 transactionCode={transactionCode}
                 setTransactionCode={setTransactionCode}
-                providerName={providerName}
-                setProviderName={setProviderName}
               />
             )}
           </div>
@@ -120,6 +124,13 @@ const PaymentModal = ({
               <>
                 <Spinner size="sm" className="text-on-primary" />
                 Đang xử lý giao dịch...
+              </>
+            ) : checkoutUrl ? (
+              <>
+                <span className="material-symbols-outlined text-[20px]">
+                  check_circle
+                </span>
+                Xác nhận đã thanh toán & In biên lai
               </>
             ) : (
               <>

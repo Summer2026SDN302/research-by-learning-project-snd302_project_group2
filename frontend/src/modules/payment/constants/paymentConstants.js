@@ -1,44 +1,3 @@
-const envBankId = import.meta.env.VITE_VIETQR_BANK_ID?.trim();
-const envAccountNo = import.meta.env.VITE_VIETQR_ACCOUNT_NO?.trim();
-const envAccountName = import.meta.env.VITE_VIETQR_ACCOUNT_NAME?.trim();
-const envTemplate = import.meta.env.VITE_VIETQR_TEMPLATE?.trim();
-
-const demoBankConfig = {
-  bankId: "MB",
-  accountNo: "9704229267151024",
-  accountName: "STALLBOX CANTEEN",
-  template: "qr_only",
-};
-
-export const VIET_QR_CONFIG = {
-  bankId: envBankId || demoBankConfig.bankId,
-  accountNo: envAccountNo || demoBankConfig.accountNo,
-  accountName: envAccountName || demoBankConfig.accountName,
-  template: envTemplate || demoBankConfig.template,
-  isConfigured: Boolean(envBankId && envAccountNo && envAccountName),
-  isUsingDemoConfig: !(envBankId && envAccountNo && envAccountName),
-};
-
-export const buildVietQrImageUrl = ({ amount, addInfo }) => {
-  const { bankId, accountNo, template } = VIET_QR_CONFIG;
-
-  if (!bankId || !accountNo) {
-    return null;
-  }
-
-  const params = new URLSearchParams();
-
-  if (amount != null) {
-    params.set("amount", String(amount));
-  }
-
-  if (addInfo) {
-    params.set("addInfo", addInfo);
-  }
-
-  return `https://img.vietqr.io/image/${bankId}-${accountNo}-${template}.png?${params.toString()}`;
-};
-
 export const PAYMENT_METHOD_OPTIONS = [
   {
     value: "Cash",
@@ -51,10 +10,10 @@ export const PAYMENT_METHOD_OPTIONS = [
   {
     value: "QR",
     label: "QR Pay",
-    description: "Quét mã VietQR chuyển khoản nhanh",
+    description: "Thanh toán QR qua cổng PayOS",
     icon: "qr_code_2",
     tone: "bg-tertiary/10 text-tertiary",
-    defaultProviderName: "VietQR",
+    defaultProviderName: "PayOS",
   },
 ];
 

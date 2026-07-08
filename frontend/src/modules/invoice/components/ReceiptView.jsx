@@ -1,4 +1,3 @@
-import React from "react";
 import dayjs from "dayjs";
 import { formatCurrency } from "@/utils/formatters";
 
@@ -14,8 +13,6 @@ const ReceiptView = ({ receipt }) => {
     notes,
     subtotalAmount,
     discountAmount = 0,
-    taxRate,
-    taxAmount,
     finalAmount,
   } = receipt;
 
@@ -31,7 +28,9 @@ const ReceiptView = ({ receipt }) => {
         <p className="text-[11px] text-on-surface-variant/80">
           Khu Cong Nghe Phan Mem DHQG HCM
         </p>
-        <p className="text-[11px] text-on-surface-variant/80">SDT: 028-1234-5678</p>
+        <p className="text-[11px] text-on-surface-variant/80">
+          SDT: 028-1234-5678
+        </p>
       </div>
 
       <div className="my-4 border-b border-dashed border-outline-variant" />
@@ -111,13 +110,11 @@ const ReceiptView = ({ receipt }) => {
         {discountAmount > 0 && (
           <div className="flex justify-between">
             <span>Khuyen mai:</span>
-            <span className="text-primary">-{formatCurrency(discountAmount)}</span>
+            <span className="text-primary">
+              -{formatCurrency(discountAmount)}
+            </span>
           </div>
         )}
-        <div className="flex justify-between">
-          <span>Thue VAT ({(taxRate * 100).toFixed(0)}%):</span>
-          <span>{formatCurrency(taxAmount)}</span>
-        </div>
         <div className="flex justify-between border-t border-dashed border-outline-variant pt-2 text-lg font-bold text-on-surface sm:text-[28px]">
           <span>TONG TIEN:</span>
           <span>{formatCurrency(finalAmount)}</span>
@@ -127,7 +124,8 @@ const ReceiptView = ({ receipt }) => {
       <div className="space-y-3 pt-3 text-center select-none">
         <p className="text-sm font-bold text-on-surface">Cam on Quy khach!</p>
         <p className="text-[10px] leading-relaxed text-on-surface-variant/70 sm:text-[11px]">
-          Vui long mang bien lai nay toi quay nhan mon. StallBox phuc vu tan tam.
+          Vui long mang bien lai nay toi quay nhan mon. StallBox phuc vu tan
+          tam.
         </p>
       </div>
     </div>
