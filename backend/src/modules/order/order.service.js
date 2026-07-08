@@ -92,9 +92,9 @@ const orderService = {
     }
 
     // Fix #1: findByDate giờ populate items.foodItemId với field "name"
-    const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr);
+    const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr, { isConfigured: true });
 
-    if (!dailyMenu || !dailyMenu.isConfigured) {
+    if (!dailyMenu) {
       throw new AppError(
         "Daily menu not found or not configured for today",
         404,
