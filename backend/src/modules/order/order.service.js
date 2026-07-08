@@ -4,9 +4,10 @@ import { buildPaginationMeta } from "../../shared/helpers/pagination.helper.js";
 import { parsePagination } from "../../shared/helpers/query.helper.js";
 import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.js";
 import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
+import { withTransaction } from "../../shared/helpers/transaction.helper.js";
 import orderRepository from "./order.repository.js";
 import { toOrderResponse } from "./order.dto.js";
-import { ORDER_STATUS, VALID_STATUS_TRANSITIONS, TAX_PERCENT } from "./order.constants.js";
+import { ORDER_STATUS, VALID_STATUS_TRANSITIONS } from "./order.constants.js";
 import { USER_ROLES } from "../user/user.constants.js";
 
 // Helpers
@@ -27,17 +28,13 @@ const getOrderOrThrow = async (id) => {
 };
 
 /**
- * Pure function - tinh toan gia tri don hang tu danh sach mon da validate.
+ * Calculates pricing subtotal, discounts and final total.
  *
- * @param {Array<{ menuItem, requestedQty }>} lineItems
- *   menuItem: document tu dailyMenu (co originalPrice, currentPrice, foodItemId da populate)
- *   requestedQty: so luong khach yeu cau
- *
+ * @param {Array<{menuItem: Object, requestedQty: number}>} lineItems
  * @returns {{
  *   orderItems: Array,
  *   subTotal: number,
  *   discountAmount: number,
- *   taxAmount: number,
  *   totalAmount: number
  * }}
  */
@@ -63,14 +60,12 @@ const calculateOrderPricing = (lineItems) => {
     };
   });
 
-  const taxAmount = Math.round(subTotal * TAX_PERCENT * 100) / 100;
-  const totalAmount = Math.round((subTotal + taxAmount) * 100) / 100;
+  const totalAmount = Math.round(subTotal * 100) / 100;
 
   return {
     orderItems,
     subTotal: Math.round(subTotal * 100) / 100,
     discountAmount: Math.round(discountAmount * 100) / 100,
-    taxAmount,
     totalAmount,
   };
 };
@@ -137,13 +132,10 @@ const orderService = {
       lineItems.push({ menuItem, requestedQty: requested.quantity });
     }
 
-    const { orderItems, subTotal, discountAmount, taxAmount, totalAmount } =
+    const { orderItems, subTotal, discountAmount, totalAmount } =
       calculateOrderPricing(lineItems);
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
+    return withTransaction(async (session) => {
       await Promise.all(
         body.items.map(({ foodItemId, quantity }) =>
           dailyMenuRepository.decrementSoldQuantity(
@@ -162,7 +154,6 @@ const orderService = {
           items: orderItems,
           subTotal,
           discountAmount,
-          taxAmount,
           totalAmount,
           orderStatus: ORDER_STATUS.PENDING,
           orderDate: new Date(todayStr),
@@ -170,14 +161,8 @@ const orderService = {
         session,
       );
 
-      await session.commitTransaction();
       return toOrderResponse(order);
-    } catch (err) {
-      await session.abortTransaction();
-      throw err;
-    } finally {
-      session.endSession();
-    }
+    });
   },
 
   async getOrders(query) {

@@ -14,7 +14,6 @@ export const toOrderResponse = (order) => ({
   })),
   subTotal: order.subTotal,
   discountAmount: order.discountAmount,
-  taxAmount: order.taxAmount,
   totalAmount: order.totalAmount,
   orderStatus: order.orderStatus,
   orderDate: order.orderDate,

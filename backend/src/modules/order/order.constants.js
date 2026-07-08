@@ -16,8 +16,6 @@ export const ORDER_CREATE_ROLES = [
 
 export const ORDER_STATUS_MANAGE_ROLES = [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF];
 
-/** Thue VAT ap dung tren subTotal. 8% = 0.08 */
-export const TAX_PERCENT = 0.08;
 
 export const ORDER_STATUS = {
   PENDING: "Pending",

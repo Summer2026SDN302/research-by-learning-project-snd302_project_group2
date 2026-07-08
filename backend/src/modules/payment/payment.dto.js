@@ -1,5 +1,4 @@
 import { getPaymentCompletedAt } from "./payment.derived.js";
-import { TAX_PERCENT } from "../order/order.constants.js";
 
 const mapOrderReference = (order) => {
   if (!order) {
@@ -93,8 +92,6 @@ export const toPaymentReceiptResponse = (payment, order) => ({
   notes: order?.notes ?? null,
   subtotalAmount: order?.subTotal ?? 0,
   discountAmount: order?.discountAmount ?? 0,
-  taxRate: order?.taxRate ?? TAX_PERCENT,
-  taxAmount: order?.taxAmount ?? 0,
   finalAmount: payment.finalAmount ?? order?.totalAmount ?? 0,
   paymentMethod: payment.paymentMethod,
   amountReceived: payment.amountReceived,

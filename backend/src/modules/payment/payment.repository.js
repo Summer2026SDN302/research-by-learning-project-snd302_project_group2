@@ -109,6 +109,14 @@ const paymentRepository = {
 
     return { items, total };
   },
+
+  async findByOrderId(orderId, { session = null } = {}) {
+    const query = Payment.findOne({ orderId: toObjectId(orderId) });
+    if (session) {
+      query.session(session);
+    }
+    return query;
+  },
 };
 
 export default paymentRepository;

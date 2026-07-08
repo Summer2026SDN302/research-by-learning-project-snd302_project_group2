@@ -84,6 +84,11 @@ const orderRepository = {
     const orders = await Order.find({ orderNumber: regex }).select("_id");
     return orders.map((item) => item._id);
   },
+
+  async findByOrderCodeInt(orderCode) {
+    const regex = new RegExp(String(orderCode));
+    return Order.findOne({ orderNumber: regex });
+  },
 };
 
 export default orderRepository;

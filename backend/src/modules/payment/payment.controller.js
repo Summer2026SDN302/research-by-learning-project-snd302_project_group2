@@ -31,3 +31,18 @@ export const printPaymentReceipt = asyncHandler(async (req, res) => {
 
   return successResponse(res, data, "Payment receipt prepared successfully");
 });
+
+export const handlePayOSWebhook = asyncHandler(async (req, res) => {
+  const data = await paymentService.handlePayOSWebhook(req.body);
+  return successResponse(res, data, "Webhook processed successfully");
+});
+
+export const confirmPayment = asyncHandler(async (req, res) => {
+  const data = await paymentService.confirmPayment(
+    req.params.id,
+    req.body,
+    req.userId,
+    req.user.role,
+  );
+  return successResponse(res, data, "Payment confirmed successfully");
+});

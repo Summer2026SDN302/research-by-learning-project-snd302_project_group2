@@ -22,6 +22,24 @@ vi.mock("mongoose", () => ({
   },
 }));
 
+vi.mock("../../../shared/helpers/transaction.helper.js", () => ({
+  withTransaction: vi.fn(async (callback) => {
+    const mongoose = await import("mongoose");
+    const session = await mongoose.default.startSession();
+    session.startTransaction();
+    try {
+      const result = await callback(session);
+      await session.commitTransaction();
+      return result;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }),
+}));
+
 vi.mock("../order.repository.js", () => ({
   default: {
     create: vi.fn(),
@@ -58,8 +76,7 @@ const buildOrder = (overrides = {}) => ({
   ],
   subTotal: 62000,
   discountAmount: 9000,
-  taxAmount: 4960,
-  totalAmount: 66960,
+  totalAmount: 62000,
   orderStatus: ORDER_STATUS.PENDING,
   orderDate: "2026-07-06T00:00:00.000Z",
   createdAt: "2026-07-06T01:00:00.000Z",
@@ -125,8 +142,7 @@ describe("orderService", () => {
         staffId: "staff-1",
         subTotal: 62000,
         discountAmount: 9000,
-        taxAmount: 4960,
-        totalAmount: 66960,
+        totalAmount: 62000,
         orderStatus: ORDER_STATUS.PENDING,
       }),
       mockSession,
@@ -136,7 +152,7 @@ describe("orderService", () => {
     expect(mockSession.endSession).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({
       orderNumber: "ORD-20260706-1234",
-      totalAmount: 66960,
+      totalAmount: 62000,
       orderStatus: ORDER_STATUS.PENDING,
     });
   });

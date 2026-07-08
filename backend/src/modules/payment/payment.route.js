@@ -17,6 +17,8 @@ import {
 
 const router = express.Router();
 
+router.post("/webhook/payos", paymentController.handlePayOSWebhook);
+
 router.use(authenticate);
 
 router.get(
@@ -49,6 +51,14 @@ router.post(
   validatePrintPaymentReceipt,
   validateRequest,
   paymentController.printPaymentReceipt,
+);
+
+router.post(
+  "/:id/confirm",
+  authorizeRoles(...PAYMENT_PROCESS_ROLES),
+  validateGetPaymentById,
+  validateRequest,
+  paymentController.confirmPayment,
 );
 
 export default router;

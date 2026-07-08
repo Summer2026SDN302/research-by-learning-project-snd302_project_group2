@@ -108,9 +108,7 @@ describe("payment.dto", () => {
         paymentStatus: "Paid",
         subtotalAmount: 95000,
         discountAmount: 5000,
-        taxRate: 0.08,
-        taxAmount: 7600,
-        finalAmount: 102600,
+        finalAmount: 95000,
         paidAt: "2026-06-26T05:30:00.000Z",
       },
       {
@@ -135,8 +133,6 @@ describe("payment.dto", () => {
         notes: "Mang di",
         subTotal: 95000,
         discountAmount: 5000,
-        taxRate: 0.08,
-        taxAmount: 7600,
       },
     );
 
@@ -166,9 +162,7 @@ describe("payment.dto", () => {
       notes: "Mang di",
       subtotalAmount: 95000,
       discountAmount: 5000,
-      taxRate: 0.08,
-      taxAmount: 7600,
-      finalAmount: 102600,
+      finalAmount: 95000,
       paymentMethod: "Cash",
       amountReceived: 120000,
       changeReturned: 17400,

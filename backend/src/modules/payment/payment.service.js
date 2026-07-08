@@ -1,4 +1,5 @@
 import AppError from "../../shared/exceptions/AppError.js";
+import payos from "../../config/payos.js";
 import { buildPaginationMeta } from "../../shared/helpers/pagination.helper.js";
 import {
   parsePagination,
@@ -96,6 +97,30 @@ const assertReceiptAvailable = (payment) => {
   }
 };
 
+const reconcilePaymentStatus = async (payment, order) => {
+  if (payment.paymentStatus === PAYMENT_STATUS.PENDING && payment.paymentMethod === PAYMENT_METHOD.QR) {
+    try {
+      const orderCode = parseInt(order.orderNumber.replace(/\D/g, ""), 10);
+      const payosPayment = await payos.paymentRequests.get(orderCode);
+
+      if (payosPayment && payosPayment.status === "PAID") {
+        await withTransaction(async (session) => {
+          order.orderStatus = ORDER_STATUS.COMPLETED;
+          await order.save({ session });
+
+          payment.paymentStatus = PAYMENT_STATUS.PAID;
+          payment.amountReceived = payosPayment.amountPaid;
+          const mainTransaction = payosPayment.transactions?.[0];
+          payment.transactionCode = mainTransaction?.reference ?? null;
+          await payment.save({ session });
+        });
+      }
+    } catch (payosError) {
+      console.error("Failed to fetch PayOS status for auto-reconciliation:", payosError);
+    }
+  }
+};
+
 const ensureUniqueTransactionCode = async (
   transactionCode,
   excludePaymentId,
@@ -137,6 +162,46 @@ const paymentService = {
     }
 
     const totalAmount = order.totalAmount;
+
+    if (body.paymentMethod === PAYMENT_METHOD.QR) {
+      const orderCode = parseInt(order.orderNumber.replace(/\D/g, ""), 10);
+      const description = `STB ${order.orderNumber}`.replace(/[^a-zA-Z0-9 ]/g, "").slice(0, 25);
+
+      const paymentLinkRes = await payos.paymentRequests.create({
+        orderCode,
+        amount: totalAmount,
+        description,
+        cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`,
+        returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
+      });
+
+      const paymentId = await withTransaction(async (session) => {
+        const payment = await paymentRepository.create(
+          {
+            paymentNumber: generateReferenceNumber("PAY"),
+            orderId: order._id,
+            finalAmount: totalAmount,
+            paymentMethod: body.paymentMethod,
+            amountReceived: 0,
+            changeReturned: 0,
+            transactionCode: null,
+            paymentStatus: PAYMENT_STATUS.PENDING,
+            refundedAt: null,
+            refundedBy: null,
+            refundReason: null,
+          },
+          session,
+        );
+        return payment._id;
+      });
+
+      const completedPayment = await paymentRepository.findById(paymentId);
+      return {
+        ...toPaymentResponse(completedPayment),
+        checkoutUrl: paymentLinkRes.checkoutUrl,
+      };
+    }
+
     const transactionCode = await ensureUniqueTransactionCode(
       body.transactionCode,
       null,
@@ -191,6 +256,31 @@ const paymentService = {
     return toPaymentResponse(completedPayment);
   },
 
+  async handlePayOSWebhook(webhookBody) {
+    const verifiedData = await payos.webhooks.verify(webhookBody);
+
+    if (verifiedData.code === "00") {
+      const order = await orderRepository.findByOrderCodeInt(verifiedData.orderCode);
+      if (!order) {
+        throw new AppError("Order not found from PayOS webhook", 404, "ORDER_NOT_FOUND");
+      }
+
+      const payment = await paymentRepository.findByOrderId(order._id);
+      if (payment && payment.paymentStatus === PAYMENT_STATUS.PENDING) {
+        await withTransaction(async (session) => {
+          order.orderStatus = ORDER_STATUS.COMPLETED;
+          await order.save({ session });
+
+          payment.paymentStatus = PAYMENT_STATUS.PAID;
+          payment.amountReceived = verifiedData.amount;
+          payment.transactionCode = verifiedData.reference;
+          await payment.save({ session });
+        });
+      }
+    }
+    return { received: true };
+  },
+
   async getPaymentReceipt(id, requestingUserId, requestingRole) {
     const payment = await getPaymentOrThrow(id);
     const order = await getOrderByIdOrThrow(
@@ -198,6 +288,7 @@ const paymentService = {
     );
 
     assertOrderAccess(order, requestingUserId, requestingRole);
+    await reconcilePaymentStatus(payment, order);
     assertReceiptAvailable(payment);
 
     return toPaymentReceiptResponse(payment, order);
@@ -210,6 +301,7 @@ const paymentService = {
     );
 
     assertOrderAccess(order, requestingUserId, requestingRole);
+    await reconcilePaymentStatus(payment, order);
     assertReceiptAvailable(payment);
 
     return toPaymentReceiptResponse(payment, order);
@@ -237,6 +329,43 @@ const paymentService = {
       items: items.map(toPaymentListItem),
       pagination: buildPaginationMeta({ page, limit, total }),
     };
+  },
+
+  async confirmPayment(id, body, requestingUserId, requestingRole) {
+    const payment = await getPaymentOrThrow(id);
+    const order = await getOrderByIdOrThrow(
+      payment.orderId?._id ?? payment.orderId,
+    );
+
+    assertOrderAccess(order, requestingUserId, requestingRole);
+
+    if (payment.paymentStatus !== PAYMENT_STATUS.PENDING) {
+      throw new AppError(
+        "Only pending payments can be confirmed",
+        400,
+        "PAYMENT_NOT_PENDING",
+      );
+    }
+
+    const validatedTxCode = await ensureUniqueTransactionCode(
+      body.transactionCode,
+      payment._id,
+    );
+
+    await withTransaction(async (session) => {
+      order.orderStatus = ORDER_STATUS.COMPLETED;
+      await order.save({ session });
+
+      payment.paymentStatus = PAYMENT_STATUS.PAID;
+      payment.amountReceived = payment.finalAmount;
+      if (validatedTxCode) {
+        payment.transactionCode = validatedTxCode;
+      }
+      await payment.save({ session });
+    });
+
+    const completedPayment = await paymentRepository.findById(payment._id);
+    return toPaymentResponse(completedPayment);
   },
 };
 

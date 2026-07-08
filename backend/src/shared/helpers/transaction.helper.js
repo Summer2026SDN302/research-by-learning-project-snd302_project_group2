@@ -69,8 +69,33 @@ export const withTransaction = async (callback) => {
     return result;
   } catch (error) {
     await abortTransactionSafely(session);
+
+    const errorMessage = error.message || "";
+    const isTransactionUnsupported =
+      error.code === 117 ||
+      error.code === 251 ||
+      errorMessage.includes("transaction") ||
+      errorMessage.includes("sharded cluster") ||
+      errorMessage.includes("replica set");
+
+    if (isTransactionUnsupported) {
+      console.warn(
+        "Transactions are not supported on this MongoDB deployment. Falling back to sessionless execution...",
+      );
+      try {
+        session.endSession();
+      } catch (endErr) {
+        // Ignore session end error during fallback
+      }
+      return callback(undefined);
+    }
+
     throw error;
   } finally {
-    session.endSession();
+    try {
+      session.endSession();
+    } catch (e) {
+      // Ignore
+    }
   }
 };
