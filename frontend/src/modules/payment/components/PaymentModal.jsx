@@ -1,4 +1,3 @@
-import React from "react";
 import { createPortal } from "react-dom";
 import PaymentMethodList from "./PaymentMethodList";
 import CashKeypad from "./CashKeypad";
@@ -45,17 +44,17 @@ const PaymentModal = ({
         <div className="flex items-center justify-between border-b border-outline-variant bg-white px-6 py-5 shrink-0">
           <div>
             <h2 className="font-headline-md text-headline-sm font-bold text-on-surface md:text-headline-md">
-              Xac nhan thanh toan
+              Xác nhận thanh toán
             </h2>
             <p className="mt-0.5 text-xs font-medium text-on-surface-variant">
               {order.orderNumber
-                ? `Don hang #${order.orderNumber}`
-                : "Bien lai se duoc tao sau khi thanh toan thanh cong"}
+                ? `Đơn hàng #${order.orderNumber}`
+                : "Biên lai sẽ được tạo sau khi thanh toán thành công"}
             </p>
           </div>
           <div className="text-right">
             <p className="font-label-md font-semibold uppercase tracking-wider text-primary">
-              Tong cong
+              Tổng cộng
             </p>
             <p className="text-headline-lg font-black text-primary">
               {formatCurrency(orderAmount)}
@@ -66,7 +65,7 @@ const PaymentModal = ({
         <div className="grid min-h-[350px] flex-1 grid-cols-12 gap-6 overflow-y-auto p-6">
           <div className="col-span-12 border-b border-outline-variant/60 pb-6 md:col-span-5 md:min-h-[34rem] md:border-b-0 md:border-r md:pb-0 md:pr-6">
             <h3 className="mb-4 font-body-md font-bold text-on-surface">
-              Phuong thuc thanh toan
+              Phương thức thanh toán
             </h3>
             <PaymentMethodList
               selectedMethod={selectedMethod}
@@ -109,7 +108,7 @@ const PaymentModal = ({
             onClick={onClose}
             className="flex-1 rounded-xl border border-outline-variant px-6 py-3.5 font-bold text-on-surface-variant transition-all active:scale-[0.98] hover:bg-surface-container-high disabled:opacity-50"
           >
-            Quay lai
+            Quay lại
           </button>
           <button
             type="button"
@@ -120,12 +119,14 @@ const PaymentModal = ({
             {isSubmitting ? (
               <>
                 <Spinner size="sm" className="text-on-primary" />
-                Dang xu ly giao dich...
+                Đang xử lý giao dịch...
               </>
             ) : (
               <>
-                <span className="material-symbols-outlined text-[20px]">print</span>
-                Thanh toan va in bien lai
+                <span className="material-symbols-outlined text-[20px]">
+                  print
+                </span>
+                Thanh toán và in biên lai
               </>
             )}
           </button>

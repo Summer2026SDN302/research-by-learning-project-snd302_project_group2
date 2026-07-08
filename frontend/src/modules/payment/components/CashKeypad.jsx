@@ -1,5 +1,3 @@
-import React from "react";
-
 /**
  * CashKeypad
  *
@@ -26,10 +24,18 @@ const CashKeypad = ({
   const parsedReceived = parseInt(cashReceived, 10) || 0;
 
   const keypadButtons = [
-    "1", "2", "3",
-    "4", "5", "6",
-    "7", "8", "9",
-    "C", "0", ".000",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "C",
+    "0",
+    ".000",
   ];
 
   return (
@@ -61,7 +67,9 @@ const CashKeypad = ({
               isCashValid ? "text-secondary" : "text-error"
             }`}
           >
-            {isCashValid ? `${changeReturned.toLocaleString("vi-VN")}đ` : "Chưa đủ"}
+            {isCashValid
+              ? `${changeReturned.toLocaleString("vi-VN")}đ`
+              : "Chưa đủ"}
           </p>
         </div>
       </div>

@@ -23,7 +23,7 @@ export const usePaymentReceipt = () => {
       try {
         await dispatch(fetchPaymentReceiptThunk(paymentId)).unwrap();
         return true;
-      } catch (_error) {
+      } catch {
         return null;
       }
     },
@@ -36,13 +36,13 @@ export const usePaymentReceipt = () => {
         window.print();
         await dispatch(printPaymentReceiptThunk(paymentId)).unwrap();
         toast.success(
-          "In bien lai thanh cong",
-          "So lan in bien lai da duoc cap nhat.",
+          "In biên lai thành công",
+          "Số lần in biên lai đã được cập nhật.",
         );
       } catch (err) {
         toast.error(
-          "Loi khi ghi nhan in",
-          getErrorMessage(err, "Khong the cap nhat so lan in bien lai."),
+          "Lỗi khi ghi nhận in",
+          getErrorMessage(err, "Không thể cập nhật số lần in biên lai."),
         );
       }
     },

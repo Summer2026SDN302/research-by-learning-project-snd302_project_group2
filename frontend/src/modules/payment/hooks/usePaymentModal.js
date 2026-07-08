@@ -136,7 +136,7 @@ export const usePaymentModal = () => {
           : orderAmount;
 
       if (selectedMethod === "Cash" && amountVal < orderAmount) {
-        toast.error("Thanh toan that bai", "So tien khach dua chua du.");
+        toast.error("Thanh toán thất bại", "Số tiền khách đưa chưa đủ.");
         setIsSubmitting(false);
         return null;
       }
@@ -161,13 +161,13 @@ export const usePaymentModal = () => {
           confirmedPayment?.orderId?.orderNumber || order?.orderNumber || null;
 
         toast.success(
-          "Thanh toan thanh cong",
+          "Thanh toán thành công",
           orderNumber
-            ? `Don hang #${orderNumber} da thanh toan xong va duoc luu bien lai.`
-            : "Giao dich da thanh toan xong va duoc luu bien lai.",
+            ? `Đơn hàng #${orderNumber} đã thanh toán xong và được lưu biên lai.`
+            : "Giao dịch đã thanh toán xong và được lưu biên lai.",
         );
       } catch (err) {
-        toast.error("Giao dich that bai", getApiErrorMsg(PAYMENT_ERROR_MAP, err));
+        toast.error("Giao dịch thất bại", getApiErrorMsg(PAYMENT_ERROR_MAP, err));
         setIsSubmitting(false);
         return null;
       }

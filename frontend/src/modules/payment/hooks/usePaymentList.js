@@ -11,6 +11,8 @@ const INITIAL_FILTERS = {
   search: "",
   paymentStatus: "",
   paymentMethod: "",
+  startDate: "",
+  endDate: "",
   page: 1,
   limit: 10,
 };
@@ -39,12 +41,14 @@ export const usePaymentList = () => {
       search: filters.search || undefined,
       paymentStatus: filters.paymentStatus || undefined,
       paymentMethod: filters.paymentMethod || undefined,
+      startDate: filters.startDate || undefined,
+      endDate: filters.endDate || undefined,
     };
 
     try {
       await dispatch(fetchPaymentsThunk(queryParams)).unwrap();
     } catch (err) {
-      toast.error("Loi", err?.message || "Khong the tai danh sach thanh toan.");
+      toast.error("Lỗi", err?.message || "Không thể tải danh sách thanh toán.");
     }
   }, [dispatch, filters, toast]);
 

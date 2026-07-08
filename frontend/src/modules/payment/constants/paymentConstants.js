@@ -42,24 +42,16 @@ export const buildVietQrImageUrl = ({ amount, addInfo }) => {
 export const PAYMENT_METHOD_OPTIONS = [
   {
     value: "Cash",
-    label: "Tien mat",
-    description: "Thanh toan truc tiep bang tien mat",
+    label: "Tiền mặt",
+    description: "Thanh toán trực tiếp bằng tiền mặt",
     icon: "payments",
     tone: "bg-primary/10 text-primary",
     defaultProviderName: "",
   },
   {
-    value: "Card",
-    label: "The ATM/Credit",
-    description: "Visa, Mastercard, Napas noi dia",
-    icon: "credit_card",
-    tone: "bg-secondary/10 text-secondary",
-    defaultProviderName: "Napas",
-  },
-  {
     value: "QR",
-    label: "Chuyen khoan QR",
-    description: "Quet ma VietQR chuyen khoan nhanh",
+    label: "QR Pay",
+    description: "Quét mã VietQR chuyển khoản nhanh",
     icon: "qr_code_2",
     tone: "bg-tertiary/10 text-tertiary",
     defaultProviderName: "VietQR",
@@ -67,13 +59,6 @@ export const PAYMENT_METHOD_OPTIONS = [
 ];
 
 export const DEFAULT_PAYMENT_METHOD = PAYMENT_METHOD_OPTIONS[0].value;
-
-export const CARD_PROVIDER_OPTIONS = [
-  { value: "Napas", label: "Napas Noi Dia" },
-  { value: "Visa", label: "Visa Card" },
-  { value: "Mastercard", label: "Mastercard" },
-  { value: "JCB", label: "JCB Card" },
-];
 
 const paymentMethodMetaMap = Object.fromEntries(
   PAYMENT_METHOD_OPTIONS.map((method) => [method.value, method]),
@@ -96,15 +81,48 @@ export const getDefaultPaymentProviderName = (method) =>
   getPaymentMethodMeta(method)?.defaultProviderName ?? "";
 
 export const PAYMENT_ERROR_MAP = {
-  PAYMENT_NOT_FOUND: "Khong tim thay thong tin giao dich.",
-  ORDER_NOT_FOUND: "Khong tim thay don hang tuong ung.",
-  ORDER_ALREADY_PAID: "Don hang nay da duoc thanh toan truoc do.",
-  ORDER_NOT_PAYABLE: "Don hang nay khong hop le de thanh toan.",
-  PAYMENT_IN_PROGRESS: "Dang co giao dich thanh toan khac cho don hang nay.",
-  PAYMENT_TRANSACTION_CODE_EXISTS: "Ma giao dich da ton tai tren he thong.",
-  DUPLICATE_FIELD: "Ma giao dich da ton tai tren he thong.",
-  INSUFFICIENT_CASH_RECEIVED: "So tien khach dua khong du de thanh toan.",
-  INVALID_PAYMENT_STATUS_TRANSITION: "Trang thai giao dich khong hop le.",
-  INSUFFICIENT_PERMISSIONS: "Ban khong co quyen thuc hien giao dich nay.",
-  NETWORK_ERROR: "Loi ket noi mang, vui long thu lai.",
+  PAYMENT_NOT_FOUND: "Không tìm thấy thông tin giao dịch.",
+  ORDER_NOT_FOUND: "Không tìm thấy đơn hàng tương ứng.",
+  ORDER_ALREADY_PAID: "Đơn hàng này đã được thanh toán trước đó.",
+  ORDER_NOT_PAYABLE: "Đơn hàng này không hợp lệ để thanh toán.",
+  PAYMENT_IN_PROGRESS: "Đang có giao dịch thanh toán khác cho đơn hàng này.",
+  PAYMENT_TRANSACTION_CODE_EXISTS: "Mã giao dịch đã tồn tại trên hệ thống.",
+  DUPLICATE_FIELD: "Mã giao dịch đã tồn tại trên hệ thống.",
+  INSUFFICIENT_CASH_RECEIVED: "Số tiền khách đưa không đủ để thanh toán.",
+  INVALID_PAYMENT_STATUS_TRANSITION: "Trạng thái giao dịch không hợp lệ.",
+  INSUFFICIENT_PERMISSIONS: "Bạn không có quyền thực hiện giao dịch này.",
+  NETWORK_ERROR: "Lỗi kết nối mạng, vui lòng thử lại.",
 };
+
+export const STATUS_FILTERS = [
+  { value: "", label: "Tất cả" },
+  { value: "Paid", label: "Thành công" },
+  { value: "Pending", label: "Đang chờ" },
+  { value: "Failed", label: "Thất bại" },
+  { value: "Refunded", label: "Hoàn tiền" },
+];
+
+export const PAYMENT_STATUS_MAP = {
+  Paid: {
+    status: "paid",
+    label: "Thành công",
+  },
+  Pending: {
+    status: "pending",
+    label: "Đang chờ",
+  },
+  Failed: {
+    status: "cancelled",
+    label: "Thất bại",
+  },
+  Refunded: {
+    status: "archived",
+    label: "Hoàn tiền",
+  },
+};
+
+export const mapStatus = (status) =>
+  PAYMENT_STATUS_MAP[status]?.status ?? "pending";
+
+export const mapStatusLabel = (status) =>
+  PAYMENT_STATUS_MAP[status]?.label ?? status;
