@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "@/modules/menu/redux/categorySlice";
-import { fetchTodayMenu } from "@/modules/menu/redux/dailyMenuSlice";
+import * as dailyMenuApi from "../../menu/api/dailyMenuApi";
 import {
   addToCart,
   // [CHƯA CÓ BE] cancelOrderThunk — BE chưa có endpoint cancel riêng
@@ -36,9 +36,11 @@ export const useStaffPos = () => {
   const submitStatus = useSelector((state) => state.order.status);
   const submitError = useSelector((state) => state.order.error);
   const currentOrder = useSelector((state) => state.order.currentOrder);
-  const todayMenu = useSelector((state) => state.dailyMenu.menu);
-  const dailyMenuLoading = useSelector((state) => state.dailyMenu.isLoading);
-  const dailyMenuError = useSelector((state) => state.dailyMenu.error);
+  
+  const [todayMenu, setTodayMenu] = useState(null);
+  const [dailyMenuLoading, setDailyMenuLoading] = useState(false);
+  const [dailyMenuError, setDailyMenuError] = useState(null);
+  
   const categories = useSelector((state) => state.category.items);
   const categoryListStatus = useSelector((state) => state.category.listStatus);
 
@@ -49,14 +51,28 @@ export const useStaffPos = () => {
   // const [orderNotes, setOrderNotes] = useState("");
 
   const fetchData = useCallback(async () => {
+    setDailyMenuLoading(true);
+    setDailyMenuError(null);
     try {
-      await Promise.all([
-        dispatch(fetchTodayMenu()).unwrap(),
+      const [menuData] = await Promise.all([
+        dailyMenuApi.getTodayMenu({ isConfigured: true }).catch((error) => {
+          if (
+            error?.response?.status === 404 ||
+            error?.response?.data?.error?.code === "DAILY_MENU_NOT_FOUND"
+          ) {
+            return null;
+          }
+          throw error;
+        }),
         dispatch(fetchCategories({ isActive: true, limit: 50 }))
           .unwrap()
           .catch(() => null),
       ]);
+      setTodayMenu(menuData);
+    } catch (err) {
+      setDailyMenuError(err);
     } finally {
+      setDailyMenuLoading(false);
       setHasInitialized(true);
     }
   }, [dispatch]);
