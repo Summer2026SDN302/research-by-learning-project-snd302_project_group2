@@ -6,19 +6,10 @@ import {
 } from "../../shared/helpers/query.helper.js";
 import { generateReferenceNumber } from "../../shared/helpers/reference-number.helper.js";
 import { withTransaction } from "../../shared/helpers/transaction.helper.js";
-import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
-import {
-  ORDER_STATUS,
-  TAX_PERCENT,
-} from "../order/order.constants.js";
-import Order from "../order/order.model.js";
+import { ORDER_STATUS } from "../order/order.constants.js";
 import orderRepository from "../order/order.repository.js";
-import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.js";
 import { USER_ROLES } from "../user/user.constants.js";
-import {
-  PAYMENT_METHOD,
-  PAYMENT_STATUS,
-} from "./payment.constants.js";
+import { PAYMENT_METHOD, PAYMENT_STATUS } from "./payment.constants.js";
 import {
   toPaymentListItem,
   toPaymentResponse,
@@ -28,13 +19,6 @@ import paymentRepository from "./payment.repository.js";
 
 const roundCurrency = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
-
-const generateOrderNumber = () => {
-  const now = new Date();
-  const dateStr = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}${String(now.getUTCDate()).padStart(2, "0")}`;
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `ORD-${dateStr}-${random}`;
-};
 
 const normalizeEntityId = (entity) => {
   if (!entity) {
@@ -61,104 +45,8 @@ const normalizeOptionalText = (value) => {
   return normalized || null;
 };
 
-const assertNoDuplicateItems = (items = []) => {
-  const seen = new Set();
-
-  for (const item of items) {
-    if (seen.has(item.foodItemId)) {
-      throw new AppError(
-        "Duplicate food item in checkout",
-        400,
-        "DUPLICATE_ITEM",
-      );
-    }
-
-    seen.add(item.foodItemId);
-  }
-};
-
-const buildMenuItemMap = (dailyMenu) => {
-  const menuItemMap = new Map();
-
-  for (const item of dailyMenu.items ?? []) {
-    menuItemMap.set(item.foodItemId._id.toString(), item);
-  }
-
-  return menuItemMap;
-};
-
-const buildCheckoutLineItems = (requestedItems, menuItemMap) =>
-  requestedItems.map((requested) => {
-    const menuItem = menuItemMap.get(requested.foodItemId);
-
-    if (!menuItem) {
-      throw new AppError(
-        `Food item ${requested.foodItemId} is not in today's menu`,
-        400,
-        "ITEM_NOT_IN_MENU",
-      );
-    }
-
-    if (menuItem.status !== "Available") {
-      throw new AppError(
-        `Food item "${menuItem.foodItemId.name}" is unavailable`,
-        400,
-        "ITEM_UNAVAILABLE",
-      );
-    }
-
-    if (menuItem.remainingQuantity < requested.quantity) {
-      throw new AppError(
-        `Insufficient quantity for item "${menuItem.foodItemId.name}"`,
-        400,
-        "INSUFFICIENT_QUANTITY",
-      );
-    }
-
-    return {
-      menuItem,
-      requestedQty: requested.quantity,
-    };
-  });
-
-const calculateOrderPricing = (lineItems) => {
-  let subTotal = 0;
-  let discountAmount = 0;
-
-  const orderItems = lineItems.map(({ menuItem, requestedQty }) => {
-    const unitPrice = menuItem.currentPrice;
-    const lineTotal = unitPrice * requestedQty;
-    const discount =
-      (menuItem.originalPrice - menuItem.currentPrice) * requestedQty;
-
-    subTotal += lineTotal;
-    discountAmount += discount;
-
-    return {
-      foodItemId: menuItem.foodItemId._id,
-      name: menuItem.foodItemId.name,
-      unitPrice,
-      quantity: requestedQty,
-      lineTotal,
-    };
-  });
-
-  const taxAmount = Math.round(subTotal * TAX_PERCENT * 100) / 100;
-  const totalAmount = Math.round((subTotal + taxAmount) * 100) / 100;
-
-  return {
-    orderItems,
-    subTotal: Math.round(subTotal * 100) / 100,
-    discountAmount: Math.round(discountAmount * 100) / 100,
-    taxAmount,
-    totalAmount,
-  };
-};
-
 const findOrderIdsByOrderNumberKeyword = async (keyword) => {
-  const regex = new RegExp(keyword, "i");
-  const orders = await Order.find({ orderNumber: regex }).select("_id");
-  return orders.map((item) => item._id);
+  return orderRepository.findIdsByOrderNumberKeyword(keyword);
 };
 
 const getPaymentOrThrow = async (id, options = {}) => {
@@ -208,7 +96,10 @@ const assertReceiptAvailable = (payment) => {
   }
 };
 
-const ensureUniqueTransactionCode = async (transactionCode, excludePaymentId) => {
+const ensureUniqueTransactionCode = async (
+  transactionCode,
+  excludePaymentId,
+) => {
   const normalizedCode = normalizeOptionalText(transactionCode);
 
   if (!normalizedCode) {
@@ -232,29 +123,25 @@ const ensureUniqueTransactionCode = async (transactionCode, excludePaymentId) =>
 };
 
 const paymentService = {
-  async checkout(body, requestingUserId) {
-    const todayStr = getTodayVNDateString();
-    assertNoDuplicateItems(body.items);
+  async checkout(body, requestingUserId, requestingRole) {
+    const order = await getOrderByIdOrThrow(body.orderId);
 
-    const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr);
+    assertOrderAccess(order, requestingUserId, requestingRole);
 
-    if (!dailyMenu || !dailyMenu.isConfigured) {
+    if (order.orderStatus !== ORDER_STATUS.PENDING) {
       throw new AppError(
-        "Daily menu not found or not configured for today",
-        404,
-        "DAILY_MENU_NOT_FOUND",
+        "Order is not in a payable state",
+        400,
+        "INVALID_ORDER_STATUS",
       );
     }
 
-    const menuItemMap = buildMenuItemMap(dailyMenu);
-    const lineItems = buildCheckoutLineItems(body.items, menuItemMap);
-    const { orderItems, subTotal, discountAmount, taxAmount, totalAmount } =
-      calculateOrderPricing(lineItems);
-
+    const totalAmount = order.totalAmount;
     const transactionCode = await ensureUniqueTransactionCode(
       body.transactionCode,
       null,
     );
+
     const amountReceived =
       body.paymentMethod === PAYMENT_METHOD.CASH
         ? roundCurrency(body.amountReceived)
@@ -277,29 +164,8 @@ const paymentService = {
         : 0;
 
     const paymentId = await withTransaction(async (session) => {
-      for (const { foodItemId, quantity } of body.items) {
-        await dailyMenuRepository.decrementSoldQuantity(
-          dailyMenu._id,
-          foodItemId,
-          quantity,
-          session,
-        );
-      }
-
-      const order = await orderRepository.create(
-        {
-          orderNumber: generateOrderNumber(),
-          staffId: requestingUserId,
-          items: orderItems,
-          subTotal,
-          discountAmount,
-          taxAmount,
-          totalAmount,
-          orderStatus: ORDER_STATUS.PENDING,
-          orderDate: new Date(todayStr),
-        },
-        session,
-      );
+      order.orderStatus = ORDER_STATUS.COMPLETED;
+      await order.save({ session });
 
       const payment = await paymentRepository.create(
         {
@@ -327,7 +193,9 @@ const paymentService = {
 
   async getPaymentReceipt(id, requestingUserId, requestingRole) {
     const payment = await getPaymentOrThrow(id);
-    const order = await getOrderByIdOrThrow(payment.orderId?._id ?? payment.orderId);
+    const order = await getOrderByIdOrThrow(
+      payment.orderId?._id ?? payment.orderId,
+    );
 
     assertOrderAccess(order, requestingUserId, requestingRole);
     assertReceiptAvailable(payment);
@@ -337,7 +205,9 @@ const paymentService = {
 
   async printPaymentReceipt(id, requestingUserId, requestingRole) {
     const payment = await getPaymentOrThrow(id);
-    const order = await getOrderByIdOrThrow(payment.orderId?._id ?? payment.orderId);
+    const order = await getOrderByIdOrThrow(
+      payment.orderId?._id ?? payment.orderId,
+    );
 
     assertOrderAccess(order, requestingUserId, requestingRole);
     assertReceiptAvailable(payment);
@@ -357,6 +227,8 @@ const paymentService = {
       matchingOrderIds,
       paymentStatus: query.paymentStatus,
       paymentMethod: query.paymentMethod,
+      startDate: query.startDate,
+      endDate: query.endDate,
       page,
       limit,
     });

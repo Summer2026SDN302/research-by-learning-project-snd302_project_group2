@@ -38,6 +38,7 @@ vi.mock("../../order/order.repository.js", () => ({
   default: {
     create: vi.fn(),
     findById: vi.fn(),
+    findIdsByOrderNumberKeyword: vi.fn(),
   },
 }));
 
@@ -65,18 +66,22 @@ vi.mock("../../../shared/helpers/transaction.helper.js", () => ({
   withTransaction: mockWithTransaction,
 }));
 
-const buildOrder = (overrides = {}) => ({
-  _id: "order-1",
-  orderNumber: "ORD-0001",
-  staffId: "staff-1",
-  orderStatus: ORDER_STATUS.PENDING,
-  subTotal: 100000,
-  discountAmount: 5000,
-  taxAmount: 7600,
-  totalAmount: 102600,
-  items: [],
-  ...overrides,
-});
+const buildOrder = (overrides = {}) => {
+  const orderObj = {
+    _id: "order-1",
+    orderNumber: "ORD-0001",
+    staffId: "staff-1",
+    orderStatus: ORDER_STATUS.PENDING,
+    subTotal: 100000,
+    discountAmount: 5000,
+    taxAmount: 7600,
+    totalAmount: 102600,
+    items: [],
+    save: vi.fn().mockResolvedValue(true),
+    ...overrides,
+  };
+  return orderObj;
+};
 
 const buildDailyMenu = () => ({
   _id: "menu-1",
@@ -172,47 +177,23 @@ describe("paymentService", () => {
       },
     };
 
-    dailyMenuRepository.findMenuByDate.mockResolvedValue(buildDailyMenu());
-    dailyMenuRepository.decrementSoldQuantity.mockResolvedValue(true);
-    orderRepository.create.mockResolvedValue(createdOrder);
+    orderRepository.findById.mockResolvedValue(createdOrder);
     paymentRepository.isTransactionCodeTaken.mockResolvedValue(false);
     paymentRepository.create.mockResolvedValue(createdPayment);
     paymentRepository.findById.mockResolvedValue(hydratedPayment);
 
     const result = await paymentService.checkout(
       {
-        items: [
-          { foodItemId: "food-1", quantity: 1 },
-          { foodItemId: "food-2", quantity: 1 },
-        ],
-        notes: "Mang di",
+        orderId: createdOrder._id,
         paymentMethod: PAYMENT_METHOD.CASH,
         amountReceived: 80000,
       },
       "staff-1",
+      USER_ROLES.STAFF,
     );
 
-    expect(dailyMenuRepository.decrementSoldQuantity).toHaveBeenNthCalledWith(
-      1,
-      "menu-1",
-      "food-1",
-      1,
-      mockSession,
-    );
-    expect(dailyMenuRepository.decrementSoldQuantity).toHaveBeenNthCalledWith(
-      2,
-      "menu-1",
-      "food-2",
-      1,
-      mockSession,
-    );
-    expect(orderRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        orderStatus: ORDER_STATUS.PENDING,
-        totalAmount: 77760,
-      }),
-      mockSession,
-    );
+    expect(orderRepository.findById).toHaveBeenCalledWith(createdOrder._id);
+    expect(createdOrder.save).toHaveBeenCalledWith({ session: mockSession });
     expect(paymentRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         orderId: createdOrder._id,
@@ -232,18 +213,23 @@ describe("paymentService", () => {
   });
 
   it("rejects duplicate transaction codes during checkout", async () => {
-    dailyMenuRepository.findMenuByDate.mockResolvedValue(buildDailyMenu());
+    const createdOrder = buildOrder({
+      _id: "order-checkout-1",
+      totalAmount: 100000,
+    });
+    orderRepository.findById.mockResolvedValue(createdOrder);
     paymentRepository.isTransactionCodeTaken.mockResolvedValue(true);
 
     await expect(
       paymentService.checkout(
         {
-          items: [{ foodItemId: "food-1", quantity: 1 }],
+          orderId: createdOrder._id,
           paymentMethod: PAYMENT_METHOD.QR,
           amountReceived: 0,
           transactionCode: "BANK-TXN-001",
         },
         "staff-1",
+        USER_ROLES.STAFF,
       ),
     ).rejects.toMatchObject({
       statusCode: 409,
@@ -345,8 +331,7 @@ describe("paymentService", () => {
   });
 
   it("builds payment list queries with trimmed search and mapped list items", async () => {
-    const select = vi.fn().mockResolvedValue([{ _id: "order-9" }]);
-    mockOrderFind.mockReturnValue({ select });
+    orderRepository.findIdsByOrderNumberKeyword.mockResolvedValue(["order-9"]);
     paymentRepository.findAll.mockResolvedValue({
       items: [
         {
@@ -378,9 +363,7 @@ describe("paymentService", () => {
       limit: "5",
     });
 
-    expect(mockOrderFind).toHaveBeenCalledWith({
-      orderNumber: /ORD-0009/i,
-    });
+    expect(orderRepository.findIdsByOrderNumberKeyword).toHaveBeenCalledWith("ORD-0009");
     expect(paymentRepository.findAll).toHaveBeenCalledWith({
       searchKeyword: "ORD-0009",
       matchingOrderIds: ["order-9"],

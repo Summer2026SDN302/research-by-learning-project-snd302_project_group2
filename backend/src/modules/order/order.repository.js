@@ -78,6 +78,12 @@ const orderRepository = {
       "items.foodItemId": toObjectId(foodItemId),
     });
   },
+
+  async findIdsByOrderNumberKeyword(keyword) {
+    const regex = new RegExp(keyword, "i");
+    const orders = await Order.find({ orderNumber: regex }).select("_id");
+    return orders.map((item) => item._id);
+  },
 };
 
 export default orderRepository;
