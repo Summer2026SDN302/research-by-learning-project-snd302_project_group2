@@ -65,11 +65,11 @@ const orderRepository = {
       .populate("staffId", "fullName username role");
   },
 
-  async updateStatusById(id, status) {
+  async updateStatusById(id, status, session) {
     return Order.findOneAndUpdate(
       { _id: toObjectId(id) },
       { $set: { orderStatus: status } },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true, session },
     );
   },
 
@@ -77,6 +77,16 @@ const orderRepository = {
     return Order.countDocuments({
       "items.foodItemId": toObjectId(foodItemId),
     });
+  },
+
+  async updateItemsById(id, fields, session) {
+    return Order.findOneAndUpdate(
+      { _id: toObjectId(id) },
+      { $set: fields },
+      { new: true, runValidators: true, session },
+    )
+      .populate("items.foodItemId", "name")
+      .populate("staffId", "fullName username role");
   },
 };
 

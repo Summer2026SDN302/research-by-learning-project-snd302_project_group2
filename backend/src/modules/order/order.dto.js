@@ -1,3 +1,5 @@
+import { TAX_PERCENT } from "./order.constants.js";
+
 export const toOrderResponse = (order) => ({
   _id: order._id,
   orderNumber: order.orderNumber,
@@ -11,12 +13,15 @@ export const toOrderResponse = (order) => ({
     unitPrice: item.unitPrice,
     quantity: item.quantity,
     lineTotal: item.lineTotal,
+    note: item.note ?? "",
   })),
   subTotal: order.subTotal,
   discountAmount: order.discountAmount,
-  taxAmount: order.taxAmount,
+  taxRate: TAX_PERCENT,
+  taxAmount: order.taxAmount ?? 0,
   totalAmount: order.totalAmount,
   orderStatus: order.orderStatus,
+  notes: order.notes ?? "",
   orderDate: order.orderDate,
   createdAt: order.createdAt,
   updatedAt: order.updatedAt,
