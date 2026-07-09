@@ -102,46 +102,31 @@ export const updateOrderStatus = async (id, orderStatus) => {
   }
 };
 
-// ============================================================================
-// CÁC HÀM DƯỚI ĐÂY CHƯA CÓ ENDPOINT TƯƠNG ỨNG Ở BE (nhánh be-hoang).
-// Sẽ được bật lại khi BE bổ sung các route này.
-// ============================================================================
+/**
+ * PATCH /api/orders/:id/items — Cập nhật danh sách món trong đơn hàng đang Pending.
+ * BE tự tính lại giá dựa trên daily menu (recalculate được tích hợp sẵn).
+ * Payload: { items: [{ foodItemId, quantity, note? }] }
+ */
+export const updateOrderItems = async (id, body) => {
+  try {
+    const response = await apiClient.patch(`${BASE_PATH}/${id}/items`, body);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+};
 
-// /**
-//  * [CHƯA CÓ BE] PATCH /api/orders/:id/items — Cập nhật danh sách món trong đơn
-//  * BE chưa có route này. Cần bổ sung ở be-hoang trước khi dùng.
-//  */
-// export const updateOrderItems = async (id, body) => {
-//   try {
-//     const response = await apiClient.patch(`${BASE_PATH}/${id}/items`, body);
-//     return unwrapResponse(response);
-//   } catch (error) {
-//     throw normalizeApiError(error);
-//   }
-// };
+/**
+ * PATCH /api/orders/:id/cancel — Hủy đơn hàng.
+ * Staff chỉ được hủy đơn của chính mình. Admin/Manager hủy bất kỳ đơn.
+ * Không cần body.
+ */
+export const cancelOrder = async (id) => {
+  try {
+    const response = await apiClient.patch(`${BASE_PATH}/${id}/cancel`);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+};
 
-// /**
-//  * [CHƯA CÓ BE] PATCH /api/orders/:id/recalculate — Tính lại giá đơn hàng
-//  * BE chưa có route này. Cần bổ sung ở be-hoang trước khi dùng.
-//  */
-// export const recalculateOrder = async (id, body) => {
-//   try {
-//     const response = await apiClient.patch(`${BASE_PATH}/${id}/recalculate`, body);
-//     return unwrapResponse(response);
-//   } catch (error) {
-//     throw normalizeApiError(error);
-//   }
-// };
-
-// /**
-//  * [CHƯA CÓ BE] PATCH /api/orders/:id/cancel — Hủy đơn hàng
-//  * BE chưa có route cancel riêng. Hiện tại dùng updateOrderStatus(id, "Cancelled") thay thế.
-//  */
-// export const cancelOrder = async (id) => {
-//   try {
-//     const response = await apiClient.patch(`${BASE_PATH}/${id}/cancel`);
-//     return unwrapResponse(response);
-//   } catch (error) {
-//     throw normalizeApiError(error);
-//   }
-// };

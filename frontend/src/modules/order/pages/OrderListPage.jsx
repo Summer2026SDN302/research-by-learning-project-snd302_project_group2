@@ -2,389 +2,269 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 // [CHƯA CÓ BE] useNavigate — sẽ cần khi BE có module Invoice
 // import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import dayjs from "dayjs";
-import Spinner from "@/components/feedback/Spinner";
 // [CHƯA CÓ BE] useAppToast — tạm không cần vì bỏ logic receipt
 // import useAppToast from "@/hooks/useAppToast";
-// [CHƯA CÓ BE] formatCurrency — dùng toLocaleString trực tiếp
-// import { formatCurrency } from "@/utils/formatters";
+import { formatCurrency } from "@/utils/formatters";
+import Datepicker from "react-tailwindcss-datepicker";
 import { useOrderList } from "../hooks/useOrderList";
 import OrderDetailModal from "../components/OrderDetailModal";
-import Datepicker from "react-tailwindcss-datepicker";
 import PaginationControl from "@/components/navigation/PaginationControl";
+import ConfirmDialog from "@/components/feedback/ConfirmDialog";
+import PageHeader from "@/components/layout/PageHeader";
+import StatusBadge from "@/components/data-display/StatusBadge";
+import FilterBar from "@/components/search/FilterBar";
+import DataTable from "@/components/data-display/DataTable";
+import SearchBar from "@/components/search/SearchBar";
 
-const STATUS_OPTIONS = [
-  { value: "", label: "Tất cả trạng thái" },
-  { value: "Pending", label: "Đang chờ" },
-  { value: "Confirmed", label: "Đã xác nhận" },
-  { value: "Completed", label: "Hoàn thành" },
-  { value: "Cancelled", label: "Đã hủy" },
-  { value: "Returned", label: "Đã trả lại" },
-];
-
-const getRoleLabel = (role) => {
-  switch (role) {
-    case "Admin":
-      return (
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-error" />
-          <span className="text-on-surface">Admin</span>
-        </div>
-      );
-    case "Manager":
-      return (
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-primary-container" />
-          <span className="text-on-surface">Quản lý</span>
-        </div>
-      );
-    case "Staff":
-      return (
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-secondary" />
-          <span className="text-on-surface">Nhân viên</span>
-        </div>
-      );
-    default:
-      return (
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-outline" />
-          <span className="text-on-surface">Khách lẻ</span>
-        </div>
-      );
-  }
-};
+import { ORDER_STATUS_OPTIONS, ORDER_TABLE_COLUMNS, ORDER_STATUS_MAP } from "../constants/orderConstants";
 
 const getOrderStatusBadge = (status) => {
-  switch (status) {
-    case "Completed":
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-container/30 text-secondary border border-secondary-container font-label-md text-[11px] font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
-          Hoàn thành
-        </span>
-      );
-    case "Pending":
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-container/30 text-tertiary border border-tertiary-container font-label-md text-[11px] font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse" />
-          Đang chờ
-        </span>
-      );
-    case "Confirmed":
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-container/20 text-primary border border-primary-container font-label-md text-[11px] font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-          Đã xác nhận
-        </span>
-      );
-    case "Cancelled":
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container/30 text-error border border-error-container font-label-md text-[11px] font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-error" />
-          Đã hủy
-        </span>
-      );
-    case "Returned":
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-outline/20 text-on-surface-variant border border-outline font-label-md text-[11px] font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-outline" />
-          Đã trả lại
-        </span>
-      );
-    default:
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-outline/20 text-on-surface-variant border border-outline font-label-md text-[11px] font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-outline" />
-          {status}
-        </span>
-      );
+  const config = ORDER_STATUS_MAP[status];
+  if (config) {
+    return <StatusBadge status={config.statusKey} label={config.label} />;
   }
+  return <StatusBadge status="pending" label={status} />;
 };
-
-// [CHƯA CÓ BE] getPaymentStatusBadge — BE chưa có field paymentStatus trong Order model
-// const getPaymentStatusBadge = (status) => { ... };
 
 const OrderListPage = () => {
   // [CHƯA CÓ BE] useNavigate — sẽ cần khi BE có module Invoice
   // const navigate = useNavigate();
   const location = useLocation();
+  const isAdmin = location.pathname.startsWith("/admin");
+  const roleLabel = isAdmin ? "Admin" : "Manager";
   // [CHƯA CÓ BE] toast — tạm không cần
   // const { toast } = useAppToast();
   const {
     orders,
+    rows,
+    searchQuery,
+    setSearchQuery,
     loading,
     filters,
     pagination,
-    // [CHƯA CÓ BE] handleSearch,
+    executeCancelOrder,
     handlePageChange,
     handleFilterChange,
+    clearFilters,
     refetch,
   } = useOrderList();
 
-  const [statusDropdownOpen, setStatusDropdownOpen] = React.useState(false);
   const [detailOrderId, setDetailOrderId] = React.useState(null);
-  const roleBasePath = location.pathname.startsWith("/manager") ? "/manager" : "/admin";
+  const [cancelOrderId, setCancelOrderId] = React.useState(null);
+  const [isCanceling, setIsCanceling] = React.useState(false);
+  const datepickerRef = React.useRef(null);
+  const [popoverDir, setPopoverDir] = React.useState("down");
 
-  const dateValue = React.useMemo(() => ({
-    startDate: filters.fromDate || null,
-    endDate: filters.toDate || null
-  }), [filters.fromDate, filters.toDate]);
+  const handleDatepickerInteraction = () => {
+    if (datepickerRef.current) {
+      const rect = datepickerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 350) {
+        setPopoverDir("up");
+      } else {
+        setPopoverDir("down");
+      }
+    }
+  };
+
+  const confirmCancel = async () => {
+    setIsCanceling(true);
+    await executeCancelOrder(cancelOrderId);
+    setIsCanceling(false);
+    setCancelOrderId(null);
+  };
+
+  const dateValue = React.useMemo(
+    () => ({
+      startDate: filters.fromDate || null,
+      endDate: filters.toDate || null,
+    }),
+    [filters.fromDate, filters.toDate],
+  );
+
+  const renderCell = (key, value, row) => {
+    switch (key) {
+      case "orderNumber":
+        return <span className="font-bold text-primary">#{value}</span>;
+      case "createdAt":
+        return (
+          <div>
+            <div className="font-body-md text-md text-on-surface">
+              {dayjs(value).format("HH:mm")}
+            </div>
+            <div className="font-body-sm text-sm text-on-surface-variant">
+              {dayjs(value).format("DD/MM/YYYY")}
+            </div>
+          </div>
+        );
+      case "staffName":
+        return <span className="font-medium text-on-surface">{value}</span>;
+      case "totalAmount":
+        return (
+          <span className="font-bold text-on-surface">
+            {formatCurrency(value)}
+          </span>
+        );
+      case "orderStatus":
+        return getOrderStatusBadge(value);
+      case "actions":
+        return (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDetailOrderId(row.id)}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant"
+              title="Xem chi tiết đơn hàng"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                visibility
+              </span>
+            </button>
+            {row.orderStatus === "Pending" && (
+              <button
+                onClick={() => setCancelOrderId(row.id)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-error/10 transition-colors text-error"
+                title="Huỷ đơn hàng"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  cancel
+                </span>
+              </button>
+            )}
+          </div>
+        );
+      default:
+        return String(value ?? "—");
+    }
+  };
 
   return (
-    <div className="flex-1 p-container-p-mobile md:p-container-p-desktop flex flex-col h-full bg-background overflow-hidden">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-headline-lg font-bold text-on-surface tracking-tight">
-            Lịch sử đơn hàng
-          </h2>
-          <p className="text-body-md text-on-surface-variant mt-1">
-            Quản lý, theo dõi và xử lý các giao dịch trong hệ thống.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* [CHƯA CÓ BE] Nút "Danh sách thanh toán" — module Payment chưa có */}
-          {/* <button
-            type="button"
-            onClick={() => navigate(`${roleBasePath}/payments`)}
-            className="..."
-          >
-            Danh sách thanh toán
-          </button> */}
-        </div>
-      </div>
+    <section className="space-y-6">
+      {/* Title */}
+      <PageHeader
+        breadcrumbs={[{ label: roleLabel }, { label: "Lịch sử đơn hàng" }]}
+        title={isAdmin ? "Quản lý đơn hàng" : "Danh sách đơn hàng"}
+        subtitle={
+          isAdmin
+            ? "Quản lý, theo dõi và xử lý các giao dịch trong hệ thống."
+            : "Xem danh sách các giao dịch đơn hàng trong hệ thống."
+        }
+      />
 
-      {/* Filter Section matching Mockup */}
-      <div className="flex flex-col xl:flex-row gap-4 mb-6 xl:items-end">
-        {/* Filters Group */}
-        <div className="flex-1 flex flex-col sm:flex-row gap-4">
-          {/* Filter 1: Khoảng thời gian (Date Picker) */}
-          <div className="flex-1 bg-white border border-outline-variant rounded-2xl p-4 flex flex-col justify-center relative z-20">
-            <span className="text-[13px] font-semibold text-on-surface mb-3">Khoảng thời gian</span>
-            <Datepicker
-              value={dateValue}
-              onChange={(newValue) => {
-                let from = newValue?.startDate || "";
-                let to = newValue?.endDate || "";
-                if (typeof from === 'string' && from.includes('/')) {
-                  const [d, m, y] = from.split('/');
-                  from = `${y}-${m}-${d}`;
-                } else if (from) {
-                  from = dayjs(from).format("YYYY-MM-DD");
-                }
-                
-                if (typeof to === 'string' && to.includes('/')) {
-                  const [d, m, y] = to.split('/');
-                  to = `${y}-${m}-${d}`;
-                } else if (to) {
-                  to = dayjs(to).format("YYYY-MM-DD");
-                }
-                
-                handleFilterChange({ 
-                  fromDate: from, 
-                  toDate: to 
-                });
-              }}
-              useRange={false}
-              showShortcuts={true}
-              primaryColor="teal"
-              inputClassName="w-full text-sm bg-white border border-outline-variant rounded-full px-4 py-2 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
-              displayFormat="DD/MM/YYYY"
-              placeholder="Từ ngày - Đến ngày"
-              separator="-"
-            />
-          </div>
-
-          {/* Filter 2: Trạng thái đơn hàng (Custom Dropdown) */}
-          <div className="flex-1 bg-white border border-outline-variant rounded-2xl p-4 flex flex-col justify-center">
-            <span className="text-[13px] font-semibold text-on-surface mb-3">Trạng thái đơn hàng</span>
-            <div className="relative">
-              <div 
-                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className={`flex items-center bg-white border rounded-full px-4 py-2 text-sm text-on-surface cursor-pointer transition-all ${statusDropdownOpen ? 'ring-1 ring-primary border-primary' : 'border-outline-variant hover:border-outline'}`}
-              >
-                <span className="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">receipt_long</span>
-                <span className="flex-1 text-[13px] truncate">
-                  {STATUS_OPTIONS.find((opt) => opt.value === filters.orderStatus)?.label || "Tất cả trạng thái"}
-                </span>
-                <span className={`material-symbols-outlined text-[18px] text-on-surface-variant transition-transform ${statusDropdownOpen ? 'rotate-180' : ''}`}>
-                  arrow_drop_down
-                </span>
-              </div>
-              
-              {/* Custom Dropdown List */}
-              {statusDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setStatusDropdownOpen(false)}></div>
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-outline-variant rounded-xl shadow-lg z-40 overflow-hidden py-1">
-                    {STATUS_OPTIONS.map((option) => (
-                      <div
-                        key={option.value}
-                        onClick={() => {
-                          handleFilterChange({ orderStatus: option.value });
-                          setStatusDropdownOpen(false);
-                        }}
-                        className={`px-4 py-2.5 text-[13px] cursor-pointer transition-colors ${
-                          filters.orderStatus === option.value
-                            ? "bg-primary-container text-on-primary-container font-semibold"
-                            : "text-on-surface hover:bg-surface-container-low"
-                        }`}
-                      >
-                        {option.label}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+      {/* Toolbar + Table card */}
+      <div className="space-y-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-soft flex flex-col flex-1 min-h-0 overflow-hidden">
+        {/* Toolbar: Search + Date + Filters */}
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1 max-w-2xl">
+            {/* Search Bar */}
+            <div className="w-full sm:max-w-[240px]">
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Tìm mã đơn, người tạo..."
+              />
             </div>
-          </div>
 
-          {/* Filter 3: Phương thức (Vẫn giữ nhưng mờ đi vì BE ko có) */}
-          <div className="flex-1 bg-white border border-outline-variant rounded-2xl p-4 flex flex-col justify-center opacity-50 cursor-not-allowed" title="Chưa hỗ trợ">
-            <span className="text-[13px] font-semibold text-on-surface mb-3">Phương thức</span>
-            <div className="flex items-center gap-2 bg-white border border-outline-variant rounded-full px-4 py-2 text-sm text-on-surface">
-              <span className="material-symbols-outlined text-[18px] text-on-surface-variant">payments</span>
-              <span className="flex-1 text-[13px]">Tất cả phương thức</span>
-              <span className="material-symbols-outlined text-[18px] text-on-surface-variant">arrow_drop_down</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row xl:flex-col items-stretch sm:items-center xl:items-end gap-3 justify-end">
-          {roleBasePath === "/manager" && (
-            <button
-              type="button"
-              onClick={() => window.location.href = "/manager/create-order"}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-on-primary rounded-full hover:bg-primary/90 transition-all shadow-sm font-label-md text-sm font-semibold h-[42px] w-full sm:w-[130px]"
+            {/* Khoảng thời gian (Date Picker) */}
+            <div
+              ref={datepickerRef}
+              onClick={handleDatepickerInteraction}
+              onFocusCapture={handleDatepickerInteraction}
+              className="w-full sm:max-w-[200px] relative z-20"
             >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              Tạo POS
+              <Datepicker
+                popoverDirection={popoverDir}
+                value={dateValue}
+                onChange={(newValue) => {
+                  let from = newValue?.startDate || "";
+                  let to = newValue?.endDate || "";
+                  if (typeof from === "string" && from.includes("/")) {
+                    const [d, m, y] = from.split("/");
+                    from = `${y}-${m}-${d}`;
+                  } else if (from) {
+                    from = dayjs(from).format("YYYY-MM-DD");
+                  }
+
+                  if (typeof to === "string" && to.includes("/")) {
+                    const [d, m, y] = to.split("/");
+                    to = `${y}-${m}-${d}`;
+                  } else if (to) {
+                    to = dayjs(to).format("YYYY-MM-DD");
+                  }
+
+                  handleFilterChange({
+                    fromDate: from,
+                    toDate: to,
+                  });
+                }}
+                useRange={false}
+                showShortcuts={true}
+                primaryColor="teal"
+                inputClassName="w-full text-sm bg-white border border-outline-variant rounded-full px-4 py-2 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                displayFormat="DD/MM/YYYY"
+                placeholder="Chọn ngày"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <FilterBar
+              filters={[
+                {
+                  key: "orderStatus",
+                  label: "Trạng thái",
+                  options: ORDER_STATUS_OPTIONS,
+                },
+              ]}
+              values={{
+                orderStatus: filters.orderStatus,
+                fromDate: filters.fromDate,
+                toDate: filters.toDate,
+              }}
+              onChange={(key, value) => handleFilterChange({ [key]: value })}
+              onReset={clearFilters}
+            />
+
+            {/* Action Buttons */}
+            <button
+              onClick={refetch}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-primary text-primary rounded-lg hover:bg-primary-container transition-all font-label-md text-sm font-semibold h-[38px]"
+              title="Tải lại dữ liệu"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                refresh
+              </span>
+              Tải lại
             </button>
-          )}
-          <button
-            onClick={refetch}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-primary text-primary rounded-full hover:bg-primary-container hover:text-on-primary-container transition-all shadow-sm font-label-md text-sm font-semibold h-[42px] w-full sm:w-[130px]"
-            title="Tải lại dữ liệu"
-          >
-            <span className="material-symbols-outlined text-[18px]">refresh</span>
-            Tải lại
-          </button>
+          </div>
         </div>
-      </div>
 
-      <div className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center p-12 gap-3">
-            <Spinner size="lg" />
-            <p className="text-sm text-on-surface-variant">
-              Đang tải danh sách đơn hàng...
-            </p>
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center text-on-surface-variant">
-            <span className="material-symbols-outlined text-[48px] mb-2 text-outline/50">
-              receipt_long
-            </span>
-            <p className="font-semibold text-on-surface">Không tìm thấy đơn hàng nào</p>
-            <p className="text-xs">
-              Vui lòng thay đổi từ khóa hoặc bộ lọc để xem kết quả.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-surface-container border-b border-outline-variant">
-                  <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
-                    Mã ĐH
-                  </th>
-                  <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
-                    Thời gian
-                  </th>
-                  <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
-                    Người tạo
-                  </th>
-                  <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
-                    Vai trò
-                  </th>
-                  <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap text-right">
-                    Tổng tiền
-                  </th>
-                  {/* [CHƯA CÓ BE] Cột "Thanh toán" — paymentStatus chưa có */}
-                  <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap">
-                    Trạng thái đơn
-                  </th>
-                  <th className="py-4 px-6 font-label-md text-label-md text-on-surface-variant whitespace-nowrap text-center">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/50">
-                {orders.map((order) => {
-                  const orderTimestamp = order.orderDate || order.createdAt;
+        {/* Data Table wrapped for alignment */}
+        <div className="flex-1 min-h-0 overflow-y-auto [&_th:nth-child(4)]:text-right [&_td:nth-child(4)]:text-right [&_th:nth-child(4)_span]:justify-end [&_th:nth-child(4)_span]:w-full">
+          <DataTable
+            columns={ORDER_TABLE_COLUMNS}
+            rows={rows}
+            isLoading={loading}
+            emptyTitle="Không tìm thấy đơn hàng nào"
+            emptyMessage="Hãy thử đổi bộ lọc hoặc từ khóa tìm kiếm khác."
+            renderCell={renderCell}
+          />
+        </div>
 
-                  return (
-                    <tr
-                      key={order._id}
-                      className="hover:bg-surface-container-low transition-colors duration-200"
-                    >
-                      <td className="py-4 px-6 font-label-md text-label-md text-primary font-bold">
-                        #{order.orderNumber}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="font-body-md text-body-md text-on-surface">
-                          {dayjs(orderTimestamp).format("HH:mm")}
-                        </div>
-                        <div className="font-body-sm text-body-sm text-on-surface-variant">
-                          {dayjs(orderTimestamp).format("DD/MM/YYYY")}
-                        </div>
-                      </td>
-                      {/* BE DTO trả staffId là ObjectId (chưa populate) nên hiện ID tạm */}
-                      <td className="py-4 px-6 font-body-md text-body-md text-on-surface whitespace-nowrap">
-                        {order.staffId?.fullName || order.staffId?.username || (typeof order.staffId === "string" ? order.staffId.slice(-6) : "N/A")}
-                      </td>
-                      <td className="py-4 px-6 whitespace-nowrap">
-                        {getRoleLabel(order.staffId?.role)}
-                      </td>
-                      {/* Dùng totalAmount — BE DTO trả totalAmount (không có finalAmount) */}
-                      <td className="py-4 px-6 font-body-md text-body-md text-on-surface font-semibold text-right">
-                        {(order.totalAmount || 0).toLocaleString("vi-VN")}₫
-                      </td>
-                      {/* [CHƯA CÓ BE] Cột paymentStatus
-                      <td className="py-4 px-6 whitespace-nowrap">
-                        {getPaymentStatusBadge(order.paymentStatus)}
-                      </td> */}
-                      <td className="py-4 px-6 whitespace-nowrap">
-                        {getOrderStatusBadge(order.orderStatus)}
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <button 
-                          onClick={() => setDetailOrderId(order._id)}
-                          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant mx-auto"
-                          title="Xem chi tiết đơn hàng"
-                        >
-                          <span className="material-symbols-outlined text-[20px]">visibility</span>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
+        {/* Pagination Footer */}
         {!loading && orders.length > 0 && (
-          <div className="bg-surface-container-low border-t border-outline-variant p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-xs text-on-surface-variant">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-outline-variant pt-5">
+            <div className="text-body-sm text-on-surface-variant">
               Hiển thị{" "}
               <span className="font-semibold text-on-surface">
                 {(pagination.page - 1) * pagination.limit + 1} -{" "}
                 {Math.min(pagination.page * pagination.limit, pagination.total)}
               </span>{" "}
               trong{" "}
-              <span className="font-semibold text-on-surface">{pagination.total}</span>{" "}
+              <span className="font-semibold text-on-surface">
+                {pagination.total}
+              </span>{" "}
               đơn hàng
             </div>
             <PaginationControl
@@ -396,12 +276,32 @@ const OrderListPage = () => {
         )}
       </div>
 
-      <OrderDetailModal 
-        open={!!detailOrderId}
-        onClose={() => setDetailOrderId(null)}
-        orderId={detailOrderId}
-      />
-    </div>
+      {/* Order Detail Modal */}
+      {createPortal(
+        <OrderDetailModal
+          open={!!detailOrderId}
+          onClose={() => setDetailOrderId(null)}
+          orderId={detailOrderId}
+        />,
+        document.body,
+      )}
+
+      {/* Cancel Order Confirm Dialog */}
+      {createPortal(
+        <ConfirmDialog
+          open={!!cancelOrderId}
+          title="Huỷ đơn hàng"
+          description="Bạn có chắc chắn muốn huỷ đơn hàng này? Thao tác này không thể hoàn tác."
+          confirmLabel="Huỷ đơn"
+          cancelLabel="Đóng"
+          variant="danger"
+          isLoading={isCanceling}
+          onConfirm={confirmCancel}
+          onCancel={() => setCancelOrderId(null)}
+        />,
+        document.body,
+      )}
+    </section>
   );
 };
 

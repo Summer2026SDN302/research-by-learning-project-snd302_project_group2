@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchOrdersThunk } from "../redux/orderSlice";
+import { fetchOrdersThunk, cancelOrderThunk } from "../redux/orderSlice";
 import useAppToast from "@/hooks/useAppToast";
+import { getApiErrorMsg } from "@/utils/errorUtils";
+import { ORDER_ERROR_MAP } from "../constants/orderConstants";
 
 /**
  * Hook cho trang "Quản lý đơn hàng" — dành cho Admin/Manager
@@ -16,6 +18,7 @@ export const useOrderList = () => {
   const listStatus = useSelector((state) => state.order.listStatus);
   const error = useSelector((state) => state.order.listError);
 
+  const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     // [CHƯA CÓ BE] search — BE chưa hỗ trợ search query param
     orderStatus: "",
@@ -50,18 +53,13 @@ export const useOrderList = () => {
     try {
       await dispatch(fetchOrdersThunk(queryParams)).unwrap();
     } catch (err) {
-      toast.error("Lỗi", err?.message || "Không thể tải danh sách đơn hàng.");
+      toast.error("Lỗi", getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể tải danh sách đơn hàng."));
     }
   }, [dispatch, filters, toast]);
 
   useEffect(() => {
     void fetchOrders();
   }, [fetchOrders]);
-
-  // [CHƯA CÓ BE] handleSearch — BE chưa hỗ trợ search query param
-  // const handleSearch = (searchKeyword) => {
-  //   setFilters((prev) => ({ ...prev, search: searchKeyword, page: 1 }));
-  // };
 
   const handlePageChange = (newPage) => {
     setFilters((prev) => ({ ...prev, page: newPage }));
@@ -71,13 +69,53 @@ export const useOrderList = () => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   };
 
+  const executeCancelOrder = async (orderId) => {
+    try {
+      await dispatch(cancelOrderThunk(orderId)).unwrap();
+      toast.success("Thành công", "Đã huỷ đơn hàng thành công!");
+      void fetchOrders();
+      return true;
+    } catch (err) {
+      toast.error("Lỗi", getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể huỷ đơn hàng."));
+      return false;
+    }
+  };
+
+  const rows = useMemo(() => {
+    const mapped = orders.map((order) => ({
+      id: order._id,
+      orderNumber: order.orderNumber,
+      createdAt: order.createdAt,
+      staffName:
+        order.staffId?.fullName ||
+        order.staffId?.username ||
+        (typeof order.staffId === "string" ? order.staffId.slice(-6) : "N/A"),
+      totalAmount: order.totalAmount,
+      orderStatus: order.orderStatus,
+      _raw: order,
+    }));
+
+    if (!searchQuery.trim()) return mapped;
+
+    const query = searchQuery.toLowerCase().trim();
+    return mapped.filter((r) => {
+      return (
+        r.orderNumber?.toLowerCase().includes(query) ||
+        r.staffName?.toLowerCase().includes(query)
+      );
+    });
+  }, [orders, searchQuery]);
+
   return {
     orders,
+    rows,
+    searchQuery,
+    setSearchQuery,
     loading: listStatus === "loading",
     error: error?.message || error || null,
     filters,
     pagination,
-    // [CHƯA CÓ BE] handleSearch,
+    executeCancelOrder,
     handlePageChange,
     handleFilterChange,
     clearFilters,

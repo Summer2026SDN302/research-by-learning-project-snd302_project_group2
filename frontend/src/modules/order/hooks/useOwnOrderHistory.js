@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchMyOrdersThunk,
@@ -7,6 +7,8 @@ import {
   cancelOrderThunk,
 } from "../redux/orderSlice";
 import useAppToast from "@/hooks/useAppToast";
+import { getApiErrorMsg } from "@/utils/errorUtils";
+import { ORDER_ERROR_MAP } from "../constants/orderConstants";
 
 const getTodayDateString = () => dayjs().format("YYYY-MM-DD");
 
@@ -20,6 +22,7 @@ export const useOwnOrderHistory = () => {
   const error = useSelector((state) => state.order.listError);
   const kpis = useSelector((state) => state.order.ownHistoryKpis);
 
+  const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     // [CHƯA CÓ BE] search — BE chưa hỗ trợ tìm kiếm theo keyword
     orderStatus: "",
@@ -58,7 +61,7 @@ export const useOwnOrderHistory = () => {
     try {
       await dispatch(fetchMyOrdersThunk(queryParams)).unwrap();
     } catch (err) {
-      toast.error("Lỗi", err?.message || "Không thể tải danh sách đơn hàng.");
+      toast.error("Lỗi", getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể tải danh sách đơn hàng."));
     }
   }, [dispatch, filters, toast]);
 
@@ -78,11 +81,6 @@ export const useOwnOrderHistory = () => {
     void fetchKpiData();
   }, [fetchKpiData]);
 
-  // [CHƯA CÓ BE] handleSearch — BE chưa hỗ trợ search query param
-  // const handleSearch = (searchKeyword) => {
-  //   setFilters((prev) => ({ ...prev, search: searchKeyword, page: 1 }));
-  // };
-
   const handlePageChange = (newPage) => {
     setFilters((prev) => ({ ...prev, page: newPage }));
   };
@@ -99,20 +97,38 @@ export const useOwnOrderHistory = () => {
       fetchKpiData();
       return true;
     } catch (err) {
-      toast.error("Lỗi", err?.message || "Không thể huỷ đơn hàng.");
+      toast.error("Lỗi", getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể huỷ đơn hàng."));
       return false;
     }
   };
 
+  const rows = useMemo(() => {
+    const mapped = orders.map((order) => ({
+      id: order._id,
+      orderNumber: order.orderNumber,
+      createdAt: order.createdAt,
+      totalAmount: order.totalAmount,
+      orderStatus: order.orderStatus,
+      _raw: order,
+    }));
+
+    if (!searchQuery.trim()) return mapped;
+
+    const query = searchQuery.toLowerCase().trim();
+    return mapped.filter((r) => r.orderNumber?.toLowerCase().includes(query));
+  }, [orders, searchQuery]);
+
   return {
     orders,
+    rows,
+    searchQuery,
+    setSearchQuery,
     loading: listStatus === "loading",
     error: error?.message || error || null,
     kpis,
     filters,
     pagination,
     executeCancelOrder,
-    // [CHƯA CÓ BE] handleSearch,
     handlePageChange,
     handleFilterChange,
     clearFilters,

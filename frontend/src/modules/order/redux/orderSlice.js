@@ -17,18 +17,14 @@ const DEFAULT_OWN_HISTORY_KPIS = {
 
 const KPI_PAGE_SIZE = 200;
 
-// [CHƯA CÓ BE] Logic kiểm tra order có thể tái sử dụng (update items).
-// BE chưa có endpoint PATCH /api/orders/:id/items nên tạm comment.
-// const canReuseCurrentOrder = (order) =>
-//   Boolean(order?._id) &&
-//   order.paymentStatus !== "Paid" &&
-//   order.orderStatus !== "Completed" &&
-//   order.orderStatus !== "Returned" &&
-//   order.orderStatus !== "Cancelled";
+// Logic kiểm tra order có thể tái sử dụng (update items).
+const canReuseCurrentOrder = (order) =>
+  Boolean(order?._id) && order.orderStatus === "Pending";
 
 // [CHƯA CÓ BE] field orderedAt chưa có trong Order model BE.
 // BE trả về createdAt và orderDate.
-const getOrderReferenceDate = (order) => order?.orderDate || order?.createdAt || null;
+const getOrderReferenceDate = (order) =>
+  order?.orderDate || order?.createdAt || null;
 
 const toDateKey = (value) => (value ? dayjs(value).format("YYYY-MM-DD") : null);
 
@@ -44,13 +40,14 @@ const buildOwnHistoryKpis = (orders) => ({
     // Tạm dùng orderStatus === "Completed" để tính doanh thu.
     .filter((item) => item.orderStatus === "Completed")
     .reduce((sum, item) => sum + (item.totalAmount || 0), 0),
-  pendingOrdersCount: orders.filter((item) => item.orderStatus === "Pending").length,
+  pendingOrdersCount: orders.filter((item) => item.orderStatus === "Pending")
+    .length,
 });
 
 const fetchAllMyOrders = async (params = {}) => {
   const items = [];
   let page = 1;
-  let totalPages = 1;
+  let totalPages;
 
   do {
     const result = await orderApi.getMyOrders({
@@ -125,14 +122,12 @@ export const fetchOwnOrderKpisThunk = createAsyncThunk(
  */
 export const submitOrder = createAsyncThunk(
   "order/submitOrder",
-  async (orderData, { rejectWithValue }) => {
+  async (orderData, { getState, rejectWithValue }) => {
     try {
-      // [CHƯA CÓ BE] Logic updateOrderItems khi canReuseCurrentOrder.
-      // BE chưa có PATCH /api/orders/:id/items nên luôn tạo order mới.
-      // const currentOrder = getState().order.currentOrder;
-      // if (canReuseCurrentOrder(currentOrder)) {
-      //   return await orderApi.updateOrderItems(currentOrder._id, orderData);
-      // }
+      const currentOrder = getState().order.currentOrder;
+      if (canReuseCurrentOrder(currentOrder)) {
+        return await orderApi.updateOrderItems(currentOrder._id, orderData);
+      }
 
       return await orderApi.createOrder(orderData);
     } catch (error) {
@@ -141,12 +136,22 @@ export const submitOrder = createAsyncThunk(
   },
 );
 
-// Hủy đơn hàng (đã được BE hỗ trợ dùng updateOrderStatus)
+// Hủy đơn hàng sử dụng API cancelOrder mới của BE
 export const cancelOrderThunk = createAsyncThunk(
   "order/cancelOrder",
   async (id, { rejectWithValue }) => {
     try {
-      return await orderApi.updateOrderStatus(id, "Cancelled");
+      return await orderApi.cancelOrder(id);
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+export const fetchOrderByIdThunk = createAsyncThunk(
+  "order/fetchOrderById",
+  async (id, { rejectWithValue }) => {
+    try {
+      return await orderApi.getOrderById(id);
     } catch (error) {
       return rejectWithValue(error);
     }
@@ -168,6 +173,9 @@ const initialState = {
   ownHistoryKpis: DEFAULT_OWN_HISTORY_KPIS,
   ownHistoryKpiStatus: "idle",
   ownHistoryKpiError: null,
+  orderDetail: null,
+  orderDetailStatus: "idle",
+  orderDetailError: null,
 };
 
 const orderSlice = createSlice({
@@ -200,7 +208,9 @@ const orderSlice = createSlice({
     },
     updateCartItemQuantity(state, action) {
       const { foodItemId, quantity } = action.payload;
-      const item = state.cart.items.find((item) => item.foodItemId === foodItemId);
+      const item = state.cart.items.find(
+        (item) => item.foodItemId === foodItemId,
+      );
       if (item) {
         if (quantity <= 0) {
           state.cart.items = state.cart.items.filter(
@@ -211,14 +221,13 @@ const orderSlice = createSlice({
         }
       }
     },
-    // [CHƯA CÓ BE] updateCartItemNote — BE chưa hỗ trợ field note cho từng item
-    // updateCartItemNote(state, action) {
-    //   const { foodItemId, note } = action.payload;
-    //   const item = state.cart.items.find((cartItem) => cartItem.foodItemId === foodItemId);
-    //   if (item) {
-    //     item.note = note || null;
-    //   }
-    // },
+    updateCartItemNote(state, action) {
+      const { foodItemId, note } = action.payload;
+      const item = state.cart.items.find((cartItem) => cartItem.foodItemId === foodItemId);
+      if (item) {
+        item.note = note || null;
+      }
+    },
     clearCart(state) {
       state.cart.items = [];
       state.currentOrder = null;
@@ -232,6 +241,11 @@ const orderSlice = createSlice({
     },
     setCurrentOrder(state, action) {
       state.currentOrder = action.payload;
+    },
+    clearOrderDetail(state) {
+      state.orderDetail = null;
+      state.orderDetailStatus = "idle";
+      state.orderDetailError = null;
     },
   },
   extraReducers: (builder) => {
@@ -248,6 +262,20 @@ const orderSlice = createSlice({
       .addCase(fetchOrdersThunk.rejected, (state, action) => {
         state.listStatus = "failed";
         state.listError = action.payload ?? action.error;
+      })
+
+      // fetchOrderByIdThunk
+      .addCase(fetchOrderByIdThunk.pending, (state) => {
+        state.orderDetailStatus = "loading";
+        state.orderDetailError = null;
+      })
+      .addCase(fetchOrderByIdThunk.fulfilled, (state, action) => {
+        state.orderDetailStatus = "succeeded";
+        state.orderDetail = action.payload;
+      })
+      .addCase(fetchOrderByIdThunk.rejected, (state, action) => {
+        state.orderDetailStatus = "failed";
+        state.orderDetailError = action.payload ?? action.error;
       })
 
       // fetchMyOrdersThunk — dùng cho Staff/Manager xem đơn của chính mình
@@ -289,21 +317,23 @@ const orderSlice = createSlice({
       .addCase(submitOrder.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
-      });
+      })
 
-      // [CHƯA CÓ BE] cancelOrderThunk cases — comment vì BE chưa có cancel endpoint
-      // .addCase(cancelOrderThunk.pending, (state) => {
-      //   state.status = "loading";
-      //   state.error = null;
-      // })
-      // .addCase(cancelOrderThunk.fulfilled, (state, action) => {
-      //   state.status = "succeeded";
-      //   state.currentOrder = action.payload;
-      // })
-      // .addCase(cancelOrderThunk.rejected, (state, action) => {
-      //   state.status = "failed";
-      //   state.error = action.payload;
-      // });
+      .addCase(cancelOrderThunk.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(cancelOrderThunk.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        // Nếu huỷ chính đơn hàng hiện tại, cập nhật lại trạng thái đơn hàng
+        if (state.currentOrder?._id === action.payload?._id) {
+          state.currentOrder = action.payload;
+        }
+      })
+      .addCase(cancelOrderThunk.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload;
+      });
   },
 });
 
@@ -311,10 +341,11 @@ export const {
   addToCart,
   removeFromCart,
   updateCartItemQuantity,
-  // [CHƯA CÓ BE] updateCartItemNote,
+  updateCartItemNote,
   clearCart,
   resetOrderState,
   setCurrentOrder,
+  clearOrderDetail,
 } = orderSlice.actions;
 
 export default orderSlice.reducer;
