@@ -20,10 +20,10 @@ const CategoryListPage = lazy(
 const FoodItemListPage = lazy(
   () => import("../modules/menu/pages/FoodItemListPage"),
 );
-const DailyMenuPage = lazy(
-  () => import("../modules/menu/pages/DailyMenuPage"),
+const DailyMenuPage = lazy(() => import("../modules/menu/pages/DailyMenuPage"));
+const OrderListPage = lazy(
+  () => import("../modules/order/pages/OrderListPage"),
 );
-const OrderListPage = lazy(() => import("../modules/order/pages/OrderListPage"));
 const PaymentListPage = lazy(
   () => import("../modules/payment/pages/PaymentListPage"),
 );
@@ -34,7 +34,10 @@ const AdminReceiptPage = lazy(
 const AdminRoutes = () => (
   <Route path="/admin" element={<MainLayout role="admin" />}>
     <Route index element={<Navigate to="dashboard" replace />} />
-    <Route path="dashboard" element={<PlaceholderPage title="Tong quan Admin" />} />
+    <Route
+      path="dashboard"
+      element={<PlaceholderPage title="Tong quan Admin" />}
+    />
     <Route path="users" element={<UserManagementPage />} />
     <Route
       path="categories"
@@ -46,7 +49,10 @@ const AdminRoutes = () => (
     <Route path="orders" element={<OrderListPage />} />
     <Route path="payments" element={<PaymentListPage />} />
     <Route path="receipts/:paymentId" element={<AdminReceiptPage />} />
-    <Route path="ai" element={<PlaceholderPage title="Phan tich va du bao" />} />
+    <Route
+      path="ai"
+      element={<PlaceholderPage title="Phan tich va du bao" />}
+    />
     <Route path="profile" element={<ProfilePage />} />
     <Route path="change-password" element={<ChangePasswordPage />} />
   </Route>

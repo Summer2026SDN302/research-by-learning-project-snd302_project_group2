@@ -1,104 +1,84 @@
 import React from "react";
-import { useDispatch } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+// [CHƯA CÓ BE] useNavigate — sẽ cần khi BE có module Invoice
+// import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import dayjs from "dayjs";
-import Datepicker from "react-tailwindcss-datepicker";
-import Spinner from "@/components/feedback/Spinner";
+// [CHƯA CÓ BE] useAppToast — tạm không cần vì bỏ logic receipt
+// import useAppToast from "@/hooks/useAppToast";
 import { formatCurrency } from "@/utils/formatters";
+import Datepicker from "react-tailwindcss-datepicker";
 import { useOrderList } from "../hooks/useOrderList";
-import { clearCart } from "../redux/orderSlice";
+import OrderDetailModal from "../components/OrderDetailModal";
+import PaginationControl from "@/components/navigation/PaginationControl";
+import ConfirmDialog from "@/components/feedback/ConfirmDialog";
+import PageHeader from "@/components/layout/PageHeader";
+import StatusBadge from "@/components/data-display/StatusBadge";
+import FilterBar from "@/components/search/FilterBar";
+import DataTable from "@/components/data-display/DataTable";
+import SearchBar from "@/components/search/SearchBar";
 
-const ORDER_STATUS_OPTIONS = [
-  { value: "", label: "Tat ca trang thai" },
-  { value: "Pending", label: "Cho xu ly" },
-  { value: "Confirmed", label: "Da xac nhan" },
-  { value: "Completed", label: "Hoan tat" },
-  { value: "Cancelled", label: "Da huy" },
-  { value: "Returned", label: "Da tra" },
-];
+import {
+  ORDER_STATUS_OPTIONS,
+  ORDER_TABLE_COLUMNS,
+  ORDER_STATUS_MAP,
+} from "../constants/orderConstants";
 
 const getOrderStatusBadge = (status) => {
-  switch (status) {
-    case "Completed":
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary-container bg-secondary-container/25 px-2.5 py-1 text-[11px] font-bold text-secondary">
-          <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-          Hoan tat
-        </span>
-      );
-    case "Confirmed":
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-container bg-primary-container/25 px-2.5 py-1 text-[11px] font-bold text-primary">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-          Da xac nhan
-        </span>
-      );
-    case "Pending":
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-tertiary-container bg-tertiary-container/25 px-2.5 py-1 text-[11px] font-bold text-tertiary">
-          <span className="h-1.5 w-1.5 rounded-full bg-tertiary animate-pulse" />
-          Cho xu ly
-        </span>
-      );
-    case "Cancelled":
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-error-container bg-error-container/20 px-2.5 py-1 text-[11px] font-bold text-error">
-          <span className="h-1.5 w-1.5 rounded-full bg-error" />
-          Da huy
-        </span>
-      );
-    case "Returned":
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-outline bg-outline/15 px-2.5 py-1 text-[11px] font-bold text-on-surface-variant">
-          <span className="h-1.5 w-1.5 rounded-full bg-outline" />
-          Da tra
-        </span>
-      );
-    default:
-      return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-outline bg-outline/10 px-2.5 py-1 text-[11px] font-bold text-on-surface-variant">
-          <span className="h-1.5 w-1.5 rounded-full bg-outline" />
-          Khong xac dinh
-        </span>
-      );
+  const config = ORDER_STATUS_MAP[status];
+  if (config) {
+    return <StatusBadge status={config.statusKey} label={config.label} />;
   }
-};
-
-const getOrderAmount = (order) => order.finalAmount || order.totalAmount || 0;
-const getOrderTimestamp = (order) => order.createdAt || order.orderDate;
-
-const getShortOrderNumber = (orderNumber) => {
-  const normalized = String(orderNumber ?? "").replace(/^#/, "");
-  const [prefix = "ORD", rawDate = "", rawSuffix = ""] = normalized.split("-");
-  const shortDate =
-    rawDate.length === 8 ? `${rawDate.slice(4, 6)}${rawDate.slice(6, 8)}` : rawDate;
-  const shortSuffix = rawSuffix.slice(-6) || rawSuffix;
-
-  if (!shortDate && !shortSuffix) {
-    return `#${normalized}`;
-  }
-
-  return `#${prefix}-${shortDate}-${shortSuffix}`;
+  return <StatusBadge status="pending" label={status} />;
 };
 
 const OrderListPage = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  // [CHƯA CÓ BE] useNavigate — sẽ cần khi BE có module Invoice
+  // const navigate = useNavigate();
   const location = useLocation();
+  const isAdmin = location.pathname.startsWith("/admin");
+  const roleLabel = isAdmin ? "Admin" : "Manager";
+  // [CHƯA CÓ BE] toast — tạm không cần
+  // const { toast } = useAppToast();
   const {
     orders,
+    rows,
+    searchQuery,
+    setSearchQuery,
     loading,
     filters,
     pagination,
+    executeCancelOrder,
     handlePageChange,
     handleFilterChange,
+    clearFilters,
     refetch,
   } = useOrderList();
 
-  const [statusDropdownOpen, setStatusDropdownOpen] = React.useState(false);
-  const roleBasePath =
-    location.pathname.startsWith("/manager") ? "/manager" : "/admin";
-  const posPagePath = "/manager/create-order";
+  const [detailOrderId, setDetailOrderId] = React.useState(null);
+  const [cancelOrderId, setCancelOrderId] = React.useState(null);
+  const [isCanceling, setIsCanceling] = React.useState(false);
+  const datepickerRef = React.useRef(null);
+  const [popoverDir, setPopoverDir] = React.useState("down");
+
+  const handleDatepickerInteraction = () => {
+    if (datepickerRef.current) {
+      const rect = datepickerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 350) {
+        setPopoverDir("up");
+      } else {
+        setPopoverDir("down");
+      }
+    }
+  };
+
+  const confirmCancel = async () => {
+    setIsCanceling(true);
+    await executeCancelOrder(cancelOrderId);
+    setIsCanceling(false);
+    setCancelOrderId(null);
+  };
 
   const dateValue = React.useMemo(
     () => ({
@@ -108,239 +88,179 @@ const OrderListPage = () => {
     [filters.fromDate, filters.toDate],
   );
 
-  return (
-    <div className="flex h-full flex-1 flex-col overflow-hidden bg-background p-container-p-mobile md:p-container-p-desktop">
-      <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h2 className="text-headline-lg font-bold tracking-tight text-on-surface">
-            Lich su don hang
-          </h2>
-          <p className="mt-1 text-body-md text-on-surface-variant">
-            Quan ly va theo doi cac don hang trong he thong.
-          </p>
-        </div>
-      </div>
-
-      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end">
-        <div className="flex flex-1 flex-col gap-4 sm:flex-row">
-          <div className="relative z-20 flex flex-1 flex-col justify-center rounded-2xl border border-outline-variant bg-white p-4">
-            <span className="mb-3 text-[13px] font-semibold text-on-surface">
-              Khoang thoi gian
-            </span>
-            <Datepicker
-              value={dateValue}
-              onChange={(newValue) => {
-                let from = newValue?.startDate || "";
-                let to = newValue?.endDate || "";
-
-                if (typeof from === "string" && from.includes("/")) {
-                  const [day, month, year] = from.split("/");
-                  from = `${year}-${month}-${day}`;
-                } else if (from) {
-                  from = dayjs(from).format("YYYY-MM-DD");
-                }
-
-                if (typeof to === "string" && to.includes("/")) {
-                  const [day, month, year] = to.split("/");
-                  to = `${year}-${month}-${day}`;
-                } else if (to) {
-                  to = dayjs(to).format("YYYY-MM-DD");
-                }
-
-                handleFilterChange({
-                  fromDate: from,
-                  toDate: to,
-                });
-              }}
-              useRange={false}
-              showShortcuts={true}
-              primaryColor="teal"
-              inputClassName="w-full rounded-full border border-outline-variant bg-white px-4 py-2 text-sm text-on-surface outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
-              displayFormat="DD/MM/YYYY"
-              placeholder="Tu ngay - Den ngay"
-              separator="-"
-            />
-          </div>
-
-          <div className="flex flex-1 flex-col justify-center rounded-2xl border border-outline-variant bg-white p-4">
-            <span className="mb-3 text-[13px] font-semibold text-on-surface">
-              Trang thai don
-            </span>
-            <div className="relative">
-              <div
-                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className={`flex cursor-pointer items-center rounded-full border px-4 py-2 text-sm text-on-surface transition-all ${
-                  statusDropdownOpen
-                    ? "border-primary ring-1 ring-primary"
-                    : "border-outline-variant hover:border-outline"
-                }`}
-              >
-                <span className="material-symbols-outlined mr-2 text-[18px] text-on-surface-variant">
-                  assignment
-                </span>
-                <span className="flex-1 truncate text-[13px]">
-                  {ORDER_STATUS_OPTIONS.find((opt) => opt.value === filters.orderStatus)
-                    ?.label || "Tat ca trang thai"}
-                </span>
-                <span
-                  className={`material-symbols-outlined text-[18px] text-on-surface-variant transition-transform ${
-                    statusDropdownOpen ? "rotate-180" : ""
-                  }`}
-                >
-                  arrow_drop_down
-                </span>
-              </div>
-
-              {statusDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-30"
-                    onClick={() => setStatusDropdownOpen(false)}
-                  />
-                  <div className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-xl border border-outline-variant bg-white py-1 shadow-lg">
-                    {ORDER_STATUS_OPTIONS.map((option) => (
-                      <div
-                        key={option.value}
-                        onClick={() => {
-                          handleFilterChange({ orderStatus: option.value });
-                          setStatusDropdownOpen(false);
-                        }}
-                        className={`cursor-pointer px-4 py-2.5 text-[13px] transition-colors ${
-                          filters.orderStatus === option.value
-                            ? "bg-primary-container font-semibold text-on-primary-container"
-                            : "text-on-surface hover:bg-surface-container-low"
-                        }`}
-                      >
-                        {option.label}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+  const renderCell = (key, value, row) => {
+    switch (key) {
+      case "orderNumber":
+        return <span className="font-bold text-primary">#{value}</span>;
+      case "createdAt":
+        return (
+          <div>
+            <div className="font-body-md text-md text-on-surface">
+              {dayjs(value).format("HH:mm")}
+            </div>
+            <div className="font-body-sm text-sm text-on-surface-variant">
+              {dayjs(value).format("DD/MM/YYYY")}
             </div>
           </div>
-        </div>
-
-        <div className="flex flex-col items-stretch justify-end gap-3 sm:flex-row sm:items-center xl:flex-col xl:items-end">
-          {roleBasePath === "/manager" && (
+        );
+      case "staffName":
+        return <span className="font-medium text-on-surface">{value}</span>;
+      case "totalAmount":
+        return (
+          <span className="font-bold text-on-surface">
+            {formatCurrency(value)}
+          </span>
+        );
+      case "orderStatus":
+        return getOrderStatusBadge(value);
+      case "actions":
+        return (
+          <div className="flex items-center gap-2">
             <button
-              type="button"
-              onClick={() => {
-                dispatch(clearCart());
-                navigate(posPagePath);
-              }}
-              className="h-[42px] w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-all hover:bg-primary/90 sm:w-[130px]"
+              onClick={() => setDetailOrderId(row.id)}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant"
+              title="Xem chi tiết đơn hàng"
             >
-              <span className="flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                Tao POS
+              <span className="material-symbols-outlined text-[20px]">
+                visibility
               </span>
             </button>
-          )}
-          <button
-            type="button"
-            onClick={refetch}
-            className="flex h-[42px] w-full items-center justify-center gap-2 rounded-full border border-primary bg-white px-4 py-2.5 text-sm font-semibold text-primary shadow-sm transition-all hover:bg-primary-container hover:text-on-primary-container sm:w-[130px]"
-            title="Tai lai du lieu"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              refresh
-            </span>
-            Tai lai
-          </button>
+            {row.orderStatus === "Pending" && (
+              <button
+                onClick={() => setCancelOrderId(row.id)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-error/10 transition-colors text-error"
+                title="Huỷ đơn hàng"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  cancel
+                </span>
+              </button>
+            )}
+          </div>
+        );
+      default:
+        return String(value ?? "—");
+    }
+  };
+
+  return (
+    <section className="space-y-6">
+      {/* Title */}
+      <PageHeader
+        breadcrumbs={[{ label: roleLabel }, { label: "Lịch sử đơn hàng" }]}
+        title={isAdmin ? "Quản lý đơn hàng" : "Danh sách đơn hàng"}
+        subtitle={
+          isAdmin
+            ? "Quản lý, theo dõi và xử lý các giao dịch trong hệ thống."
+            : "Xem danh sách các giao dịch đơn hàng trong hệ thống."
+        }
+      />
+
+      {/* Toolbar + Table card */}
+      <div className="space-y-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-soft flex flex-col flex-1 min-h-0 overflow-hidden">
+        {/* Toolbar: Search + Date + Filters */}
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1 max-w-2xl">
+            {/* Search Bar */}
+            <div className="w-full sm:max-w-[240px]">
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Tìm mã đơn, người tạo..."
+              />
+            </div>
+
+            {/* Khoảng thời gian (Date Picker) */}
+            <div
+              ref={datepickerRef}
+              onClick={handleDatepickerInteraction}
+              onFocusCapture={handleDatepickerInteraction}
+              className="w-full sm:max-w-[200px] relative z-20"
+            >
+              <Datepicker
+                popoverDirection={popoverDir}
+                value={dateValue}
+                onChange={(newValue) => {
+                  let from = newValue?.startDate || "";
+                  let to = newValue?.endDate || "";
+                  if (typeof from === "string" && from.includes("/")) {
+                    const [d, m, y] = from.split("/");
+                    from = `${y}-${m}-${d}`;
+                  } else if (from) {
+                    from = dayjs(from).format("YYYY-MM-DD");
+                  }
+
+                  if (typeof to === "string" && to.includes("/")) {
+                    const [d, m, y] = to.split("/");
+                    to = `${y}-${m}-${d}`;
+                  } else if (to) {
+                    to = dayjs(to).format("YYYY-MM-DD");
+                  }
+
+                  handleFilterChange({
+                    fromDate: from,
+                    toDate: to,
+                  });
+                }}
+                useRange={false}
+                showShortcuts={true}
+                primaryColor="teal"
+                inputClassName="w-full text-sm bg-white border border-outline-variant rounded-full px-4 py-2 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                displayFormat="DD/MM/YYYY"
+                placeholder="Chọn ngày"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <FilterBar
+              filters={[
+                {
+                  key: "orderStatus",
+                  label: "Trạng thái",
+                  options: ORDER_STATUS_OPTIONS,
+                },
+              ]}
+              values={{
+                orderStatus: filters.orderStatus,
+                fromDate: filters.fromDate,
+                toDate: filters.toDate,
+              }}
+              onChange={(key, value) => handleFilterChange({ [key]: value })}
+              onReset={clearFilters}
+            />
+
+            {/* Action Buttons */}
+            <button
+              onClick={refetch}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-primary text-primary rounded-lg hover:bg-primary-container transition-all font-label-md text-sm font-semibold h-[38px]"
+              title="Tải lại dữ liệu"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                refresh
+              </span>
+              Tải lại
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface shadow-sm">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center gap-3 p-12">
-            <Spinner size="lg" />
-            <p className="text-sm text-on-surface-variant">
-              Dang tai danh sach don hang...
-            </p>
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center text-on-surface-variant">
-            <span className="material-symbols-outlined mb-2 text-[48px] text-outline/50">
-              receipt_long
-            </span>
-            <p className="font-semibold text-on-surface">
-              Khong tim thay don hang nao
-            </p>
-            <p className="text-xs">
-              Vui long thay doi tu khoa hoac bo loc de xem ket qua.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-outline-variant bg-surface-container">
-                  <th className="whitespace-nowrap px-6 py-4 text-label-md text-on-surface-variant">
-                    Ma DH
-                  </th>
-                  <th className="whitespace-nowrap px-6 py-4 text-label-md text-on-surface-variant">
-                    Thoi gian
-                  </th>
-                  <th className="whitespace-nowrap px-6 py-4 text-label-md text-on-surface-variant">
-                    Nguoi tao
-                  </th>
-                  <th className="whitespace-nowrap px-6 py-4 text-right text-label-md text-on-surface-variant">
-                    Tong tien
-                  </th>
-                  <th className="whitespace-nowrap px-6 py-4 text-label-md text-on-surface-variant">
-                    Trang thai
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/50">
-                {orders.map((order) => {
-                  const orderTimestamp = getOrderTimestamp(order);
+        {/* Data Table wrapped for alignment */}
+        <div className="flex-1 min-h-0 overflow-y-auto [&_th:nth-child(4)]:text-right [&_td:nth-child(4)]:text-right [&_th:nth-child(4)_span]:justify-end [&_th:nth-child(4)_span]:w-full">
+          <DataTable
+            columns={ORDER_TABLE_COLUMNS}
+            rows={rows}
+            isLoading={loading}
+            emptyTitle="Không tìm thấy đơn hàng nào"
+            emptyMessage="Hãy thử đổi bộ lọc hoặc từ khóa tìm kiếm khác."
+            renderCell={renderCell}
+          />
+        </div>
 
-                  return (
-                    <tr
-                      key={order._id}
-                      className="transition-colors duration-200 hover:bg-surface-container-low"
-                    >
-                      <td
-                        className="whitespace-nowrap px-6 py-4 text-label-md font-bold text-primary"
-                        title={`#${order.orderNumber}`}
-                      >
-                        {getShortOrderNumber(order.orderNumber)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-body-md text-on-surface">
-                          {dayjs(orderTimestamp).format("HH:mm")}
-                        </div>
-                        <div className="text-body-sm text-on-surface-variant">
-                          {dayjs(orderTimestamp).format("DD/MM/YYYY")}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-body-md text-on-surface">
-                        {order.staffId?.fullName ||
-                          order.staffId?.username ||
-                          (typeof order.staffId === "string"
-                            ? order.staffId.slice(-6)
-                            : "N/A")}
-                      </td>
-                      <td className="px-6 py-4 text-right text-body-md font-semibold text-on-surface">
-                        {formatCurrency(getOrderAmount(order))}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        {getOrderStatusBadge(order.orderStatus)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
+        {/* Pagination Footer */}
         {!loading && orders.length > 0 && (
-          <div className="flex flex-col items-center justify-between gap-4 border-t border-outline-variant bg-surface-container-low p-4 sm:flex-row">
-            <div className="text-xs text-on-surface-variant">
-              Hien thi{" "}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-outline-variant pt-5">
+            <div className="text-body-sm text-on-surface-variant">
+              Hiển thị{" "}
               <span className="font-semibold text-on-surface">
                 {(pagination.page - 1) * pagination.limit + 1} -{" "}
                 {Math.min(pagination.page * pagination.limit, pagination.total)}
@@ -349,55 +269,43 @@ const OrderListPage = () => {
               <span className="font-semibold text-on-surface">
                 {pagination.total}
               </span>{" "}
-              don hang
+              đơn hàng
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page <= 1}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  chevron_left
-                </span>
-              </button>
-
-              <div className="flex items-center gap-1 text-xs">
-                {Array.from(
-                  { length: pagination.totalPages },
-                  (_, index) => index + 1,
-                ).map((pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    type="button"
-                    onClick={() => handlePageChange(pageNumber)}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full font-bold transition-all ${
-                      pagination.page === pageNumber
-                        ? "bg-primary text-on-primary shadow-sm"
-                        : "text-on-surface hover:bg-surface-container"
-                    }`}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page >= pagination.totalPages}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-outline-variant text-on-surface-variant transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  chevron_right
-                </span>
-              </button>
-            </div>
+            <PaginationControl
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+            />
           </div>
         )}
       </div>
-    </div>
+
+      {/* Order Detail Modal */}
+      {createPortal(
+        <OrderDetailModal
+          open={!!detailOrderId}
+          onClose={() => setDetailOrderId(null)}
+          orderId={detailOrderId}
+        />,
+        document.body,
+      )}
+
+      {/* Cancel Order Confirm Dialog */}
+      {createPortal(
+        <ConfirmDialog
+          open={!!cancelOrderId}
+          title="Huỷ đơn hàng"
+          description="Bạn có chắc chắn muốn huỷ đơn hàng này? Thao tác này không thể hoàn tác."
+          confirmLabel="Huỷ đơn"
+          cancelLabel="Đóng"
+          variant="danger"
+          isLoading={isCanceling}
+          onConfirm={confirmCancel}
+          onCancel={() => setCancelOrderId(null)}
+        />,
+        document.body,
+      )}
+    </section>
   );
 };
 

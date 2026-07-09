@@ -1,23 +1,16 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import dayjs from "dayjs";
 import * as dailyMenuApi from "../api/dailyMenuApi";
 
 export const fetchTodayMenu = createAsyncThunk(
   "dailyMenu/fetchTodayMenu",
-  async (_, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
-      return await dailyMenuApi.getTodayMenu();
+      return await dailyMenuApi.getTodayMenu(params);
     } catch (error) {
-      if (
-        error?.response?.status === 404 ||
-        error?.response?.data?.error?.code === "DAILY_MENU_NOT_FOUND"
-      ) {
-        return null;
-      }
-
       return rejectWithValue(error);
     }
-  },
+  }
 );
 
 const initialState = {
@@ -87,11 +80,10 @@ const dailyMenuSlice = createSlice({
       .addCase(fetchTodayMenu.fulfilled, (state, action) => {
         state.isLoading = false;
         state.menu = action.payload;
-        state.error = null;
       })
       .addCase(fetchTodayMenu.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload ?? action.error;
+        state.error = action.payload;
       });
   },
 });

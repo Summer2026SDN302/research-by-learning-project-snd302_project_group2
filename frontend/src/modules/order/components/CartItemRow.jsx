@@ -1,104 +1,169 @@
-import React from "react";
+import { useState } from "react";
 import { formatCurrency } from "@/utils/formatters";
 
-const CartItemRow = ({ item, onUpdateNote, onUpdateQuantity, onRemove }) => {
-  const [isNoteOpen, setIsNoteOpen] = React.useState(false);
-  const canIncreaseQuantity =
-    item.canIncreaseQuantity ?? item.quantity < (item.maxSelectableQuantity ?? Infinity);
-  const actualRemainingQuantity = item.actualRemainingQuantity ?? 0;
-  const reservedQuantity = item.reservedQuantity ?? 0;
-  const hasItemNote = Boolean(String(item.note ?? "").trim());
+/**
+ * CartItemRow
+ *
+ * Props:
+ *   item             {Object}   - Cart item: { foodItemId, name, unitPrice, quantity }
+ *   onUpdateQuantity {Function} - (foodItemId, newQty) => void
+ *   onRemove         {Function} - (foodItemId) => void
+ *   onUpdateNote     {Function} - (foodItemId, newNote) => void — BE chưa có field note cho item
+ */
+const CartItemRow = ({ item, onUpdateQuantity, onUpdateNote, onRemove }) => {
+  const [localQty, setLocalQty] = useState(item.quantity);
+  const [prevQty, setPrevQty] = useState(item.quantity);
+
+  if (item.quantity !== prevQty) {
+    setPrevQty(item.quantity);
+    setLocalQty(item.quantity);
+  }
+
+  const handleInputChange = (e) => {
+    const valStr = e.target.value;
+    setLocalQty(valStr);
+    const parsed = parseInt(valStr, 10);
+    if (!isNaN(parsed) && parsed >= 1) {
+      onUpdateQuantity(item.foodItemId, parsed);
+    }
+  };
+
+  const handleInputBlur = () => {
+    const parsed = parseInt(localQty, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setLocalQty(1);
+      onUpdateQuantity(item.foodItemId, 1);
+    }
+  };
+
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteValue, setNoteValue] = useState(item.note || "");
+  const handleNoteSave = () => {
+    onUpdateNote(item.foodItemId, noteValue);
+    setShowNoteInput(false);
+  };
+  const handleNoteCancel = () => {
+    setNoteValue(item.note || "");
+    setShowNoteInput(false);
+  };
 
   return (
-    <div className="flex flex-col gap-1 pb-3 border-b border-outline-variant/30 last:border-b-0 group">
-      <div className="flex justify-between items-start gap-4">
+    <div className="flex flex-col gap-0.5 pb-2 border-b border-outline-variant/30 last:border-b-0 group">
+      <div className="flex justify-between items-center gap-4">
+        {/* Item Info */}
         <div className="flex-1 min-w-0">
-          <h4 className="font-body-md text-body-md text-on-surface font-semibold truncate">
+          <h4 className="font-body-sm text-body-sm text-on-surface font-semibold truncate">
             {item.name}
           </h4>
 
-          <div className="font-body-sm text-primary font-bold mt-1">
-            {formatCurrency(item.unitPrice)}
-          </div>
+          {item.note && !showNoteInput && (
+            <p className="text-[11px] text-primary italic font-medium mt-0.5 flex items-center gap-1">
+              <span className="material-symbols-outlined text-[12px]">
+                edit_note
+              </span>
+              {item.note}
+            </p>
+          )}
 
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-on-surface-variant">
-            <span>Con lai he thong: {actualRemainingQuantity}</span>
-            <span>Toi da chon: {item.maxSelectableQuantity ?? item.quantity}</span>
-            {reservedQuantity > 0 && <span>Da giu trong don: {reservedQuantity}</span>}
+          <div className="font-body-xs text-on-surface-variant mt-0.5 text-[12px] font-medium">
+            {item.quantity} × {formatCurrency(item.unitPrice)}
           </div>
         </div>
 
+        {/* Action controls */}
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label={`Ghi chu rieng cho ${item.name}`}
-            aria-expanded={isNoteOpen}
-            onClick={() => setIsNoteOpen((prev) => !prev)}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all ${
-              isNoteOpen || hasItemNote
-                ? "border-primary/20 bg-primary-container/70 text-primary"
-                : "border-transparent bg-surface-container text-on-surface-variant hover:text-primary"
-            }`}
-            title={hasItemNote ? "Da co ghi chu rieng" : "Them ghi chu rieng"}
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              edit_note
-            </span>
-          </button>
+          {!showNoteInput && (
+            <button
+              type="button"
+              onClick={() => setShowNoteInput(true)}
+              className="p-1 rounded-md text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+              title="Thêm ghi chú"
+            >
+              <span className="material-symbols-outlined text-[16px]">
+                edit_note
+              </span>
+            </button>
+          )}
 
-          <div className="flex items-center gap-3 bg-surface-container rounded-lg p-1">
-            <button
-              type="button"
-              onClick={() => onUpdateQuantity(item.foodItemId, item.quantity - 1)}
-              className="w-6 h-6 flex items-center justify-center rounded-md bg-surface-container-lowest text-on-surface hover:text-primary hover:shadow-sm transition-all"
-            >
-              <span className="material-symbols-outlined text-[16px]">remove</span>
-            </button>
-            <span className="font-label-md text-label-md text-on-surface min-w-[1.25rem] text-center select-none font-semibold">
-              {item.quantity}
-            </span>
-            <button
-              type="button"
-              disabled={!canIncreaseQuantity}
-              onClick={() => onUpdateQuantity(item.foodItemId, item.quantity + 1)}
-              className="w-6 h-6 flex items-center justify-center rounded-md bg-surface-container-lowest text-on-surface hover:text-primary hover:shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:shadow-none disabled:hover:text-on-surface"
-              title={
-                canIncreaseQuantity
-                  ? "Tang so luong"
-                  : "Da dat toi da so luong con lai"
-              }
-            >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-            </button>
+          {/* Quantity Selector + Line Total underneath */}
+          <div className="flex flex-col items-center gap-1">
+            {/* Quantity selector */}
+            <div className="flex items-center gap-2 bg-surface-container rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateQuantity(item.foodItemId, item.quantity - 1)
+                }
+                className="w-5 h-5 flex items-center justify-center rounded-lg bg-surface-container-lowest text-on-surface hover:text-primary hover:shadow-sm transition-all"
+              >
+                <span className="material-symbols-outlined text-[13px]">
+                  remove
+                </span>
+              </button>
+              <input
+                type="number"
+                min="1"
+                value={localQty}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
+                className="font-label-sm text-sm text-on-surface w-6 text-center font-semibold bg-transparent focus:outline-none border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateQuantity(item.foodItemId, item.quantity + 1)
+                }
+                className="w-5 h-5 flex items-center justify-center rounded-lg bg-surface-container-lowest text-on-surface hover:text-primary hover:shadow-sm transition-all"
+              >
+                <span className="material-symbols-outlined text-[13px]">
+                  add
+                </span>
+              </button>
+            </div>
+
+            {/* Line Total */}
+            <div className="text-[12px] font-body-xs text-primary font-bold">
+              {formatCurrency(item.unitPrice * item.quantity)}
+            </div>
           </div>
 
+          {/* Remove Button */}
           <button
             type="button"
             onClick={() => onRemove(item.foodItemId)}
-            className="p-1 text-on-surface-variant hover:text-error hover:bg-error-container/20 rounded-md transition-colors"
-            title="Xoa khoi don"
+            className="p-1 text-error hover:text-error hover:bg-error-container/20 rounded-md transition-colors flex items-center justify-center"
+            title="Xóa khỏi đơn"
           >
-            <span className="material-symbols-outlined text-[18px]">close</span>
+            <span className="material-symbols-outlined text-[16px]">
+              delete
+            </span>
           </button>
         </div>
       </div>
 
-      {isNoteOpen && (
-        <div className="pr-9 pt-2">
-          <label
-            htmlFor={`item-note-${item.foodItemId}`}
-            className="sr-only"
-          >
-            Ghi chu rieng cho {item.name}
-          </label>
+      {showNoteInput && (
+        <div className="flex gap-2 mt-2 items-center bg-surface-container-low p-2 rounded-lg border border-outline-variant/40">
           <input
-            id={`item-note-${item.foodItemId}`}
             type="text"
-            value={item.note ?? ""}
-            onChange={(event) => onUpdateNote(item.foodItemId, event.target.value)}
-            placeholder="Vi du: it da, khong hanh, tach rieng..."
-            className="w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 py-2 text-[13px] text-on-surface transition-all focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            placeholder="Ghi chú món ăn..."
+            value={noteValue}
+            onChange={(e) => setNoteValue(e.target.value)}
+            className="flex-1 bg-surface-container-lowest border border-outline-variant/60 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-on-surface"
           />
+          <button
+            type="button"
+            onClick={handleNoteSave}
+            className="px-2.5 py-1 bg-primary text-on-primary rounded-md text-xs font-semibold hover:opacity-95"
+          >
+            Lưu
+          </button>
+          <button
+            type="button"
+            onClick={handleNoteCancel}
+            className="px-2.5 py-1 bg-surface-container text-on-surface rounded-md text-xs font-semibold hover:bg-surface-container-high"
+          >
+            Hủy
+          </button>
         </div>
       )}
     </div>

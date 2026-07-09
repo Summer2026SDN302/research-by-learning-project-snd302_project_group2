@@ -1,21 +1,16 @@
 import dayjs from "dayjs";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchMyOrdersThunk,
   fetchOwnOrderKpisThunk,
+  cancelOrderThunk,
 } from "../redux/orderSlice";
 import useAppToast from "@/hooks/useAppToast";
+import { getApiErrorMsg } from "@/utils/errorUtils";
+import { ORDER_ERROR_MAP } from "../constants/orderConstants";
 
 const getTodayDateString = () => dayjs().format("YYYY-MM-DD");
-
-const INITIAL_FILTERS = {
-  orderStatus: "",
-  fromDate: "",
-  toDate: "",
-  page: 1,
-  limit: 10,
-};
 
 export const useOwnOrderHistory = () => {
   const dispatch = useDispatch();
@@ -27,26 +22,53 @@ export const useOwnOrderHistory = () => {
   const error = useSelector((state) => state.order.listError);
   const kpis = useSelector((state) => state.order.ownHistoryKpis);
 
-  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({
+    // [CHƯA CÓ BE] search — BE chưa hỗ trợ tìm kiếm theo keyword
+    orderStatus: "",
+    fromDate: "", // Lọc từ ngày
+    toDate: "", // Lọc đến ngày
+    // [CHƯA CÓ BE] paymentStatus — BE chưa có field paymentStatus trong Order model
+    page: 1,
+    limit: 10,
+  });
 
   const clearFilters = () => {
-    setFilters(INITIAL_FILTERS);
+    setFilters({
+      orderStatus: "",
+      fromDate: "",
+      toDate: "",
+      page: 1,
+      limit: 10,
+    });
   };
 
+  /**
+   * Gọi GET /api/orders/my-orders — BE tự ép staffId = req.userId
+   * Khác với fetchOrdersThunk (GET /api/orders) chỉ dành cho Admin/Manager
+   */
   const fetchOrdersData = useCallback(async () => {
     const queryParams = {
       page: filters.page,
       limit: filters.limit,
     };
-
     if (filters.orderStatus) queryParams.orderStatus = filters.orderStatus;
     if (filters.fromDate) queryParams.fromDate = filters.fromDate;
     if (filters.toDate) queryParams.toDate = filters.toDate;
+    // [CHƯA CÓ BE] search
+    // [CHƯA CÓ BE] paymentStatus
 
     try {
       await dispatch(fetchMyOrdersThunk(queryParams)).unwrap();
     } catch (err) {
-      toast.error("Loi", err?.message || "Khong the tai danh sach don hang.");
+      toast.error(
+        "Lỗi",
+        getApiErrorMsg(
+          ORDER_ERROR_MAP,
+          err,
+          "Không thể tải danh sách đơn hàng.",
+        ),
+      );
     }
   }, [dispatch, filters, toast]);
 
@@ -74,13 +96,49 @@ export const useOwnOrderHistory = () => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   };
 
+  const executeCancelOrder = async (orderId) => {
+    try {
+      await dispatch(cancelOrderThunk(orderId)).unwrap();
+      toast.success("Thành công", "Đã huỷ đơn hàng thành công!");
+      fetchOrdersData();
+      fetchKpiData();
+      return true;
+    } catch (err) {
+      toast.error(
+        "Lỗi",
+        getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể huỷ đơn hàng."),
+      );
+      return false;
+    }
+  };
+
+  const rows = useMemo(() => {
+    const mapped = orders.map((order) => ({
+      id: order._id,
+      orderNumber: order.orderNumber,
+      createdAt: order.createdAt,
+      totalAmount: order.totalAmount,
+      orderStatus: order.orderStatus,
+      _raw: order,
+    }));
+
+    if (!searchQuery.trim()) return mapped;
+
+    const query = searchQuery.toLowerCase().trim();
+    return mapped.filter((r) => r.orderNumber?.toLowerCase().includes(query));
+  }, [orders, searchQuery]);
+
   return {
     orders,
+    rows,
+    searchQuery,
+    setSearchQuery,
     loading: listStatus === "loading",
     error: error?.message || error || null,
     kpis,
     filters,
     pagination,
+    executeCancelOrder,
     handlePageChange,
     handleFilterChange,
     clearFilters,
