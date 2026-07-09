@@ -22,6 +22,20 @@ export const validateCreateOrder = [
   body("items.*.quantity")
     .isInt({ min: 1 })
     .withMessage("Quantity must be at least 1"),
+  body("items.*.note")
+    .optional()
+    .isString()
+    .withMessage("Item note must be a string")
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage("Item note must not exceed 200 characters"),
+  body("notes")
+    .optional()
+    .isString()
+    .withMessage("Order notes must be a string")
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage("Order notes must not exceed 500 characters"),
 ];
 
 export const validateUpdateStatus = [
@@ -29,6 +43,26 @@ export const validateUpdateStatus = [
   body("orderStatus")
     .isIn(Object.values(ORDER_STATUS))
     .withMessage("Invalid order status"),
+];
+
+export const validateUpdateItems = [
+  param("id").isMongoId().withMessage("Invalid order id"),
+  body("items")
+    .isArray({ min: 1 })
+    .withMessage("Order must have at least one item"),
+  body("items.*.foodItemId")
+    .isMongoId()
+    .withMessage("Invalid food item id"),
+  body("items.*.quantity")
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be at least 1"),
+  body("items.*.note")
+    .optional()
+    .isString()
+    .withMessage("Item note must be a string")
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage("Item note must not exceed 200 characters"),
 ];
 
 export const validateGetOrders = [
