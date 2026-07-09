@@ -36,6 +36,11 @@ const orderItemSchema = new Schema(
       required: true,
       min: 0,
     },
+
+    note: {
+      type: String,
+      default: "",
+    },
   },
   { _id: false },
 );
@@ -58,7 +63,7 @@ const orderSchema = new Schema(
     items: [orderItemSchema],
 
     /**
-     * Tong gia truoc thue: Sigma lineTotal cua tat ca order items.
+     * Tổng giá trước thuế
      */
     subTotal: {
       type: Number,
@@ -91,8 +96,13 @@ const orderSchema = new Schema(
     },
 
     orderDate: {
-      type: Date, // Fix #5: dung Date thay vi String de ho tro query $gte/$lte theo range
+      type: Date,
       required: true,
+    },
+
+    notes: {
+      type: String,
+      default: "",
     },
   },
   {

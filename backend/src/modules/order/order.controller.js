@@ -41,3 +41,22 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   );
   return successResponse(res, data, "Order status updated successfully");
 });
+
+export const cancelOrder = asyncHandler(async (req, res) => {
+  const data = await orderService.cancelOrder(
+    req.params.id,
+    req.userId,
+    req.user.role,
+  );
+  return successResponse(res, data, "Order cancelled successfully");
+});
+
+export const updateOrderItems = asyncHandler(async (req, res) => {
+  const data = await orderService.updateOrderItems(
+    req.params.id,
+    req.body.items,
+    req.userId,
+    req.user.role,
+  );
+  return successResponse(res, data, "Order items updated successfully");
+});

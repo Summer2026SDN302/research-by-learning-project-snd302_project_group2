@@ -20,8 +20,8 @@ export const countActiveByFoodItemId = async (foodItemId, fromDate) => {
   });
 };
 
-export const findMenuByDate = async (date) => {
-  return DailyMenu.findOne({ date })
+export const findMenuByDate = async (date, filter = {}) => {
+  return DailyMenu.findOne({ date, ...filter })
     .populate("createdBy", "-passwordHash")
     .populate({
       path: "items.foodItemId",
@@ -221,43 +221,34 @@ export const decrementSoldQuantity = async (
   );
 };
 
-export const adjustSoldQuantity = async (
+export const incrementSoldQuantity = async (
   menuId,
   foodItemId,
-  quantityDelta,
+  quantity,
   session,
 ) => {
-  if (!quantityDelta) {
-    return true;
-  }
-
-  const reserveQuantity = Math.abs(quantityDelta);
-  const arrayFilter =
-    quantityDelta > 0
-      ? {
-          "item.foodItemId": toObjectId(foodItemId),
-          "item.remainingQuantity": { $gte: reserveQuantity },
-        }
-      : {
-          "item.foodItemId": toObjectId(foodItemId),
-          "item.soldQuantity": { $gte: reserveQuantity },
-        };
-
-  const result = await DailyMenu.updateOne(
-    { _id: toObjectId(menuId) },
+  return DailyMenu.findByIdAndUpdate(
+    menuId,
     {
       $inc: {
-        "items.$[item].soldQuantity": quantityDelta,
-        "items.$[item].remainingQuantity": -quantityDelta,
+        "items.$[item].soldQuantity": -quantity,
+        "items.$[item].remainingQuantity": quantity,
       },
     },
     {
-      arrayFilters: [arrayFilter],
+      // Guard: chỉ hoàn trả nếu soldQuantity đủ lớn, tránh để giá trị âm.
+      // Trường hợp soldQuantity < quantity là bất thường (dữ liệu bị lệch),
+      // giữ nguyên thay vì tạo giá trị âm.
+      arrayFilters: [
+        {
+          "item.foodItemId": toObjectId(foodItemId),
+          "item.soldQuantity": { $gte: quantity },
+        },
+      ],
+      new: true,
       session,
     },
   );
-
-  return result.modifiedCount > 0;
 };
 
 export const setItemUnavailable = async (menuId, foodItemId) => {
