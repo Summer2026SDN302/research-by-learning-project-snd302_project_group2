@@ -25,7 +25,7 @@
  * }
  */
 export const getApiErrorMsg = (errorMap, err, fallback = 'Có lỗi xảy ra, vui lòng thử lại.') => {
-  const code = err?.response?.data?.error?.code;
+  const code = err?.code || err?.response?.data?.error?.code;
   if (code && errorMap?.[code]) {
     return errorMap[code];
   }
