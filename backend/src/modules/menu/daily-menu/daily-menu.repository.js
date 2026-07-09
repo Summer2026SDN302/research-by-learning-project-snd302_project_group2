@@ -221,6 +221,36 @@ export const decrementSoldQuantity = async (
   );
 };
 
+export const incrementSoldQuantity = async (
+  menuId,
+  foodItemId,
+  quantity,
+  session,
+) => {
+  return DailyMenu.findByIdAndUpdate(
+    menuId,
+    {
+      $inc: {
+        "items.$[item].soldQuantity": -quantity,
+        "items.$[item].remainingQuantity": quantity,
+      },
+    },
+    {
+      // Guard: chỉ hoàn trả nếu soldQuantity đủ lớn, tránh để giá trị âm.
+      // Trường hợp soldQuantity < quantity là bất thường (dữ liệu bị lệch),
+      // giữ nguyên thay vì tạo giá trị âm.
+      arrayFilters: [
+        {
+          "item.foodItemId": toObjectId(foodItemId),
+          "item.soldQuantity": { $gte: quantity },
+        },
+      ],
+      new: true,
+      session,
+    },
+  );
+};
+
 export const setItemUnavailable = async (menuId, foodItemId) => {
   return DailyMenu.findByIdAndUpdate(
     menuId,
