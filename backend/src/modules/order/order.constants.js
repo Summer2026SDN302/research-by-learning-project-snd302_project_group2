@@ -9,12 +9,13 @@ export const ORDER_READ_ROLES = [
 export const ORDER_READ_ALL_ROLES = [USER_ROLES.ADMIN, USER_ROLES.MANAGER];
 export const ORDER_MY_ORDERS_ROLES = [USER_ROLES.MANAGER, USER_ROLES.STAFF];
 
-export const ORDER_CREATE_ROLES = [
+export const ORDER_CREATE_ROLES = [USER_ROLES.MANAGER, USER_ROLES.STAFF];
+
+export const ORDER_STATUS_MANAGE_ROLES = [
+  USER_ROLES.ADMIN,
   USER_ROLES.MANAGER,
   USER_ROLES.STAFF,
 ];
-
-export const ORDER_STATUS_MANAGE_ROLES = [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF];
 
 /** Thuế VAT áp dụng trên subTotal. 8% = 0.08 */
 export const TAX_PERCENT = 0.08;
@@ -27,6 +28,7 @@ export const ORDER_STATUS = {
   RETURNED: "Returned",
 };
 
+export const ORDER_STATUS_VALUES = Object.values(ORDER_STATUS);
 export const VALID_STATUS_TRANSITIONS = {
   Pending: ["Confirmed", "Cancelled"],
   Confirmed: ["Completed", "Returned"],

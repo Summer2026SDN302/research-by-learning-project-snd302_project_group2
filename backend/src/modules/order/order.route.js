@@ -6,6 +6,7 @@ import {
   validateGetOrderById,
   validateGetOrders,
   validateUpdateStatus,
+  validateUpdateItems,
 } from "./order.validation.js";
 import {
   ORDER_CREATE_ROLES,
@@ -23,7 +24,7 @@ const router = express.Router();
 // Apply authentication to all order routes
 router.use(authenticate);
 
-// GET /api/orders/my-orders – Staff/Manager xem order của chính mình
+// GET /api/orders/my-orders - Staff/Manager xem order cua chinh minh
 router.get(
   "/my-orders",
   authorizeRoles(...ORDER_MY_ORDERS_ROLES),
@@ -32,7 +33,7 @@ router.get(
   orderController.getMyOrders,
 );
 
-// GET /api/orders – Manager/Admin xem tất cả order
+// GET /api/orders - Manager/Admin xem tat ca order
 router.get(
   "/",
   authorizeRoles(...ORDER_READ_ALL_ROLES),
@@ -50,7 +51,7 @@ router.get(
   orderController.getOrderById,
 );
 
-// POST /api/orders – Staff/Manager/Admin create order
+// POST /api/orders – Staff/Manager create order
 router.post(
   "/",
   authorizeRoles(...ORDER_CREATE_ROLES),
@@ -59,13 +60,31 @@ router.post(
   orderController.createOrder,
 );
 
-// PATCH /api/orders/:id/status – Manager/Admin manage status
+// PATCH /api/orders/:id/status - Manager/Admin manage status
 router.patch(
   "/:id/status",
   authorizeRoles(...ORDER_STATUS_MANAGE_ROLES),
   validateUpdateStatus,
   validateRequest,
   orderController.updateOrderStatus,
+);
+
+// PATCH /api/orders/:id/cancel – Hủy đơn hàng (Staff chỉ hủy đơn của mình)
+router.patch(
+  "/:id/cancel",
+  authorizeRoles(...ORDER_STATUS_MANAGE_ROLES),
+  validateGetOrderById,
+  validateRequest,
+  orderController.cancelOrder,
+);
+
+// PATCH /api/orders/:id/items – Cập nhật danh sách món (chỉ đơn Pending)
+router.patch(
+  "/:id/items",
+  authorizeRoles(...ORDER_CREATE_ROLES),
+  validateUpdateItems,
+  validateRequest,
+  orderController.updateOrderItems,
 );
 
 export default router;
