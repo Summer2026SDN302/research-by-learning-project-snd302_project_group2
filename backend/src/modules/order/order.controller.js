@@ -3,14 +3,16 @@ import { successResponse } from "../../shared/response/responseFormatter.js";
 import orderService from "./order.service.js";
 
 export const getOrders = asyncHandler(async (req, res) => {
-  // Fix: Tach rieng getOrders (All Orders) va getMyOrders (My Orders).
-  // API nay duoc dung cho Admin/Manager de lay toan bo don hang trong he thong.
-  // Neu ho muon filter theo staff cu the, ho se tu pass staffId vao query.
+  // Fix: Tách riêng getOrders (All Orders) và getMyOrders (My Orders).
+  // API này được dùng cho Admin/Manager để lấy toàn bộ đơn hàng trong hệ thống.
+  // Nếu họ muốn filter theo staff cụ thể, họ sẽ tự pass staffId vào query.
   const data = await orderService.getOrders(req.query);
   return successResponse(res, data, "Orders retrieved successfully");
 });
 
 export const getMyOrders = asyncHandler(async (req, res) => {
+  // Ép buộc staffId trong query phải là ID của user đang đăng nhập.
+  // Đảm bảo Manager và Staff chỉ thấy đơn hàng của chính họ ở route này.
   const data = await orderService.getOrders({
     ...req.query,
     staffId: req.userId,
@@ -19,11 +21,7 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 });
 
 export const getOrderById = asyncHandler(async (req, res) => {
-  const data = await orderService.getOrderById(
-    req.params.id,
-    req.userId,
-    req.user.role,
-  );
+  const data = await orderService.getOrderById(req.params.id, req.userId, req.user.role);
   return successResponse(res, data, "Order retrieved successfully");
 });
 
@@ -37,26 +35,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     req.params.id,
     req.body.orderStatus,
     req.userId,
-    req.user.role,
+    req.user.role
   );
   return successResponse(res, data, "Order status updated successfully");
-});
-
-export const cancelOrder = asyncHandler(async (req, res) => {
-  const data = await orderService.cancelOrder(
-    req.params.id,
-    req.userId,
-    req.user.role,
-  );
-  return successResponse(res, data, "Order cancelled successfully");
-});
-
-export const updateOrderItems = asyncHandler(async (req, res) => {
-  const data = await orderService.updateOrderItems(
-    req.params.id,
-    req.body.items,
-    req.userId,
-    req.user.role,
-  );
-  return successResponse(res, data, "Order items updated successfully");
 });

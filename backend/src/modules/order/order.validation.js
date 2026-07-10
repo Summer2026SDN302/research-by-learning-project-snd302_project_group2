@@ -1,7 +1,7 @@
 import { body, param, query } from "express-validator";
 import { ORDER_STATUS } from "./order.constants.js";
 
-/** Helper: kiem tra chuoi YYYY-MM-DD co phai ngay thuc su hop le khong */
+/** Helper: kiểm tra chuỗi YYYY-MM-DD có phải ngày thực sự hợp lệ không */
 const isRealDate = (value) => {
   const [year, month, day] = value.split("-").map(Number);
   const d = new Date(Date.UTC(year, month - 1, day));
@@ -22,20 +22,6 @@ export const validateCreateOrder = [
   body("items.*.quantity")
     .isInt({ min: 1 })
     .withMessage("Quantity must be at least 1"),
-  body("items.*.note")
-    .optional()
-    .isString()
-    .withMessage("Item note must be a string")
-    .trim()
-    .isLength({ max: 200 })
-    .withMessage("Item note must not exceed 200 characters"),
-  body("notes")
-    .optional()
-    .isString()
-    .withMessage("Order notes must be a string")
-    .trim()
-    .isLength({ max: 500 })
-    .withMessage("Order notes must not exceed 500 characters"),
 ];
 
 export const validateUpdateStatus = [
@@ -43,26 +29,6 @@ export const validateUpdateStatus = [
   body("orderStatus")
     .isIn(Object.values(ORDER_STATUS))
     .withMessage("Invalid order status"),
-];
-
-export const validateUpdateItems = [
-  param("id").isMongoId().withMessage("Invalid order id"),
-  body("items")
-    .isArray({ min: 1 })
-    .withMessage("Order must have at least one item"),
-  body("items.*.foodItemId")
-    .isMongoId()
-    .withMessage("Invalid food item id"),
-  body("items.*.quantity")
-    .isInt({ min: 1 })
-    .withMessage("Quantity must be at least 1"),
-  body("items.*.note")
-    .optional()
-    .isString()
-    .withMessage("Item note must be a string")
-    .trim()
-    .isLength({ max: 200 })
-    .withMessage("Item note must not exceed 200 characters"),
 ];
 
 export const validateGetOrders = [
@@ -75,14 +41,14 @@ export const validateGetOrders = [
     .isInt({ min: 1, max: 50 })
     .withMessage("Limit must be between 1 and 50"),
 
-  // trim() de tranh loi do khoang trang thua
+  // trim() để tránh lỗi do khoảng trắng thừa
   query("orderStatus")
     .optional()
     .trim()
     .isIn(Object.values(ORDER_STATUS))
     .withMessage("Invalid status filter"),
 
-  // validate staffId la MongoId hop le (Admin/Manager filter theo staff)
+  // validate staffId là MongoId hợp lệ (Admin/Manager filter theo staff)
   query("staffId")
     .optional()
     .isMongoId()
@@ -113,7 +79,7 @@ export const validateGetOrders = [
       return true;
     }),
 
-  // Custom validator: neu date ton tai thi fromDate / toDate phai absent
+  // Custom validator: nếu date tồn tại thì fromDate / toDate phải absent
   query("date").custom((value, { req }) => {
     if (value && (req.query.fromDate || req.query.toDate)) {
       throw new Error(
@@ -127,3 +93,4 @@ export const validateGetOrders = [
 export const validateGetOrderById = [
   param("id").isMongoId().withMessage("Invalid order id"),
 ];
+

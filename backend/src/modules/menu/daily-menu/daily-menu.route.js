@@ -20,11 +20,7 @@ const router = express.Router();
 router.use(authenticate);
 
 // GET /today - Staff, Manager, Admin can view today's menu
-router.get(
-  "/today",
-  authorizeRoles(USER_ROLES.STAFF, USER_ROLES.MANAGER, USER_ROLES.ADMIN),
-  dailyMenuController.getTodayMenu,
-);
+router.get("/today", dailyMenuController.getTodayMenu);
 
 // GET /:date - Manager, Admin can view menu by date
 router.get(

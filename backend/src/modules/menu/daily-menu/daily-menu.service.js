@@ -57,19 +57,12 @@ const normalizeExpiredMenuStatus = async (menu) => {
   return menu;
 };
 
-export const getTodayMenu = async (role, query = {}) => {
+export const getTodayMenu = async (role) => {
   const todayDate = getTodayVNDateString();
-  const filter = {};
-
-  if (role === USER_ROLES.STAFF) {
-    filter.isConfigured = true;
-  } else if (query.isConfigured !== undefined && query.isConfigured !== "") {
-    filter.isConfigured =
-      query.isConfigured === "true" || query.isConfigured === true;
+  const menu = await dailyMenuRepository.findMenuByDate(todayDate);
+  if (role === USER_ROLES.STAFF && !menu.isConfigured) {
+    throw new AppError("Daily menu not found", 404, "DAILY_MENU_NOT_FOUND");
   }
-
-  const menu = await dailyMenuRepository.findMenuByDate(todayDate, filter);
-
   return menu;
 };
 
