@@ -19,6 +19,9 @@ const FoodItemListPage = lazy(
 const DailyMenuPage = lazy(
   () => import("../modules/menu/pages/DailyMenuPage"),
 );
+const AiDashboardPage = lazy(
+  () => import("../modules/ai/pages/AiDashboardPage"),
+);
 
 const ManagerRoutes = () => (
   <Route path="/manager" element={<MainLayout role="manager" />}>
@@ -37,11 +40,8 @@ const ManagerRoutes = () => (
       path="scheduled-menu"
       element={<ScheduledMenuPage title="Thực đơn theo lịch" />}
     />
-    <Route
-      path="pricing"
-      element={<PlaceholderPage title="Định giá linh hoạt" />}
-    />
-    <Route path="ai" element={<PlaceholderPage title="Tối ưu hóa AI" />} />
+    <Route path="pricing" element={<Navigate to="../ai" replace />} />
+    <Route path="ai" element={<AiDashboardPage />} />
     <Route path="orders" element={<PlaceholderPage title="Đơn hàng" />} />
     <Route path="payments" element={<PlaceholderPage title="Thanh toán" />} />
     <Route path="profile" element={<ProfilePage />} />

@@ -23,9 +23,9 @@ const VARIANT_CONFIG = {
   },
   warning: {
     icon: "warning",
-    iconColor: "text-tertiary",
-    bg: "bg-tertiary-container/20",
-    btn: "bg-tertiary hover:opacity-90 text-on-tertiary",
+    iconColor: "text-warning",
+    bg: "bg-warning-container/20",
+    btn: "bg-warning hover:opacity-90 text-on-warning",
   },
   info: {
     icon: "info",
