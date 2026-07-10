@@ -1,7 +1,8 @@
 import React from "react";
 import { createPortal } from "react-dom";
-// [CHƯA CÓ BE] useNavigate — sẽ cần khi BE có module Invoice
-// import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import useAppToast from "@/hooks/useAppToast";
 import dayjs from "dayjs";
 import Datepicker from "react-tailwindcss-datepicker";
 import { useOwnOrderHistory } from "../hooks/useOwnOrderHistory";
@@ -15,11 +16,16 @@ import FilterBar from "@/components/search/FilterBar";
 import DataTable from "@/components/data-display/DataTable";
 import SearchBar from "@/components/search/SearchBar";
 
-import { ORDER_STATUS_OPTIONS, OWN_ORDER_TABLE_COLUMNS, ORDER_STATUS_MAP } from "../constants/orderConstants";
+import {
+  ORDER_STATUS_OPTIONS,
+  OWN_ORDER_TABLE_COLUMNS,
+  ORDER_STATUS_MAP,
+} from "../constants/orderConstants";
 
 const OwnOrderHistoryPage = () => {
-  // [CHƯA CÓ BE] useNavigate
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
+  const { toast } = useAppToast();
+  const { user } = useSelector((state) => state.auth);
   const {
     orders,
     rows,
@@ -30,6 +36,7 @@ const OwnOrderHistoryPage = () => {
     filters,
     pagination,
     executeCancelOrder,
+    fetchPaymentByOrderId,
     handlePageChange,
     handleFilterChange,
     refetch,
@@ -59,6 +66,23 @@ const OwnOrderHistoryPage = () => {
     await executeCancelOrder(cancelOrderId);
     setIsCanceling(false);
     setCancelOrderId(null);
+  };
+
+  const handleViewReceipt = async (orderId) => {
+    try {
+      const payment = await fetchPaymentByOrderId(orderId);
+      if (payment?._id) {
+        const userRole = user?.role?.toLowerCase() || "staff";
+        navigate(`/${userRole}/receipts/${payment._id}`);
+      } else {
+        toast.error("Không tìm thấy biên lai", "Đơn hàng chưa có thông tin thanh toán.");
+      }
+    } catch (err) {
+      toast.error(
+        "Lỗi",
+        err?.message || "Không thể lấy thông tin biên lai cho đơn hàng này."
+      );
+    }
   };
 
   const dateValue = React.useMemo(
@@ -120,14 +144,26 @@ const OwnOrderHistoryPage = () => {
                 visibility
               </span>
             </button>
-            {order.orderStatus === "Pending" && (
+            {order.orderStatus === "Pending" &&
+              dayjs(order.createdAt).isSame(dayjs(), "day") && (
+                <button
+                  onClick={() => setCancelOrderId(order.id)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-error/10 transition-colors text-error"
+                  title="Huỷ đơn hàng"
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    cancel
+                  </span>
+                </button>
+              )}
+            {order.orderStatus === "Completed" && (
               <button
-                onClick={() => setCancelOrderId(order.id)}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-error/10 transition-colors text-error"
-                title="Huỷ đơn hàng"
+                onClick={() => handleViewReceipt(order.id)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors text-primary"
+                title="Xem hoá đơn thanh toán"
               >
                 <span className="material-symbols-outlined text-[20px]">
-                  cancel
+                  receipt_long
                 </span>
               </button>
             )}
@@ -193,40 +229,40 @@ const OwnOrderHistoryPage = () => {
               onFocusCapture={handleDatepickerInteraction}
               className="w-full sm:max-w-[200px] relative z-20"
             >
-            <Datepicker
-              popoverDirection={popoverDir}
-              value={dateValue}
-              onChange={(newValue) => {
-                let from = newValue?.startDate || "";
-                let to = newValue?.endDate || "";
-                if (typeof from === "string" && from.includes("/")) {
-                  const [d, m, y] = from.split("/");
-                  from = `${y}-${m}-${d}`;
-                } else if (from) {
-                  from = dayjs(from).format("YYYY-MM-DD");
-                }
+              <Datepicker
+                popoverDirection={popoverDir}
+                value={dateValue}
+                onChange={(newValue) => {
+                  let from = newValue?.startDate || "";
+                  let to = newValue?.endDate || "";
+                  if (typeof from === "string" && from.includes("/")) {
+                    const [d, m, y] = from.split("/");
+                    from = `${y}-${m}-${d}`;
+                  } else if (from) {
+                    from = dayjs(from).format("YYYY-MM-DD");
+                  }
 
-                if (typeof to === "string" && to.includes("/")) {
-                  const [d, m, y] = to.split("/");
-                  to = `${y}-${m}-${d}`;
-                } else if (to) {
-                  to = dayjs(to).format("YYYY-MM-DD");
-                }
+                  if (typeof to === "string" && to.includes("/")) {
+                    const [d, m, y] = to.split("/");
+                    to = `${y}-${m}-${d}`;
+                  } else if (to) {
+                    to = dayjs(to).format("YYYY-MM-DD");
+                  }
 
-                handleFilterChange({
-                  fromDate: from,
-                  toDate: to,
-                });
-              }}
-              useRange={false}
-              showShortcuts={true}
-              primaryColor="teal"
-              inputClassName="w-full text-sm bg-white border border-outline-variant rounded-full px-4 py-2 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
-              displayFormat="DD/MM/YYYY"
-              placeholder="Chọn ngày"
-            />
+                  handleFilterChange({
+                    fromDate: from,
+                    toDate: to,
+                  });
+                }}
+                useRange={false}
+                showShortcuts={true}
+                primaryColor="teal"
+                inputClassName="w-full text-sm bg-white border border-outline-variant rounded-full px-4 py-2 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none"
+                displayFormat="DD/MM/YYYY"
+                placeholder="Chọn ngày"
+              />
+            </div>
           </div>
-        </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <FilterBar

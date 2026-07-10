@@ -24,7 +24,11 @@
  *   toast.error('Thất bại', getApiErrorMsg(DAILY_MENU_ERROR_MAP, err));
  * }
  */
-export const getApiErrorMsg = (errorMap, err, fallback = 'Có lỗi xảy ra, vui lòng thử lại.') => {
+export const getApiErrorMsg = (
+  errorMap,
+  err,
+  fallback = "Có lỗi xảy ra, vui lòng thử lại.",
+) => {
   const code = err?.code || err?.response?.data?.error?.code;
   if (code && errorMap?.[code]) {
     return errorMap[code];

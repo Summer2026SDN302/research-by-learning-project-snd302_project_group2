@@ -1,12 +1,3 @@
-/**
- * Utility functions for formatting values.
- */
-
-/**
- * Format number to Vietnamese currency display (VND)
- * @param {number} n
- * @returns {string}
- */
 const vndFormatter = new Intl.NumberFormat("vi-VN", {
   style: "currency",
   currency: "VND",
@@ -15,7 +6,7 @@ const vndFormatter = new Intl.NumberFormat("vi-VN", {
 
 export const formatCurrency = (value) => {
   const number = Number(value);
-  return Number.isNaN(number) ? "—" : vndFormatter.format(number);
+  return Number.isFinite(number) ? vndFormatter.format(number) : "-";
 };
 
 export const getInitials = (name = "") => {
@@ -24,3 +15,15 @@ export const getInitials = (name = "") => {
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
 };
+
+/**
+ * Chuyển chuỗi tiếng Việt có dấu → không dấu (ASCII-safe).
+ * Dùng cho hóa đơn in nhiệt không hỗ trợ Unicode.
+ */
+export const removeAccents = (str) =>
+  String(str ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+

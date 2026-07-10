@@ -23,7 +23,7 @@ export const useOrderList = () => {
     // [CHƯA CÓ BE] search — BE chưa hỗ trợ search query param
     orderStatus: "",
     fromDate: "", // Lọc từ ngày
-    toDate: "",   // Lọc đến ngày
+    toDate: "", // Lọc đến ngày
     // [CHƯA CÓ BE] paymentStatus — BE chưa có field paymentStatus trong Order model
     page: 1,
     limit: 10,
@@ -53,7 +53,14 @@ export const useOrderList = () => {
     try {
       await dispatch(fetchOrdersThunk(queryParams)).unwrap();
     } catch (err) {
-      toast.error("Lỗi", getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể tải danh sách đơn hàng."));
+      toast.error(
+        "Lỗi",
+        getApiErrorMsg(
+          ORDER_ERROR_MAP,
+          err,
+          "Không thể tải danh sách đơn hàng.",
+        ),
+      );
     }
   }, [dispatch, filters, toast]);
 
@@ -76,7 +83,10 @@ export const useOrderList = () => {
       void fetchOrders();
       return true;
     } catch (err) {
-      toast.error("Lỗi", getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể huỷ đơn hàng."));
+      toast.error(
+        "Lỗi",
+        getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể huỷ đơn hàng."),
+      );
       return false;
     }
   };

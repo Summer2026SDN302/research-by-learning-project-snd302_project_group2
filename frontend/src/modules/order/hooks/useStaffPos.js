@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, useSelector, useStore } from "react-redux";
 import { fetchCategories } from "@/modules/menu/redux/categorySlice";
 import { fetchTodayMenu } from "@/modules/menu/redux/dailyMenuSlice";
 import {
@@ -14,6 +14,7 @@ import {
 import useAppToast from "@/hooks/useAppToast";
 import { getApiErrorMsg } from "@/utils/errorUtils";
 import { ORDER_ERROR_MAP } from "../constants/orderConstants";
+import { buildCartPreviewTotals } from "../utils/orderPreview";
 
 const MENU_ERROR_MESSAGE = "Không thể tải dữ liệu thực đơn hôm nay.";
 
@@ -29,11 +30,10 @@ const MENU_ERROR_MESSAGE = "Không thể tải dữ liệu thực đơn hôm nay
 
 const normalizeErrorMessage = (error, fallback) =>
   error?.message || error?.response?.data?.message || fallback;
-
 export const useStaffPos = () => {
   const dispatch = useDispatch();
+  const store = useStore();
   const { toast } = useAppToast();
-
   const cart = useSelector((state) => state.order.cart);
   const submitStatus = useSelector((state) => state.order.status);
   const submitError = useSelector((state) => state.order.error);
@@ -124,62 +124,86 @@ export const useStaffPos = () => {
     return items;
   }, [todayMenu, selectedCategoryId, searchQuery]);
 
+  const menuItemSelectionMap = useMemo(() => {
+    const map = {};
+    if (!todayMenu?.items) return map;
+
+    for (const item of todayMenu.items) {
+      const foodId = item.foodItemId?._id || item.foodItemId;
+      if (!foodId) continue;
+
+      const cartQty = cart.items.find((i) => i.foodItemId === foodId)?.quantity ?? 0;
+      const actualRemainingQuantity = item.remainingQuantity ?? 0;
+      const preparedQuantity = item.preparedQuantity ?? 0;
+      const soldQuantity = item.soldQuantity ?? 0;
+      const maxSelectableQuantity = actualRemainingQuantity;
+      const remainingSelectableQuantity = Math.max(maxSelectableQuantity - cartQty, 0);
+      const canIncreaseQuantity = cartQty < maxSelectableQuantity;
+
+      map[foodId] = {
+        actualRemainingQuantity,
+        soldQuantity,
+        preparedQuantity,
+        maxSelectableQuantity,
+        remainingSelectableQuantity,
+        canIncreaseQuantity,
+      };
+    }
+    return map;
+  }, [todayMenu, cart.items]);
+
+  const cartItemsWithMeta = useMemo(() => {
+    return cart.items.map((item) => {
+      const meta = menuItemSelectionMap[item.foodItemId] || {};
+      return {
+        ...item,
+        ...meta,
+      };
+    });
+  }, [cart.items, menuItemSelectionMap]);
+
   /**
    * Tính tổng giỏ hàng.
    * TAX_PERCENT = 0.08 (8%) — khớp với BE order.constants.js
    */
   const cartTotals = useMemo(() => {
-    const totalAmount = cart.items.reduce(
-      (sum, item) => sum + item.unitPrice * item.quantity,
-      0,
-    );
-    const taxRate = 0.08; // Khớp với BE TAX_PERCENT
-    const taxAmount = Math.round(totalAmount - totalAmount / (1 + taxRate));
-    const subtotal = totalAmount - taxAmount;
-
-    return {
-      subtotal,
-      taxRate,
-      taxAmount,
-      totalAmount,
-    };
+    return buildCartPreviewTotals(cart.items);
   }, [cart.items]);
 
   const handleAddItem = useCallback(
-    (foodItem, currentPrice) => {
+    (itemOrFoodItem, currentPrice) => {
+      const isDailyMenuItem = Boolean(itemOrFoodItem && itemOrFoodItem.foodItemId);
+      const foodItem = isDailyMenuItem ? itemOrFoodItem.foodItemId : itemOrFoodItem;
+      const price = isDailyMenuItem ? itemOrFoodItem.currentPrice : currentPrice;
+
+      if (!foodItem || !foodItem._id) return;
+
+      const dailyMenuItem = todayMenu?.items?.find(
+        (i) => (i.foodItemId?._id || i.foodItemId) === foodItem._id
+      );
+      const remainingQty = dailyMenuItem ? (dailyMenuItem.remainingQuantity ?? dailyMenuItem.preparedQuantity ?? Infinity) : Infinity;
+      const liveCartQuantity = store.getState().order.cart.items.find((i) => i.foodItemId === foodItem._id)?.quantity ?? 0;
+      if (liveCartQuantity >= remainingQty) {
+        toast.warning(
+          "Vuot qua so luong con lai",
+          `Mon ${foodItem.name} chi co the chon toi da ${remainingQty} phan.`,
+        );
+        return;
+      }
       dispatch(
         addToCart({
           foodItemId: foodItem._id,
           name: foodItem.name,
-          unitPrice: currentPrice,
+          unitPrice: price,
           quantity: 1,
         }),
       );
     },
-    [dispatch],
+    [dispatch, todayMenu, store, toast],
   );
-
-  // [CHƯA CÓ BE] cancelActiveOrderIfNeeded — BE chưa có endpoint cancel riêng.
-  // Logic này sẽ được bật lại khi BE bổ sung PATCH /api/orders/:id/cancel.
-  // const cancelActiveOrderIfNeeded = useCallback(async () => {
-  //   if (!canCancelCurrentOrder(currentOrder)) {
-  //     return true;
-  //   }
-  //   try {
-  //     await dispatch(cancelOrderThunk(currentOrder._id)).unwrap();
-  //     return true;
-  //   } catch (err) {
-  //     toast.error(
-  //       "Hủy đơn nháp thất bại",
-  //       normalizeErrorMessage(err, "Không thể hủy đơn nháp hiện tại."),
-  //     );
-  //     return false;
-  //   }
-  // }, [currentOrder, dispatch, toast]);
 
   const handleRemoveItem = useCallback(
     (foodItemId) => {
-      // Đơn giản hóa: bỏ logic cancelActiveOrderIfNeeded vì BE chưa có
       dispatch(removeFromCart(foodItemId));
       return true;
     },
@@ -188,30 +212,42 @@ export const useStaffPos = () => {
 
   const handleUpdateQuantity = useCallback(
     (foodItemId, quantity) => {
-      // Đơn giản hóa: bỏ logic cancelActiveOrderIfNeeded vì BE chưa có
+      const dailyMenuItem = todayMenu?.items?.find(
+        (i) => (i.foodItemId?._id || i.foodItemId) === foodItemId
+      );
+      if (dailyMenuItem) {
+        const remainingQty = dailyMenuItem.remainingQuantity ?? dailyMenuItem.preparedQuantity ?? Infinity;
+        if (quantity > remainingQty) {
+          const itemName = store.getState().order.cart.items.find((i) => i.foodItemId === foodItemId)?.name || "này";
+          toast.warning(
+            "Vuot qua so luong con lai",
+            `Mon ${itemName} chi co the chon toi da ${remainingQty} phan.`,
+          );
+          dispatch(updateCartItemQuantity({ foodItemId, quantity: remainingQty }));
+          return false;
+        }
+      }
       dispatch(updateCartItemQuantity({ foodItemId, quantity }));
+      return true;
+    },
+    [dispatch, todayMenu, store, toast],
+  );
+  const handleUpdateNote = useCallback(
+    (foodItemId, note) => {
+      dispatch(updateCartItemNote({ foodItemId, note }));
       return true;
     },
     [dispatch],
   );
-
-  const handleUpdateNote = useCallback(
-    (foodItemId, note) => {
-      dispatch(updateCartItemNote({ foodItemId, note }));
-    },
-    [dispatch],
-  );
-
   const handleOrderNotesChange = useCallback((value) => {
     setOrderNotes(value);
   }, []);
-
   const handleClearCart = useCallback(() => {
     // Đơn giản hóa: bỏ logic cancelActiveOrderIfNeeded vì BE chưa có
     dispatch(clearCart());
+    setOrderNotes("");
     return true;
   }, [dispatch]);
-
   /**
    * Submit order lên BE.
    * Payload chỉ gửi { items: [{ foodItemId, quantity }] }
@@ -227,31 +263,29 @@ export const useStaffPos = () => {
       items: cart.items.map((item) => ({
         foodItemId: item.foodItemId,
         quantity: item.quantity,
-        note: item.note,
+        note: item.note ?? "",
       })),
-      notes: orderNotes,
-      // [CHƯA CÓ BE] taxRate — BE tự tính thuế từ constants
+      notes: orderNotes ? orderNotes.trim() : "",
     };
 
     try {
       const result = await dispatch(submitOrder(orderPayload)).unwrap();
+      const isUpdate = Boolean(currentOrder?._id);
       toast.success(
-        "Tạo đơn thành công",
-        `Đơn hàng #${result?.orderNumber ?? ""} đã được tạo.`,
+        isUpdate ? "Cập nhật đơn hàng thành công" : "Tạo đơn hàng thành công",
+        `Đơn hàng #${result?.orderNumber ?? ""} đã được ${isUpdate ? "cập nhật" : "tạo"}.`,
       );
-      // Reset cart sau khi tạo đơn thành công
-      dispatch(clearCart());
       // Refetch menu để cập nhật số lượng còn lại
       await fetchData();
       return result;
     } catch (err) {
       toast.error(
-        "Tạo đơn hàng thất bại",
+        currentOrder?._id ? "Cập nhật đơn hàng thất bại" : "Tạo đơn hàng thất bại",
         getApiErrorMsg(ORDER_ERROR_MAP, err, "Đã xảy ra lỗi khi lưu đơn."),
       );
       return null;
     }
-  }, [cart.items, dispatch, toast, fetchData, orderNotes]);
+  }, [cart.items, dispatch, toast, fetchData, orderNotes, currentOrder]);
 
   // [CHƯA CÓ BE] handleCheckout mở PaymentModal — module Payment chưa có ở BE.
   // Tạm thời handleCheckout chỉ gọi handleSubmitOrder trực tiếp.
@@ -281,6 +315,8 @@ export const useStaffPos = () => {
     setSearchQuery,
     filteredMenuItems,
     cart,
+    cartItemsWithMeta,
+    menuItemSelectionMap,
     cartTotals,
     orderNotes,
     handleOrderNotesChange,
@@ -288,6 +324,7 @@ export const useStaffPos = () => {
     handleRemoveItem,
     handleUpdateQuantity,
     handleUpdateNote,
+    handleUpdateItemNote: handleUpdateNote,
     handleClearCart,
     handleSubmitOrder,
     // [CHƯA CÓ BE] handleCheckout — dùng handleSubmitOrder trực tiếp

@@ -9,6 +9,7 @@ import {
 import useAppToast from "@/hooks/useAppToast";
 import { getApiErrorMsg } from "@/utils/errorUtils";
 import { ORDER_ERROR_MAP } from "../constants/orderConstants";
+import { fetchPaymentByOrderIdThunk } from "@/modules/payment/redux/paymentSlice";
 
 const getTodayDateString = () => dayjs().format("YYYY-MM-DD");
 
@@ -27,7 +28,7 @@ export const useOwnOrderHistory = () => {
     // [CHƯA CÓ BE] search — BE chưa hỗ trợ tìm kiếm theo keyword
     orderStatus: "",
     fromDate: "", // Lọc từ ngày
-    toDate: "",   // Lọc đến ngày
+    toDate: "", // Lọc đến ngày
     // [CHƯA CÓ BE] paymentStatus — BE chưa có field paymentStatus trong Order model
     page: 1,
     limit: 10,
@@ -61,7 +62,14 @@ export const useOwnOrderHistory = () => {
     try {
       await dispatch(fetchMyOrdersThunk(queryParams)).unwrap();
     } catch (err) {
-      toast.error("Lỗi", getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể tải danh sách đơn hàng."));
+      toast.error(
+        "Lỗi",
+        getApiErrorMsg(
+          ORDER_ERROR_MAP,
+          err,
+          "Không thể tải danh sách đơn hàng.",
+        ),
+      );
     }
   }, [dispatch, filters, toast]);
 
@@ -97,7 +105,10 @@ export const useOwnOrderHistory = () => {
       fetchKpiData();
       return true;
     } catch (err) {
-      toast.error("Lỗi", getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể huỷ đơn hàng."));
+      toast.error(
+        "Lỗi",
+        getApiErrorMsg(ORDER_ERROR_MAP, err, "Không thể huỷ đơn hàng."),
+      );
       return false;
     }
   };
@@ -118,6 +129,13 @@ export const useOwnOrderHistory = () => {
     return mapped.filter((r) => r.orderNumber?.toLowerCase().includes(query));
   }, [orders, searchQuery]);
 
+  const fetchPaymentByOrderId = useCallback(
+    async (orderId) => {
+      return await dispatch(fetchPaymentByOrderIdThunk(orderId)).unwrap();
+    },
+    [dispatch],
+  );
+
   return {
     orders,
     rows,
@@ -129,6 +147,7 @@ export const useOwnOrderHistory = () => {
     filters,
     pagination,
     executeCancelOrder,
+    fetchPaymentByOrderId,
     handlePageChange,
     handleFilterChange,
     clearFilters,

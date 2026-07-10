@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useStaffPos } from "../hooks/useStaffPos";
 import CategoryFilterBar from "../components/CategoryFilterBar";
 import PosMenuGrid from "../components/PosMenuGrid";
@@ -5,9 +6,15 @@ import OrderSummaryCard from "../components/OrderSummaryCard";
 import Spinner from "@/components/feedback/Spinner";
 import EmptyState from "@/components/data-display/EmptyState";
 import SearchBar from "@/components/search/SearchBar";
+import useAppToast from "@/hooks/useAppToast";
+import PaymentModal from "@/modules/payment/components/PaymentModal";
+import { DEFAULT_PAYMENT_METHOD } from "@/modules/payment/constants/paymentConstants";
+import { usePaymentModal } from "@/modules/payment/hooks/usePaymentModal";
 
 const PosPage = ({ role = "staff" }) => {
+  const { toast } = useAppToast();
   const staffPos = useStaffPos();
+  const paymentModal = usePaymentModal();
 
   const {
     todayMenu,
@@ -33,9 +40,90 @@ const PosPage = ({ role = "staff" }) => {
     refetchMenu,
   } = staffPos;
 
-  const handleCheckoutClick = () => {
-    void handleSubmitOrder();
-  };
+  const {
+    isOpen,
+    order,
+    selectedMethod,
+    setSelectedMethod,
+    cashReceived,
+    transactionCode,
+    setTransactionCode,
+    providerName,
+    setProviderName,
+    isSubmitting: isPaymentSubmitting,
+    openModal,
+    closeModal,
+    appendDigit,
+    clearCash,
+    setCashReceivedAmount,
+    changeReturned,
+    isCashValid,
+    quickCashOptions,
+    submitCheckout,
+    confirmPaymentOffline,
+    checkoutUrl,
+    confirmedPaymentData,
+  } = paymentModal;
+
+  const handlePaymentSuccess = useCallback(
+    async (payment) => {
+      await handleClearCart();
+
+      try {
+        await refetchMenu();
+      } catch {
+        // Receipt navigation should not be blocked by a temporary menu refresh issue.
+      }
+
+      toast.success(
+        "Thanh toán thành công",
+        payment?.paymentMethod === "QR"
+          ? "Giao dịch đã được xác nhận thành công qua PayOS."
+          : "Giao dịch đã thanh toán xong và được ghi nhận.",
+      );
+    },
+    [handleClearCart, refetchMenu, toast],
+  );
+
+  const handleCheckoutClick = useCallback(async () => {
+    if (cart.items.length === 0) {
+      return;
+    }
+
+    // 1. Submit the order to backend first to get the created order with _id
+    const createdOrder = await handleSubmitOrder({ showSuccessToast: false });
+    if (!createdOrder) {
+      return; // Order creation failed (e.g. out of stock)
+    }
+
+    // 2. Open payment modal with the created order
+    openModal(createdOrder, DEFAULT_PAYMENT_METHOD);
+  }, [cart.items, handleSubmitOrder, openModal]);
+
+  const handlePaymentConfirm = useCallback(async () => {
+    if (checkoutUrl) {
+      const confirmed = await confirmPaymentOffline(
+        confirmedPaymentData._id,
+        transactionCode,
+      );
+      if (confirmed) {
+        await handlePaymentSuccess(confirmed);
+      }
+      return;
+    }
+    void submitCheckout(handlePaymentSuccess);
+  }, [
+    handlePaymentSuccess,
+    submitCheckout,
+    confirmPaymentOffline,
+    checkoutUrl,
+    confirmedPaymentData,
+    transactionCode,
+  ]);
+
+  const handlePaymentClose = useCallback(() => {
+    closeModal();
+  }, [closeModal]);
 
   if (loadingMenu) {
     return (
@@ -86,48 +174,72 @@ const PosPage = ({ role = "staff" }) => {
   }
 
   return (
-    <section className="h-full">
-      <div className="grid grid-cols-12 gap-6 h-full items-start">
-        {/* LEFT COLUMN: Title, Search, Categories & Menu Grid (8 cols) */}
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-4">
-          {/* Search Bar under Title */}
-          <div className="w-full">
-            <SearchBar
-              placeholder="Tìm món ăn nhanh..."
-              value={searchQuery}
-              onChange={setSearchQuery}
-              className="w-full"
+    <>
+      <section className="h-full">
+        <div className="grid grid-cols-12 gap-6 h-full items-start">
+          {/* LEFT COLUMN: Title, Search, Categories & Menu Grid (8 cols) */}
+          <div className="col-span-12 lg:col-span-8 flex flex-col gap-4">
+            {/* Search Bar under Title */}
+            <div className="w-full">
+              <SearchBar
+                placeholder="Tìm món ăn nhanh..."
+                value={searchQuery}
+                onChange={setSearchQuery}
+                className="w-full"
+              />
+            </div>
+
+            {/* Horizontal Category Filtering */}
+            <CategoryFilterBar
+              categories={categories}
+              selectedCategoryId={selectedCategoryId}
+              onSelectCategory={setSelectedCategoryId}
             />
+
+            {/* Menu Grid */}
+            <PosMenuGrid items={filteredMenuItems} onAddItem={handleAddItem} />
           </div>
 
-          {/* Horizontal Category Filtering */}
-          <CategoryFilterBar
-            categories={categories}
-            selectedCategoryId={selectedCategoryId}
-            onSelectCategory={setSelectedCategoryId}
-          />
-
-          {/* Menu Grid */}
-          <PosMenuGrid items={filteredMenuItems} onAddItem={handleAddItem} />
+          {/* RIGHT COLUMN: Order Summary (4 cols) */}
+          <div className="col-span-12 lg:col-span-4 lg:h-[calc(100vh-120px)]">
+            <OrderSummaryCard
+              cart={cart}
+              totals={cartTotals}
+              orderNotes={orderNotes}
+              onOrderNotesChange={handleOrderNotesChange}
+              onUpdateQuantity={handleUpdateQuantity}
+              onUpdateNote={handleUpdateNote}
+              onRemove={handleRemoveItem}
+              onClearCart={handleClearCart}
+              onCheckout={handleCheckoutClick}
+              isSubmitting={submitStatus === "loading"}
+            />
+          </div>
         </div>
+      </section>
 
-        {/* RIGHT COLUMN: Order Summary (4 cols) */}
-        <div className="col-span-12 lg:col-span-4 lg:h-[calc(100vh-120px)]">
-          <OrderSummaryCard
-            cart={cart}
-            totals={cartTotals}
-            orderNotes={orderNotes}
-            onOrderNotesChange={handleOrderNotesChange}
-            onUpdateQuantity={handleUpdateQuantity}
-            onUpdateNote={handleUpdateNote}
-            onRemove={handleRemoveItem}
-            onClearCart={handleClearCart}
-            onCheckout={handleCheckoutClick}
-            isSubmitting={submitStatus === "loading"}
-          />
-        </div>
-      </div>
-    </section>
+      <PaymentModal
+        open={isOpen}
+        order={order}
+        onClose={handlePaymentClose}
+        onConfirm={handlePaymentConfirm}
+        selectedMethod={selectedMethod}
+        setSelectedMethod={setSelectedMethod}
+        cashReceived={cashReceived}
+        transactionCode={transactionCode}
+        setTransactionCode={setTransactionCode}
+        providerName={providerName}
+        setProviderName={setProviderName}
+        isSubmitting={isPaymentSubmitting}
+        appendDigit={appendDigit}
+        clearCash={clearCash}
+        setCashReceivedAmount={setCashReceivedAmount}
+        changeReturned={changeReturned}
+        isCashValid={isCashValid}
+        quickCashOptions={quickCashOptions}
+        checkoutUrl={checkoutUrl}
+      />
+    </>
   );
 };
 

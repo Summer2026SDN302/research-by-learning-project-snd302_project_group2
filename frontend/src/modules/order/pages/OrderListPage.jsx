@@ -18,7 +18,11 @@ import FilterBar from "@/components/search/FilterBar";
 import DataTable from "@/components/data-display/DataTable";
 import SearchBar from "@/components/search/SearchBar";
 
-import { ORDER_STATUS_OPTIONS, ORDER_TABLE_COLUMNS, ORDER_STATUS_MAP } from "../constants/orderConstants";
+import {
+  ORDER_STATUS_OPTIONS,
+  ORDER_TABLE_COLUMNS,
+  ORDER_STATUS_MAP,
+} from "../constants/orderConstants";
 
 const getOrderStatusBadge = (status) => {
   const config = ORDER_STATUS_MAP[status];

@@ -95,7 +95,9 @@ export const createOrder = async (body) => {
  */
 export const updateOrderStatus = async (id, orderStatus) => {
   try {
-    const response = await apiClient.patch(`${BASE_PATH}/${id}/status`, { orderStatus });
+    const response = await apiClient.patch(`${BASE_PATH}/${id}/status`, {
+      orderStatus,
+    });
     return unwrapResponse(response);
   } catch (error) {
     throw normalizeApiError(error);
@@ -129,4 +131,3 @@ export const cancelOrder = async (id) => {
     throw normalizeApiError(error);
   }
 };
-
