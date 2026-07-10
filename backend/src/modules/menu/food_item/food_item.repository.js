@@ -129,6 +129,10 @@ const foodItemRepository = {
       { new: true, runValidators: true },
     );
   },
+
+  async findAllActiveWithCategory() {
+    return FoodItem.find({ isArchived: false }).populate("categoryId");
+  },
 };
 
 export default foodItemRepository;

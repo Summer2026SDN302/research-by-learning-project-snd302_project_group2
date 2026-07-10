@@ -47,6 +47,10 @@ const scheduledMenuRepository = {
       .populate(FOOD_ITEM_POPULATE)
       .lean();
   },
+
+  async findAllRaw() {
+    return ScheduledMenu.find();
+  },
 };
 
 export default scheduledMenuRepository;
