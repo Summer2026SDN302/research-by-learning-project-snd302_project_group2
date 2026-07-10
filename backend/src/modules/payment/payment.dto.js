@@ -1,4 +1,20 @@
-import { getPaymentCompletedAt } from "./payment.derived.js";
+import { PAYMENT_STATUS } from "./payment.constants.js";
+
+const getPaymentCompletedAt = (payment) => {
+  if (!payment) {
+    return null;
+  }
+
+  if (
+    ![PAYMENT_STATUS.PAID, PAYMENT_STATUS.REFUNDED].includes(
+      payment.paymentStatus,
+    )
+  ) {
+    return null;
+  }
+
+  return payment.paidAt ?? payment.updatedAt ?? payment.createdAt ?? null;
+};
 
 const mapOrderReference = (order) => {
   if (!order) {
@@ -19,7 +35,7 @@ const mapOrderReference = (order) => {
           fullName: order.staffId.fullName,
           role: order.staffId.role,
         }
-      : order.staffId ?? null,
+      : (order.staffId ?? null),
   };
 };
 
@@ -92,6 +108,7 @@ export const toPaymentReceiptResponse = (payment, order) => ({
   notes: order?.notes ?? null,
   subtotalAmount: order?.subTotal ?? 0,
   discountAmount: order?.discountAmount ?? 0,
+  taxAmount: order?.taxAmount ?? 0,
   finalAmount: payment.finalAmount ?? order?.totalAmount ?? 0,
   paymentMethod: payment.paymentMethod,
   amountReceived: payment.amountReceived,

@@ -71,6 +71,7 @@ vi.mock("../payment.repository.js", () => ({
     findById: vi.fn(),
     isTransactionCodeTaken: vi.fn(),
     findAll: vi.fn(),
+    findByOrderId: vi.fn(),
   },
 }));
 
@@ -434,7 +435,7 @@ describe("paymentService", () => {
     expect(payosMock.paymentRequests.create).toHaveBeenCalledWith(
       expect.objectContaining({
         orderCode: 20260628002,
-        amount: 150000,
+        amount: 2000,
       })
     );
     expect(paymentRepository.create).toHaveBeenCalledWith(

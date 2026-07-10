@@ -162,6 +162,7 @@ describe("payment.dto", () => {
       notes: "Mang di",
       subtotalAmount: 95000,
       discountAmount: 5000,
+      taxAmount: 0,
       finalAmount: 95000,
       paymentMethod: "Cash",
       amountReceived: 120000,

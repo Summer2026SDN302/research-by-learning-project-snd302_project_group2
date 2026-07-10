@@ -140,7 +140,8 @@ describe("orderService", () => {
     expect(orderRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         staffId: "staff-1",
-        subTotal: 62000,
+        subTotal: 57407.41,
+        taxAmount: 4592.59,
         discountAmount: 9000,
         totalAmount: 62000,
         orderStatus: ORDER_STATUS.PENDING,

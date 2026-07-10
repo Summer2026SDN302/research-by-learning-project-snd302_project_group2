@@ -46,3 +46,12 @@ export const confirmPayment = asyncHandler(async (req, res) => {
   );
   return successResponse(res, data, "Payment confirmed successfully");
 });
+
+export const getPaymentByOrderId = asyncHandler(async (req, res) => {
+  const data = await paymentService.getPaymentByOrderId(
+    req.params.orderId,
+    req.userId,
+    req.user.role,
+  );
+  return successResponse(res, data, "Payment retrieved successfully");
+});

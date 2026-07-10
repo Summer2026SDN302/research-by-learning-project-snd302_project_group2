@@ -82,6 +82,12 @@ const orderSchema = new Schema(
       min: 0,
     },
 
+    taxAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     totalAmount: {
       type: Number,
       required: true,
