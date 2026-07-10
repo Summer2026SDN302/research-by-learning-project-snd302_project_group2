@@ -11,11 +11,25 @@ const mapUser = (user) => {
   return { _id: user };
 };
 
+/**
+ * Extracts a plain string ID from either a populated Mongoose document or a raw ObjectId.
+ * Needed because after populate(), foodItemId becomes a full object {_id, name, ...}
+ * instead of a plain ObjectId — the frontend must receive a plain string so it can
+ * send it back to the backend validator as a valid MongoDB ObjectId.
+ */
+const resolveId = (ref) => {
+  if (!ref) return null;
+  if (ref._id) return ref._id.toString();
+  return ref.toString();
+};
+
+
 export const toForecastResponse = (forecast) => {
   if (!forecast) return null;
   return {
-    foodItemId: forecast.foodItemId,
+    foodItemId: resolveId(forecast.foodItemId),
     name: forecast.name,
+    categoryName: forecast.foodItemId?.categoryId?.name || "Khác",
     predictedDemand: forecast.predictedDemand,
     recommendedQuantity: forecast.recommendedQuantity,
     status: forecast.status,
@@ -26,10 +40,11 @@ export const toForecastResponse = (forecast) => {
   };
 };
 
+
 export const toPricingRecommendationResponse = (rec) => {
   if (!rec) return null;
   return {
-    foodItemId: rec.foodItemId,
+    foodItemId: resolveId(rec.foodItemId),
     name: rec.name,
     currentRemaining: rec.currentRemaining,
     originalPrice: rec.originalPrice,
@@ -43,6 +58,7 @@ export const toPricingRecommendationResponse = (rec) => {
     rejectedAt: rec.rejectedAt,
   };
 };
+
 
 export const toAiInsightResponse = (doc) => {
   if (!doc) return null;

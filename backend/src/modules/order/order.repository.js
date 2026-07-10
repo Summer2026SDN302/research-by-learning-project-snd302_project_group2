@@ -83,9 +83,10 @@ const orderRepository = {
   async findCompletedOrdersSince(date) {
     return Order.find({
       orderStatus: { $in: [ORDER_STATUS.COMPLETED] },
-      createdAt: { $gte: date },
+      orderDate: { $gte: date },
     });
   },
+
   async findIdsByOrderNumberKeyword(keyword) {
     const regex = new RegExp(keyword, "i");
     const orders = await Order.find({ orderNumber: regex }).select("_id");

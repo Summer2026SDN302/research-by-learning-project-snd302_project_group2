@@ -34,9 +34,9 @@ const getSerializedDataForAI = async () => {
   const orders = await orderRepository.findCompletedOrdersSince(ninetyDaysAgo);
   const salesData = [];
   orders.forEach((order) => {
-    const timestamp = order.createdAt
-      ? order.createdAt.toISOString().replace("T", " ").substring(0, 19)
-      : "";
+    const timestamp = order.orderDate
+      ? order.orderDate.toISOString().replace("T", " ").substring(0, 19)
+      : (order.createdAt ? order.createdAt.toISOString().replace("T", " ").substring(0, 19) : "");
 
     order.items.forEach((item) => {
       salesData.push({
@@ -186,6 +186,9 @@ export const applyForecasts = async (insightId, updates, userId) => {
     throw new AppError("AI Insight not found.", 404, "INSIGHT_NOT_FOUND");
   }
 
+  // Helper: extract plain ObjectId string from either a populated doc or a raw ObjectId
+  const toId = (ref) => (ref?._id ?? ref)?.toString();
+
   const targetDate = insight.targetDate;
   const targetDateStr = new Date(targetDate).toISOString().substring(0, 10);
   const dailyMenu = await dailyMenuRepository.findMenuByDate(targetDateStr);
@@ -210,7 +213,7 @@ export const applyForecasts = async (insightId, updates, userId) => {
     const { foodItemId, status } = update;
 
     const forecast = insight.forecasts.find(
-      (f) => f.foodItemId.toString() === foodItemId.toString(),
+      (f) => toId(f.foodItemId) === foodItemId.toString(),
     );
 
     if (!forecast) {
@@ -251,7 +254,7 @@ export const applyForecasts = async (insightId, updates, userId) => {
     }
 
     const menuItem = dailyMenu.items.find(
-      (item) => item.foodItemId._id.toString() === foodItemId.toString(),
+      (item) => toId(item.foodItemId) === foodItemId.toString(),
     );
 
     // Exception 22.0.E1 Item Removed from Daily Menu
@@ -332,7 +335,7 @@ export const applyForecasts = async (insightId, updates, userId) => {
 /**
  * Generate dynamic pricing recommendations based on today's remaining inventory and forecast.
  */
-export const generateDynamicPricingRecommendations = async (targetDateStr) => {
+export const generateDynamicPricingRecommendations = async (targetDateStr, isManual = false) => {
   const targetDate = new Date(targetDateStr);
   const latestInsight = await aiRepository.findLatestByDate(targetDate);
 
@@ -359,6 +362,8 @@ export const generateDynamicPricingRecommendations = async (targetDateStr) => {
   const closingTime = new Date(targetDateStr);
   closingTime.setHours(CANTEEN_CLOSING_HOUR, 0, 0, 0);
 
+  const toId = (ref) => (ref?._id ?? ref)?.toString();
+
   for (const menuItem of dailyMenu.items) {
     if (
       menuItem.status !== DAILY_MENU_ITEM_STATUS.AVAILABLE ||
@@ -373,7 +378,7 @@ export const generateDynamicPricingRecommendations = async (targetDateStr) => {
 
     // Find forecast
     const forecast = latestInsight.forecasts.find(
-      (f) => f.foodItemId.toString() === foodItemId.toString(),
+      (f) => toId(f.foodItemId) === toId(foodItemId),
     );
     if (!forecast) {
       continue;
@@ -389,8 +394,15 @@ export const generateDynamicPricingRecommendations = async (targetDateStr) => {
     const excess = Math.max(0, menuItem.remainingQuantity - demandRemain);
     const excessRatio = excess / menuItem.remainingQuantity;
 
-    if (excess <= 0) {
-      continue; // No excess expected, no need to discount
+    // Nếu chạy tự động thì kiểm tra nghiêm ngặt excess, còn thủ công chỉ cần còn hàng tồn thực tế
+    if (isManual) {
+      if (menuItem.remainingQuantity <= 0) {
+        continue;
+      }
+    } else {
+      if (excess <= 0) {
+        continue; // No excess expected, no need to discount
+      }
     }
 
     let discountPercentage = 0;
@@ -398,46 +410,69 @@ export const generateDynamicPricingRecommendations = async (targetDateStr) => {
 
     const currentHour = now.getHours() + now.getMinutes() / 60;
 
-    // Rule-based discount rules for Lunch and Dinner
-    if (currentHour >= 12.5 && currentHour < 14) {
-      // 12:30 - 14:00 (Xả quầy trưa)
+    if (isManual) {
+      // Khi admin/manager chủ động click tạo bằng tay, bỏ qua kiểm tra giờ
       if (excessRatio >= 0.1 && excessRatio <= 0.3) {
         discountPercentage = 10;
-        reason = "Tồn dư nhỏ, xả quầy trưa";
+        reason = "Tồn dư nhỏ, xả quầy (Tạo thủ công)";
       } else if (excessRatio > 0.3 && excessRatio <= 0.6) {
         discountPercentage = 20;
-        reason = "Tồn dư vừa, xả quầy trưa";
+        reason = "Tồn dư vừa, xả quầy (Tạo thủ công)";
       } else if (excessRatio > 0.6) {
         discountPercentage = 30;
-        reason = "Tồn dư cao, xả quầy trưa";
-      }
-    } else if (currentHour >= 16 && currentHour < 18) {
-      // 16:00 - 18:00 (Sắp đóng quầy tối)
-      if (excessRatio >= 0.1 && excessRatio <= 0.3) {
-        discountPercentage = 10;
-        reason = "Tồn dư nhỏ, sắp đóng quầy tối";
-      } else if (excessRatio > 0.3 && excessRatio <= 0.6) {
-        discountPercentage = 20;
-        reason = "Tồn dư vừa, sắp đóng quầy tối";
-      } else if (excessRatio > 0.6) {
-        discountPercentage = 30;
-        reason = "Tồn dư cao, sắp đóng quầy tối";
-      }
-    } else if (currentHour >= 18) {
-      // After 18:00 (< 2 hours remaining)
-      if (excessRatio >= 0.1 && excessRatio <= 0.3) {
-        discountPercentage = 20;
-        reason = "Tồn dư nhỏ, sát giờ đóng quầy tối";
-      } else if (excessRatio > 0.3 && excessRatio <= 0.6) {
-        discountPercentage = 30;
-        reason = "Tồn dư vừa, sát giờ đóng quầy tối";
-      } else if (excessRatio > 0.6) {
-        discountPercentage = 50;
-        reason = "Tồn dư cao, xả hàng cuối ngày";
+        reason = "Tồn dư cao, xả quầy (Tạo thủ công)";
+      } else {
+        // Fallback khi click bằng tay nhưng excessRatio = 0 hoặc quá thấp
+        discountPercentage = 15;
+        reason = "Kích hoạt định giá xả kho thủ công";
       }
     } else {
-      // Before 12:30 or between 14:00 and 16:00
-      continue; // No discount yet
+      // Khi chạy tự động (Cron job), bắt buộc đúng khung giờ
+      if (currentHour >= 12.5 && currentHour < 14) {
+        // 12:30 - 14:00 (Xả quầy trưa)
+        if (excessRatio >= 0.1 && excessRatio <= 0.3) {
+          discountPercentage = 10;
+          reason = "Tồn dư nhỏ, xả quầy trưa";
+        } else if (excessRatio > 0.3 && excessRatio <= 0.6) {
+          discountPercentage = 20;
+          reason = "Tồn dư vừa, xả quầy trưa";
+        } else if (excessRatio > 0.6) {
+          discountPercentage = 30;
+          reason = "Tồn dư cao, xả quầy trưa";
+        }
+      } else if (currentHour >= 16 && currentHour < 18) {
+        // 16:00 - 18:00 (Sắp đóng quầy tối)
+        if (excessRatio >= 0.1 && excessRatio <= 0.3) {
+          discountPercentage = 10;
+          reason = "Tồn dư nhỏ, sắp đóng quầy tối";
+        } else if (excessRatio > 0.3 && excessRatio <= 0.6) {
+          discountPercentage = 20;
+          reason = "Tồn dư vừa, sắp đóng quầy tối";
+        } else if (excessRatio > 0.6) {
+          discountPercentage = 30;
+          reason = "Tồn dư cao, sắp đóng quầy tối";
+        }
+      } else if (currentHour >= 18) {
+        // After 18:00 (< 2 hours remaining)
+        if (excessRatio >= 0.1 && excessRatio <= 0.3) {
+          discountPercentage = 20;
+          reason = "Tồn dư nhỏ, sát giờ đóng quầy tối";
+        } else if (excessRatio > 0.3 && excessRatio <= 0.6) {
+          discountPercentage = 30;
+          reason = "Tồn dư vừa, sát giờ đóng quầy tối";
+        } else if (excessRatio > 0.6) {
+          discountPercentage = 50;
+          reason = "Tồn dư cao, xả hàng cuối ngày";
+        }
+      } else {
+        // Fallback test
+        if (excessRatio >= 0.05) {
+          discountPercentage = 10;
+          reason = "Tối ưu hóa hàng tồn kho (Định giá tự động)";
+        } else {
+          continue;
+        }
+      }
     }
 
     if (discountPercentage > 0) {
@@ -486,6 +521,9 @@ export const applyPricingRecommendations = async (
     throw new AppError("AI Insight not found.", 404, "INSIGHT_NOT_FOUND");
   }
 
+  // Helper: extract plain ObjectId string from either a populated doc or a raw ObjectId
+  const toId = (ref) => (ref?._id ?? ref)?.toString();
+
   const targetDateStr = new Date(insight.targetDate)
     .toISOString()
     .substring(0, 10);
@@ -507,7 +545,7 @@ export const applyPricingRecommendations = async (
     const { foodItemId, status } = update;
 
     const recommendation = insight.pricingRecommendations.find(
-      (r) => r.foodItemId.toString() === foodItemId.toString(),
+      (r) => toId(r.foodItemId) === foodItemId.toString(),
     );
 
     if (!recommendation) {
@@ -547,7 +585,7 @@ export const applyPricingRecommendations = async (
     }
 
     const menuItem = dailyMenu.items.find(
-      (item) => item.foodItemId._id.toString() === foodItemId.toString(),
+      (item) => toId(item.foodItemId) === foodItemId.toString(),
     );
 
     // Exception 21.0.E1 Item Sold Out Concurrently

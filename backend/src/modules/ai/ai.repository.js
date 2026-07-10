@@ -82,7 +82,8 @@ export const findById = async (insightId) => {
 };
 
 export const createInsight = async (payload) => {
-  return AiInsight.create(payload);
+  const created = await AiInsight.create(payload);
+  return findById(created._id);
 };
 
 export const saveInsight = async (insight) => {

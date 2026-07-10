@@ -65,8 +65,8 @@ export const applyForecasts = asyncHandler(async (req, res) => {
  * Body: { "targetDate": "2026-06-25" }
  */
 export const generatePricing = asyncHandler(async (req, res) => {
-  const { targetDate } = req.body;
-  const updatedInsight = await aiService.generateDynamicPricingRecommendations(targetDate);
+  const { targetDate, isManual = true } = req.body;
+  const updatedInsight = await aiService.generateDynamicPricingRecommendations(targetDate, isManual);
   return successResponse(
     res,
     toAiInsightResponse(updatedInsight),
