@@ -16,7 +16,7 @@ const QrPaymentPanel = ({
   if (!order) return null;
 
   return (
-    <div className="w-full h-full min-h-[34rem] bg-white rounded-2xl p-6 border-2 border-dashed border-outline-variant/60 flex flex-col gap-6 items-center justify-center text-center select-none">
+    <div className="w-full h-full min-h-[22rem] bg-white rounded-2xl p-6 border-2 border-dashed border-outline-variant/60 flex flex-col gap-6 items-center justify-center text-center select-none">
       <div className="w-24 h-24 rounded-full bg-primary/10 text-primary flex items-center justify-center animate-pulse">
         <span className="material-symbols-outlined text-[48px]">
           qr_code_2

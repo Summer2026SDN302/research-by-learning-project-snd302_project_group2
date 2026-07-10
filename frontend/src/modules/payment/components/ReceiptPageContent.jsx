@@ -1,43 +1,8 @@
-import React from "react";
-import dayjs from "dayjs";
-import { useNavigate } from "react-router-dom";
 import ReceiptView from "./ReceiptView";
 import ReceiptActionPanel from "./ReceiptActionPanel";
 import Spinner from "@/components/feedback/Spinner";
 import { PAYMENT_METHODS_MAP } from "@/modules/payment/constants/paymentConstants";
-
-const RECEIPT_PAGE_CONFIG = {
-  staff: {
-    backPath: "/staff/pos",
-    backLabel: "Quay lai POS",
-    heading: "Thanh toan thanh cong!",
-    subheadingPrefix: "Ma thanh toan:",
-    introIcon: "check_circle",
-    introIconTone: "bg-secondary-container bg-opacity-20 text-secondary",
-    showConfetti: true,
-    summaryTitle: "Chi tiet giao dich",
-  },
-  manager: {
-    backPath: "/manager/payments",
-    backLabel: "Quay lai thanh toan",
-    heading: "Bien lai quan ly",
-    subheadingPrefix: "So thanh toan:",
-    introIcon: "receipt_long",
-    introIconTone: "bg-primary-container/20 text-primary",
-    showConfetti: false,
-    summaryTitle: "Thong tin quan ly",
-  },
-  admin: {
-    backPath: "/admin/payments",
-    backLabel: "Quay lai thanh toan",
-    heading: "Bien lai quan tri",
-    subheadingPrefix: "So thanh toan:",
-    introIcon: "admin_panel_settings",
-    introIconTone: "bg-primary-container/20 text-primary",
-    showConfetti: false,
-    summaryTitle: "Thong tin quan tri",
-  },
-};
+import { formatCurrency } from "@/utils/formatters";
 
 const getErrorMessage = (error) => error?.message || error || null;
 
@@ -48,8 +13,6 @@ const ReceiptPageContent = ({
   error,
   onPrint,
 }) => {
-  const navigate = useNavigate();
-  const config = RECEIPT_PAGE_CONFIG[role] || RECEIPT_PAGE_CONFIG.staff;
   const errorMessage = getErrorMessage(error);
 
   if (loading) {
@@ -57,7 +20,7 @@ const ReceiptPageContent = ({
       <div className="flex h-[70vh] flex-col items-center justify-center gap-3 select-none">
         <Spinner size="lg" />
         <p className="text-body-sm font-medium text-on-surface-variant">
-          Dang tai chi tiet bien lai thanh toan...
+          Đang tải chi tiết thanh toán...
         </p>
       </div>
     );
@@ -70,19 +33,12 @@ const ReceiptPageContent = ({
           error
         </span>
         <h2 className="mb-2 text-headline-sm font-bold text-on-surface">
-          Khong the tim thay bien lai
+          Không thể tìm thấy biên lai
         </h2>
         <p className="max-w-sm text-body-sm text-on-surface-variant">
           {errorMessage ||
             "Ma thanh toan khong hop le hoac ban khong co quyen truy cap."}
         </p>
-        <button
-          type="button"
-          onClick={() => navigate(config.backPath)}
-          className="mt-6 rounded-xl bg-primary px-5 py-2.5 font-bold text-on-primary shadow transition-opacity hover:opacity-90"
-        >
-          {config.backLabel}
-        </button>
       </div>
     );
   }
@@ -142,30 +98,6 @@ const ReceiptPageContent = ({
         }
       `}</style>
 
-      {config.showConfetti && (
-        <div
-          id="confetti-container"
-          className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
-        />
-      )}
-
-      <div className="z-10 mb-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div
-          className={`mb-4 inline-flex h-20 w-20 items-center justify-center rounded-full shadow-sm transition-transform hover:scale-105 ${config.introIconTone}`}
-        >
-          <span className="material-symbols-outlined !text-[44px]">
-            {config.introIcon}
-          </span>
-        </div>
-        <h2 className="mb-1 text-headline-sm font-black text-primary">
-          {config.heading}
-        </h2>
-        <p className="text-body-sm text-on-surface-variant">
-          {config.subheadingPrefix}{" "}
-          <span className="font-bold text-on-surface">#{receipt.paymentNumber}</span>
-        </p>
-      </div>
-
       <div className="z-10 grid w-full max-w-[1120px] grid-cols-1 items-start gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(440px,_1.05fr)_minmax(380px,_0.95fr)] lg:gap-10">
         <div className="flex w-full justify-center lg:justify-end">
           <ReceiptView receipt={receipt} />
@@ -173,13 +105,6 @@ const ReceiptPageContent = ({
 
         <div className="w-full max-w-[460px] justify-self-center lg:justify-self-start">
           <div className="rounded-2xl border border-outline-variant bg-white p-6 shadow-sm sm:p-7">
-            <h3 className="mb-5 flex items-center gap-2 border-b border-outline-variant/30 pb-3 font-body-md font-bold text-on-surface">
-              <span className="material-symbols-outlined text-[20px] text-primary">
-                analytics
-              </span>
-              {config.summaryTitle}
-            </h3>
-
             <div className="mb-6 space-y-3.5 select-text">
               <div className="flex items-center gap-4 rounded-xl border border-outline-variant/30 bg-surface-container-low p-3.5">
                 <span className="material-symbols-outlined text-[24px] text-secondary">
@@ -187,12 +112,12 @@ const ReceiptPageContent = ({
                 </span>
                 <div>
                   <p className="text-[10px] font-semibold text-on-surface-variant">
-                    Phuong thuc thanh toan
+                    Phương thức thanh toán
                   </p>
                   <p className="text-body-sm font-bold text-on-surface">
                     {PAYMENT_METHODS_MAP[receipt.paymentMethod] ||
                       receipt.paymentMethod ||
-                      "Tien mat"}
+                      "Tiền mặt"}
                   </p>
                 </div>
               </div>
@@ -204,7 +129,7 @@ const ReceiptPageContent = ({
                   </span>
                   <div>
                     <p className="text-[11px] font-semibold text-on-surface-variant">
-                      Don hang
+                      Đơn hàng
                     </p>
                     <p className="font-mono text-body-sm font-bold text-on-surface">
                       {receipt.orderNumber}
@@ -220,7 +145,7 @@ const ReceiptPageContent = ({
                   </span>
                   <div>
                     <p className="text-[11px] font-semibold text-on-surface-variant">
-                      Ma tham chieu giao dich
+                      Mã tham chiếu giao dịch
                     </p>
                     <p className="font-mono text-body-sm font-bold text-on-surface">
                       {receipt.transactionCode}
@@ -233,22 +158,24 @@ const ReceiptPageContent = ({
                 <>
                   <div className="space-y-1.5 rounded-xl border border-outline-variant/30 bg-surface-container-low p-3.5 font-mono text-xs">
                     <p className="text-[10px] font-bold uppercase text-on-surface-variant">
-                      Nhan vien lap don
+                      Nhân viên lập đơn
                     </p>
                     <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Ho ten:</span>
+                      <span className="text-on-surface-variant">Họ tên:</span>
                       <span className="font-bold text-on-surface">
                         {receipt.staff?.fullName || "-"}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Username:</span>
+                      <span className="text-on-surface-variant">
+                        Tài khoản:
+                      </span>
                       <span className="font-bold text-on-surface">
                         {receipt.staff?.username || "-"}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-on-surface-variant">Vai tro:</span>
+                      <span className="text-on-surface-variant">Vai trò:</span>
                       <span className="font-bold text-on-surface">
                         {receipt.staff?.role || "Staff"}
                       </span>
@@ -258,7 +185,7 @@ const ReceiptPageContent = ({
                   <div className="space-y-3 rounded-xl border border-outline-variant/30 bg-surface-container-low p-3.5 text-xs">
                     <div className="flex justify-between">
                       <span className="font-medium text-on-surface-variant">
-                        Trang thai thanh toan:
+                        Trạng thái thanh toán:
                       </span>
                       <span className="font-bold uppercase text-secondary">
                         {receipt.paymentStatus || "Paid"}
@@ -266,31 +193,27 @@ const ReceiptPageContent = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium text-on-surface-variant">
-                        So lan in:
+                        Tổng tiền trước thuế:
                       </span>
-                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
-                        {receipt.printCount || 0} lan
+                      <span className="font-bold text-on-surface">
+                        {formatCurrency(receipt.subtotalAmount ?? 0)}
                       </span>
                     </div>
-                    {receipt.lastPrintedAt && (
-                      <div className="flex justify-between gap-3">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-on-surface-variant">
+                        Thuế (VAT):
+                      </span>
+                      <span className="font-bold text-on-surface">
+                        {formatCurrency(receipt.taxAmount ?? 0)}
+                      </span>
+                    </div>
+                    {(receipt.discountAmount ?? 0) > 0 && (
+                      <div className="flex justify-between">
                         <span className="font-medium text-on-surface-variant">
-                          Lan in cuoi:
+                          Giảm giá:
                         </span>
-                        <span className="font-bold text-on-surface">
-                          {dayjs(receipt.lastPrintedAt).format("DD/MM/YYYY HH:mm:ss")}
-                        </span>
-                      </div>
-                    )}
-                    {receipt.lastPrintedBy && (
-                      <div className="flex justify-between gap-3">
-                        <span className="font-medium text-on-surface-variant">
-                          Nguoi in cuoi:
-                        </span>
-                        <span className="font-bold text-on-surface">
-                          {receipt.lastPrintedBy.fullName ||
-                            receipt.lastPrintedBy.username ||
-                            "-"}
+                        <span className="font-bold text-primary">
+                          -{formatCurrency(receipt.discountAmount)}
                         </span>
                       </div>
                     )}

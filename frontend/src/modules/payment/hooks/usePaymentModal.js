@@ -1,8 +1,9 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import {
   checkoutPaymentThunk,
   confirmPaymentThunk,
+  fetchPaymentReceiptThunk,
 } from "../redux/paymentSlice";
 import {
   DEFAULT_PAYMENT_METHOD,
@@ -51,6 +52,8 @@ export const usePaymentModal = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
   const [confirmedPaymentData, setConfirmedPaymentData] = useState(null);
+  const [activePaymentSuccessCallback, setActivePaymentSuccessCallback] =
+    useState(null);
 
   const resetModalState = useCallback(() => {
     setIsOpen(false);
@@ -62,6 +65,7 @@ export const usePaymentModal = () => {
     setIsSubmitting(false);
     setCheckoutUrl(null);
     setConfirmedPaymentData(null);
+    setActivePaymentSuccessCallback(null);
   }, []);
 
   const openModal = useCallback((orderData, initialMethod = "Cash") => {
@@ -127,6 +131,7 @@ export const usePaymentModal = () => {
         return null;
       }
 
+      setActivePaymentSuccessCallback(() => onSuccess);
       setIsSubmitting(true);
 
       const amountVal =
@@ -232,6 +237,54 @@ export const usePaymentModal = () => {
     },
     [dispatch, toast, resetModalState],
   );
+
+  // Listen to message from the iframe when payment success page loads
+  useEffect(() => {
+    const handleMessage = async (event) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (event.data?.type === "PAYMENT_SUCCESS") {
+        const paymentId = confirmedPaymentData?._id;
+        if (!paymentId) return;
+
+        try {
+          const receipt = await dispatch(
+            fetchPaymentReceiptThunk(paymentId),
+          ).unwrap();
+          if (receipt?.paymentStatus === "Paid") {
+            if (activePaymentSuccessCallback) {
+              await activePaymentSuccessCallback(receipt);
+            }
+            resetModalState();
+          } else {
+            toast.error(
+              "Thanh toán chưa hoàn tất",
+              "Hệ thống chưa nhận được thông tin thanh toán từ đối tác PayOS.",
+            );
+          }
+        } catch (err) {
+          console.error("Xác thực thanh toán thất bại:", err);
+          toast.error(
+            "Xác thực thất bại",
+            "Không thể xác thực trạng thái thanh toán từ máy chủ.",
+          );
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [
+    activePaymentSuccessCallback,
+    confirmedPaymentData,
+    dispatch,
+    resetModalState,
+    toast,
+  ]);
 
   return {
     isOpen,

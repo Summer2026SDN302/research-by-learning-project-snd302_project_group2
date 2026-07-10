@@ -15,11 +15,19 @@ const DEFAULT_OWN_HISTORY_KPIS = {
   pendingOrdersCount: 0,
 };
 
-const KPI_PAGE_SIZE = 200;
+const KPI_PAGE_SIZE = 50;
 
 // Logic kiểm tra order có thể tái sử dụng (update items).
 const canReuseCurrentOrder = (order) =>
   Boolean(order?._id) && order.orderStatus === "Pending";
+
+const mapOrderItemToCartItem = (item) => ({
+  foodItemId: item.foodItemId?._id || item.foodItemId,
+  name: item.name,
+  unitPrice: item.unitPrice,
+  quantity: item.quantity,
+  note: item.note ?? null,
+});
 
 // [CHƯA CÓ BE] field orderedAt chưa có trong Order model BE.
 // BE trả về createdAt và orderDate.
@@ -36,10 +44,14 @@ const toDateKey = (value) => (value ? dayjs(value).format("YYYY-MM-DD") : null);
 const buildOwnHistoryKpis = (orders) => ({
   todayOrdersCount: orders.length,
   personalRevenue: orders
-    // [CHƯA CÓ BE] paymentStatus chưa có trong Order model.
-    // Tạm dùng orderStatus === "Completed" để tính doanh thu.
     .filter((item) => item.orderStatus === "Completed")
-    .reduce((sum, item) => sum + (item.totalAmount || 0), 0),
+    .reduce(
+      (sum, item) => sum + (item.finalAmount || item.totalAmount || 0),
+      0,
+    ),
+  completedOrdersCount: orders.filter(
+    (item) => item.orderStatus === "Completed",
+  ).length,
   pendingOrdersCount: orders.filter((item) => item.orderStatus === "Pending")
     .length,
 });
@@ -130,6 +142,17 @@ export const submitOrder = createAsyncThunk(
       }
 
       return await orderApi.createOrder(orderData);
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  },
+);
+
+export const updateOrderItemsThunk = createAsyncThunk(
+  "order/updateOrderItems",
+  async ({ id, body }, { rejectWithValue }) => {
+    try {
+      return await orderApi.updateOrderItems(id, body);
     } catch (error) {
       return rejectWithValue(error);
     }
@@ -230,6 +253,13 @@ const orderSlice = createSlice({
         item.note = note || null;
       }
     },
+    startEditingOrder(state, action) {
+      const order = action.payload;
+      state.currentOrder = order;
+      state.cart.items = (order?.items || []).map(mapOrderItemToCartItem);
+      state.status = "idle";
+      state.error = null;
+    },
     clearCart(state) {
       state.cart.items = [];
       state.currentOrder = null;
@@ -320,7 +350,18 @@ const orderSlice = createSlice({
         state.status = "failed";
         state.error = action.payload;
       })
-
+      .addCase(updateOrderItemsThunk.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(updateOrderItemsThunk.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.currentOrder = action.payload;
+      })
+      .addCase(updateOrderItemsThunk.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload ?? action.error;
+      })
       .addCase(cancelOrderThunk.pending, (state) => {
         state.status = "loading";
         state.error = null;
@@ -344,6 +385,7 @@ export const {
   removeFromCart,
   updateCartItemQuantity,
   updateCartItemNote,
+  startEditingOrder,
   clearCart,
   resetOrderState,
   setCurrentOrder,

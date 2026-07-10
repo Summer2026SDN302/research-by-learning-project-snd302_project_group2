@@ -12,6 +12,9 @@ const PosPage = lazy(() => import("../modules/order/pages/PosPage"));
 const OwnOrderHistoryPage = lazy(
   () => import("../modules/order/pages/OwnOrderHistoryPage"),
 );
+const ReceiptPage = lazy(
+  () => import("../modules/payment/pages/ReceiptPage"),
+);
 
 const StaffRoutes = () => (
   <Route path="/staff" element={<MainLayout role="staff" />}>
@@ -21,7 +24,7 @@ const StaffRoutes = () => (
       element={<PlaceholderPage title="Tổng quan Staff" />}
     />
     <Route path="pos" element={<PosPage role="staff" />} />
-    <Route path="receipts/:paymentId" element={<StaffReceiptPage />} />
+    <Route path="receipts/:paymentId" element={<ReceiptPage role="staff" />} />
     <Route path="pos" element={<PosPage role="staff" />} />
     <Route path="my-orders" element={<OwnOrderHistoryPage />} />
     <Route path="profile" element={<ProfilePage />} />

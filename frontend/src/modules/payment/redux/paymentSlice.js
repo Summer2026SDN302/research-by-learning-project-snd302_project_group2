@@ -102,6 +102,17 @@ export const fetchPaymentKpisThunk = createAsyncThunk(
   },
 );
 
+export const fetchPaymentByOrderIdThunk = createAsyncThunk(
+  "payment/fetchPaymentByOrderId",
+  async (orderId, { rejectWithValue }) => {
+    try {
+      return await paymentApi.getPaymentByOrderId(orderId);
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  },
+);
+
 export const checkoutPaymentThunk = createAsyncThunk(
   "payment/checkoutPayment",
   async (paymentData, { rejectWithValue }) => {

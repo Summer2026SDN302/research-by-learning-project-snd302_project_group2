@@ -62,7 +62,7 @@ const PaymentModal = ({
         </div>
 
         <div className="grid min-h-[350px] flex-1 grid-cols-12 gap-6 overflow-y-auto p-6">
-          <div className="col-span-12 border-b border-outline-variant/60 pb-6 md:col-span-5 md:min-h-[34rem] md:border-b-0 md:border-r md:pb-0 md:pr-6">
+          <div className="col-span-12 border-b border-outline-variant/60 pb-6 md:col-span-5 md:border-b-0 md:border-r md:pb-0 md:pr-6 md:sticky md:top-0 h-fit">
             <h3 className="mb-4 font-body-md font-bold text-on-surface">
               Phương thức thanh toán
             </h3>
@@ -72,7 +72,7 @@ const PaymentModal = ({
             />
           </div>
 
-          <div className="col-span-12 flex flex-col md:col-span-7 md:min-h-[34rem]">
+          <div className="col-span-12 flex flex-col md:col-span-7 md:min-h-[22rem]">
             {selectedMethod === "Cash" ? (
               <CashKeypad
                 cashReceived={cashReceived}
@@ -85,7 +85,7 @@ const PaymentModal = ({
                 onSetCashAmount={setCashReceivedAmount}
               />
             ) : checkoutUrl ? (
-              <div className="w-full h-full min-h-[34rem] bg-white rounded-2xl overflow-hidden border border-outline-variant/60 flex flex-col">
+              <div className="w-full h-full min-h-[22rem] bg-white rounded-2xl overflow-hidden border border-outline-variant/60 flex flex-col">
                 <iframe
                   src={checkoutUrl}
                   title="PayOS Payment Checkout"

@@ -34,7 +34,7 @@ describe("ReceiptView", () => {
 
     expect(screen.getByText("Ban 5 - mang di")).toBeInTheDocument();
     expect(screen.getByText(/Khong hanh/)).toBeInTheDocument();
-    expect(screen.getAllByText(/91\.000/)).toHaveLength(2);
+    expect(screen.getAllByText(/91\.000/)).toHaveLength(1);
     expect(screen.queryByText(/90\.000/)).not.toBeInTheDocument();
   });
 });

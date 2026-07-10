@@ -27,9 +27,7 @@ const OrderListPage = lazy(
 const PaymentListPage = lazy(
   () => import("../modules/payment/pages/PaymentListPage"),
 );
-const AdminReceiptPage = lazy(
-  () => import("../modules/invoice/pages/AdminReceiptPage"),
-);
+const ReceiptPage = lazy(() => import("../modules/payment/pages/ReceiptPage"));
 
 const AdminRoutes = () => (
   <Route path="/admin" element={<MainLayout role="admin" />}>
@@ -48,7 +46,7 @@ const AdminRoutes = () => (
     <Route path="daily-menu" element={<DailyMenuPage />} />
     <Route path="orders" element={<OrderListPage />} />
     <Route path="payments" element={<PaymentListPage />} />
-    <Route path="receipts/:paymentId" element={<AdminReceiptPage />} />
+    <Route path="receipts/:paymentId" element={<ReceiptPage role="admin" />} />
     <Route
       path="ai"
       element={<PlaceholderPage title="Phan tich va du bao" />}

@@ -9,6 +9,7 @@ import {
 import useAppToast from "@/hooks/useAppToast";
 import { getApiErrorMsg } from "@/utils/errorUtils";
 import { ORDER_ERROR_MAP } from "../constants/orderConstants";
+import { fetchPaymentByOrderIdThunk } from "@/modules/payment/redux/paymentSlice";
 
 const getTodayDateString = () => dayjs().format("YYYY-MM-DD");
 
@@ -128,6 +129,13 @@ export const useOwnOrderHistory = () => {
     return mapped.filter((r) => r.orderNumber?.toLowerCase().includes(query));
   }, [orders, searchQuery]);
 
+  const fetchPaymentByOrderId = useCallback(
+    async (orderId) => {
+      return await dispatch(fetchPaymentByOrderIdThunk(orderId)).unwrap();
+    },
+    [dispatch],
+  );
+
   return {
     orders,
     rows,
@@ -139,6 +147,7 @@ export const useOwnOrderHistory = () => {
     filters,
     pagination,
     executeCancelOrder,
+    fetchPaymentByOrderId,
     handlePageChange,
     handleFilterChange,
     clearFilters,

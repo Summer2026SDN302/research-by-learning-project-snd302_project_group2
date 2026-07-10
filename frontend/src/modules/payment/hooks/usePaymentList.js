@@ -6,6 +6,8 @@ import {
   fetchPaymentsThunk,
 } from "../redux/paymentSlice";
 import useAppToast from "@/hooks/useAppToast";
+import { getApiErrorMsg } from "@/utils/errorUtils";
+import { PAYMENT_LIST_ERROR_MAP } from "../constants/paymentConstants";
 
 const INITIAL_FILTERS = {
   search: "",
@@ -48,7 +50,10 @@ export const usePaymentList = () => {
     try {
       await dispatch(fetchPaymentsThunk(queryParams)).unwrap();
     } catch (err) {
-      toast.error("Lỗi", err?.message || "Không thể tải danh sách thanh toán.");
+      toast.error(
+        "Không thể tải danh sách thanh toán",
+        getApiErrorMsg(PAYMENT_LIST_ERROR_MAP, err, "Không thể tải danh sách thanh toán."),
+      );
     }
   }, [dispatch, filters, toast]);
 

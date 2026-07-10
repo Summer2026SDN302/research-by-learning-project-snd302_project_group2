@@ -6,9 +6,8 @@ import {
   resetPaymentReceiptState,
 } from "../redux/paymentSlice";
 import useAppToast from "@/hooks/useAppToast";
-
-const getErrorMessage = (error, fallback = null) =>
-  error?.message || error || fallback;
+import { getApiErrorMsg } from "@/utils/errorUtils";
+import { PAYMENT_RECEIPT_ERROR_MAP } from "../constants/paymentConstants";
 
 export const usePaymentReceipt = () => {
   const dispatch = useDispatch();
@@ -23,11 +22,19 @@ export const usePaymentReceipt = () => {
       try {
         await dispatch(fetchPaymentReceiptThunk(paymentId)).unwrap();
         return true;
-      } catch {
+      } catch (err) {
+        toast.error(
+          "Không thể tải biên lai",
+          getApiErrorMsg(
+            PAYMENT_RECEIPT_ERROR_MAP,
+            err,
+            "Không thể tải thông tin biên lai thanh toán.",
+          ),
+        );
         return null;
       }
     },
-    [dispatch],
+    [dispatch, toast],
   );
 
   const handlePrint = useCallback(
@@ -42,7 +49,11 @@ export const usePaymentReceipt = () => {
       } catch (err) {
         toast.error(
           "Lỗi khi ghi nhận in",
-          getErrorMessage(err, "Không thể cập nhật số lần in biên lai."),
+          getApiErrorMsg(
+            PAYMENT_RECEIPT_ERROR_MAP,
+            err,
+            "Không thể cập nhật số lần in biên lai.",
+          ),
         );
       }
     },
@@ -56,7 +67,7 @@ export const usePaymentReceipt = () => {
   return {
     receipt,
     loading: status === "loading",
-    error: getErrorMessage(error, null),
+    error: error?.message || error || null,
     fetchReceipt,
     handlePrint,
     resetState,

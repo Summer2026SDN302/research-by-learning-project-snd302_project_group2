@@ -75,3 +75,12 @@ export const confirmPayment = async (id, body = {}) => {
     throw normalizeApiError(error);
   }
 };
+
+export const getPaymentByOrderId = async (orderId) => {
+  try {
+    const response = await apiClient.get(`${BASE_PATH}/order/${orderId}`);
+    return unwrapResponse(response);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+};

@@ -1,3 +1,5 @@
+import { KEYPAD_BUTTONS } from "../constants/paymentConstants";
+
 /**
  * CashKeypad
  *
@@ -23,26 +25,12 @@ const CashKeypad = ({
 }) => {
   const parsedReceived = parseInt(cashReceived, 10) || 0;
 
-  const keypadButtons = [
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "C",
-    "0",
-    ".000",
-  ];
 
   return (
-    <div className="w-full h-full min-h-[34rem] bg-surface-container-low rounded-2xl p-6 flex flex-col select-none border border-outline-variant/30">
-      <div className="mb-6 grid grid-cols-2 gap-4 shrink-0">
+    <div className="w-full h-full min-h-[22rem] bg-surface-container-low rounded-2xl p-4 flex flex-col select-none border border-outline-variant/30">
+      <div className="mb-3 grid grid-cols-2 gap-4 shrink-0">
         <div>
-          <label className="font-label-md text-on-surface-variant mb-2 block font-semibold">
+          <label className="font-label-md text-on-surface-variant mb-1 block font-semibold text-[13px]">
             Số tiền khách đưa
           </label>
           <div className="relative">
@@ -50,20 +38,20 @@ const CashKeypad = ({
               type="text"
               readOnly
               value={parsedReceived.toLocaleString("vi-VN")}
-              className="w-full bg-white border-2 border-primary rounded-2xl px-4 py-3 text-2xl font-bold text-on-surface text-right focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all"
+              className="w-full bg-white border-2 border-primary rounded-2xl px-3 py-1.5 text-xl font-bold text-on-surface text-right focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all"
             />
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-primary">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-primary text-[15px]">
               đ
             </span>
           </div>
         </div>
 
         <div>
-          <label className="font-label-md text-on-surface-variant mb-2 block text-right font-semibold">
+          <label className="font-label-md text-on-surface-variant mb-1 block text-right font-semibold text-[13px]">
             Tiền thừa trả khách
           </label>
           <p
-            className={`text-2xl font-bold text-right py-3 transition-colors ${
+            className={`text-xl font-bold text-right py-1.5 transition-colors ${
               isCashValid ? "text-secondary" : "text-error"
             }`}
           >
@@ -74,8 +62,8 @@ const CashKeypad = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 flex-1 auto-rows-fr min-h-[15rem]">
-        {keypadButtons.map((btn) => {
+      <div className="grid grid-cols-3 gap-2 flex-1 auto-rows-fr min-h-[12rem]">
+        {KEYPAD_BUTTONS.map((btn) => {
           const isClear = btn === "C";
 
           return (
@@ -89,7 +77,7 @@ const CashKeypad = ({
                   onAppendDigit(btn);
                 }
               }}
-              className={`min-h-[4.5rem] rounded-xl shadow-sm text-lg font-bold transition-all active:scale-95 flex items-center justify-center py-3 ${
+              className={`min-h-[2.8rem] rounded-xl shadow-sm text-md font-bold transition-all active:scale-95 flex items-center justify-center py-2 ${
                 isClear
                   ? "bg-error-container/20 text-error hover:bg-error-container/30"
                   : "bg-white text-on-surface hover:bg-surface-container-high"
@@ -101,11 +89,11 @@ const CashKeypad = ({
         })}
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-3 shrink-0">
+      <div className="mt-3 grid grid-cols-3 gap-2 shrink-0">
         <button
           type="button"
           onClick={() => onSetCashAmount(finalAmount)}
-          className="min-h-[3rem] bg-white/70 border border-outline-variant rounded-xl py-2.5 text-xs font-bold hover:bg-white hover:border-primary transition-all text-on-surface active:scale-95"
+          className="min-h-[2.5rem] bg-white/70 border border-outline-variant rounded-xl py-1.5 text-xs font-bold hover:bg-white hover:border-primary transition-all text-on-surface active:scale-95"
         >
           Đúng số tiền
         </button>
@@ -114,7 +102,7 @@ const CashKeypad = ({
             key={amount}
             type="button"
             onClick={() => onSetCashAmount(amount)}
-            className="min-h-[3rem] bg-white/70 border border-outline-variant rounded-xl py-2.5 text-xs font-bold hover:bg-white hover:border-primary transition-all text-on-surface active:scale-95"
+            className="min-h-[2.5rem] bg-white/70 border border-outline-variant rounded-xl py-1.5 text-xs font-bold hover:bg-white hover:border-primary transition-all text-on-surface active:scale-95"
           >
             {amount.toLocaleString("vi-VN")}đ
           </button>

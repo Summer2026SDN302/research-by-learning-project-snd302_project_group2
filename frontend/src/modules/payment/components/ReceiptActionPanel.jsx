@@ -1,22 +1,21 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 
 const ROLE_CONFIG = {
   staff: {
     primaryPath: "/staff/pos",
-    primaryLabel: "Tao don moi",
+    primaryLabel: "Tạo đơn mới",
     primaryIcon: "add_circle",
     dashboardPath: "/staff/dashboard",
   },
   manager: {
     primaryPath: "/manager/payments",
-    primaryLabel: "Quay lai thanh toan",
+    primaryLabel: "Quay lại thanh toán",
     primaryIcon: "arrow_back",
     dashboardPath: "/manager/dashboard",
   },
   admin: {
     primaryPath: "/admin/payments",
-    primaryLabel: "Quay lai thanh toan",
+    primaryLabel: "Quay lai thanh toán",
     primaryIcon: "arrow_back",
     dashboardPath: "/admin/dashboard",
   },
@@ -44,7 +43,7 @@ const ReceiptActionPanel = ({ role = "staff", onPrint }) => {
           className="flex items-center justify-center gap-2 rounded-xl border-2 border-primary py-3.5 font-bold text-primary transition-all hover:bg-primary/5 active:scale-[0.98]"
         >
           <span className="material-symbols-outlined">print</span>
-          In lai
+          In lại
         </button>
         <button
           type="button"
@@ -52,7 +51,7 @@ const ReceiptActionPanel = ({ role = "staff", onPrint }) => {
           className="flex items-center justify-center gap-2 rounded-xl bg-surface-container-high py-3.5 font-bold text-on-surface transition-all hover:bg-surface-container-highest active:scale-[0.98]"
         >
           <span className="material-symbols-outlined">dashboard</span>
-          Dashboard
+          Tổng quan
         </button>
       </div>
     </div>

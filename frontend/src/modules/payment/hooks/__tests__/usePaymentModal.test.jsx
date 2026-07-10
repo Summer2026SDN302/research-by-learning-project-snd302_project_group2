@@ -58,6 +58,7 @@ describe("usePaymentModal", () => {
     act(() => {
       result.current.openModal(
         {
+          _id: "order-1",
           items: [{ foodItemId: "food-1", quantity: 1, note: null }],
           notes: "Ban 7",
           finalAmount: 50000,
@@ -74,8 +75,7 @@ describe("usePaymentModal", () => {
     });
 
     expect(paymentApi.checkoutPayment).toHaveBeenCalledWith({
-      items: [{ foodItemId: "food-1", quantity: 1, note: null }],
-      notes: "Ban 7",
+      orderId: "order-1",
       paymentMethod: "Cash",
       amountReceived: 50000,
       transactionCode: null,
@@ -96,8 +96,8 @@ describe("usePaymentModal", () => {
     });
 
     expect(mockToast.success).toHaveBeenCalledWith(
-      "Thanh toan thanh cong",
-      "Don hang #ORD-001 da thanh toan xong va duoc luu bien lai.",
+      "Thanh toán thành công",
+      "Đơn hàng #ORD-001 đã thanh toán xong và được lưu biên lai.",
     );
     expect(onSuccess).toHaveBeenCalledWith({
       _id: "payment-1",
@@ -125,6 +125,7 @@ describe("usePaymentModal", () => {
     act(() => {
       result.current.openModal(
         {
+          _id: "order-2",
           items: [{ foodItemId: "food-2", quantity: 2, note: null }],
           notes: null,
           finalAmount: 85000,
@@ -139,8 +140,7 @@ describe("usePaymentModal", () => {
     });
 
     expect(paymentApi.checkoutPayment).toHaveBeenCalledWith({
-      items: [{ foodItemId: "food-2", quantity: 2, note: null }],
-      notes: null,
+      orderId: "order-2",
       paymentMethod: "QR",
       amountReceived: 85000,
       transactionCode: "BANK-TXN-002",
@@ -172,6 +172,7 @@ describe("usePaymentModal", () => {
     act(() => {
       result.current.openModal(
         {
+          _id: "order-3",
           items: [{ foodItemId: "food-3", quantity: 1, note: null }],
           notes: "Ban 9",
           finalAmount: 65000,

@@ -1,28 +1,32 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import ReceiptPageContent from "../components/ReceiptPageContent";
 import { usePaymentReceipt } from "@/modules/payment/hooks/usePaymentReceipt";
 
-const StaffReceiptPage = () => {
+/**
+ * ReceiptPage — trang biên lai dùng chung cho tất cả roles.
+ * Props:
+ *   role {string} - "staff" | "manager" | "admin"
+ */
+const ReceiptPage = ({ role }) => {
   const { paymentId } = useParams();
   const { receipt, loading, error, fetchReceipt, handlePrint, resetState } =
     usePaymentReceipt();
 
   useEffect(() => {
     void fetchReceipt(paymentId);
-
     return () => {
       resetState();
     };
   }, [fetchReceipt, paymentId, resetState]);
 
+  // Confetti chỉ hiện cho staff sau khi thanh toán thành công
   useEffect(() => {
-    if (loading || error || !receipt) {
+    if (role !== "staff" || loading || error || !receipt) {
       return undefined;
     }
 
     const container = document.getElementById("confetti-container");
-
     if (!container) {
       return undefined;
     }
@@ -53,11 +57,11 @@ const StaffReceiptPage = () => {
     return () => {
       elements.forEach((element) => element.remove());
     };
-  }, [error, loading, receipt]);
+  }, [role, error, loading, receipt]);
 
   return (
     <ReceiptPageContent
-      role="staff"
+      role={role}
       receipt={receipt}
       loading={loading}
       error={error}
@@ -66,4 +70,4 @@ const StaffReceiptPage = () => {
   );
 };
 
-export default StaffReceiptPage;
+export default ReceiptPage;

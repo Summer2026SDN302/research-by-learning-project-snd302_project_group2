@@ -117,7 +117,7 @@ const OrderSummaryCard = ({
           <button onClick={() => onCheckout("Cash")} ...>Tiền mặt</button>
         </div> */}
 
-        {/* Nút tạo đơn — gọi trực tiếp handleSubmitOrder (không mở PaymentModal) */}
+        {/* Nút thanh toán — gọi onCheckout (mở PaymentModal) */}
         <button
           type="button"
           disabled={isSubmitting}
@@ -125,12 +125,12 @@ const OrderSummaryCard = ({
           className="w-full bg-primary text-on-primary py-3 rounded-xl font-body-md font-bold shadow-md hover:shadow-lg hover:opacity-95 transition-all active:scale-[0.98] flex justify-center items-center gap-2 disabled:opacity-50"
         >
           {isSubmitting ? (
-            <span>Đang xử lý đơn...</span>
+            <span>Đang xử lý...</span>
           ) : (
             <>
-              Tạo đơn hàng
+              Thanh toán
               <span className="material-symbols-outlined text-[20px]">
-                arrow_forward
+                payments
               </span>
             </>
           )}

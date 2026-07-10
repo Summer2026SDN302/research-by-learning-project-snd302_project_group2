@@ -53,6 +53,21 @@ export const PAYMENT_ERROR_MAP = {
   NETWORK_ERROR: "Lỗi kết nối mạng, vui lòng thử lại.",
 };
 
+export const PAYMENT_RECEIPT_ERROR_MAP = {
+  PAYMENT_NOT_FOUND: "Không tìm thấy biên lai thanh toán.",
+  PAYMENT_RECEIPT_NOT_AVAILABLE: "Biên lai chỉ khả dụng cho giao dịch đã hoàn tất.",
+  INSUFFICIENT_PERMISSIONS: "Bạn không có quyền xem biên lai này.",
+  FORBIDDEN: "Bạn không có quyền truy cập biên lai này.",
+  NETWORK_ERROR: "Lỗi kết nối mạng, vui lòng thử lại.",
+};
+
+export const PAYMENT_LIST_ERROR_MAP = {
+  INSUFFICIENT_PERMISSIONS: "Bạn không có quyền xem danh sách thanh toán.",
+  FORBIDDEN: "Truy cập bị từ chối.",
+  NETWORK_ERROR: "Lỗi kết nối mạng, vui lòng thử lại.",
+};
+
+
 export const STATUS_FILTERS = [
   { value: "", label: "Tất cả" },
   { value: "Paid", label: "Thành công" },
@@ -85,3 +100,19 @@ export const mapStatus = (status) =>
 
 export const mapStatusLabel = (status) =>
   PAYMENT_STATUS_MAP[status]?.label ?? status;
+
+export const KEYPAD_BUTTONS = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "C",
+  "0",
+  ".000",
+];
+

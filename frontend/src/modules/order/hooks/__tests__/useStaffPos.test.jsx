@@ -151,8 +151,7 @@ describe("useStaffPos", () => {
     expect(store.getState().order.currentOrder).toBeNull();
     expect(result.current.orderNotes).toBe("");
   });
-
-  it("submits a new unpaid order with shared notes and clears the POS state", async () => {
+  it("submits a new unpaid order with shared notes and retains the POS state for payment", async () => {
     orderApi.createOrder.mockResolvedValue({
       _id: "order-2",
       orderNumber: "ORD-002",
@@ -210,12 +209,21 @@ describe("useStaffPos", () => {
       ],
       notes: "Ban 5",
     });
+
     expect(mockToast.success).toHaveBeenCalledWith(
-      "Tao don thanh cong",
-      "Don hang #ORD-002 da duoc tao.",
+      "Tạo đơn hàng thành công",
+      "Đơn hàng #ORD-002 đã được tạo.",
     );
-    expect(store.getState().order.cart.items).toEqual([]);
-    expect(result.current.orderNotes).toBe("");
+    expect(store.getState().order.cart.items).toEqual([
+      {
+        foodItemId: "food-1",
+        name: "Pho",
+        unitPrice: 35000,
+        quantity: 1,
+        note: "It hanh",
+      },
+    ]);
+    expect(result.current.orderNotes).toBe("Ban 5");
   });
 
   it("shows stock meta and blocks selecting more than the remaining quantity", async () => {
@@ -310,15 +318,15 @@ describe("useStaffPos", () => {
         {
           foodItemId: "food-1",
           quantity: 2,
-          note: null,
+          note: "",
         },
       ],
       notes: "Ban 8",
     });
     expect(orderApi.createOrder).not.toHaveBeenCalled();
     expect(mockToast.success).toHaveBeenCalledWith(
-      "Cap nhat don thanh cong",
-      "Don hang #ORD-003 da duoc cap nhat.",
+      "Cập nhật đơn hàng thành công",
+      "Đơn hàng #ORD-003 đã được cập nhật.",
     );
   });
 

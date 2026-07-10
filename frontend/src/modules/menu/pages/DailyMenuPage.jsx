@@ -78,6 +78,12 @@ const DailyMenuPage = () => {
     .map((i) => i.foodItemId?._id)
     .filter(Boolean);
 
+  const isAllPreparedQtySet =
+    (menu?.items ?? []).length > 0 &&
+    (menu?.items ?? []).every(
+      (item) => item.preparedQuantity && item.preparedQuantity > 0
+    );
+
   return (
     <section className="space-y-6">
       {/* Page header */}
@@ -94,9 +100,9 @@ const DailyMenuPage = () => {
               {!isConfigured && (
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-label-md text-label-md text-on-primary shadow-sm hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-label-md text-label-md text-on-primary shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={openConfirmPublish}
-                  disabled={isMutating}
+                  disabled={isMutating || !isAllPreparedQtySet}
                 >
                   <span className="material-symbols-outlined">publish</span>
                   Công bộ thực đơn
