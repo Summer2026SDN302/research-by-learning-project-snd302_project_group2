@@ -22,6 +22,12 @@ const ForgotPasswordPage = lazy(
 const ResetPasswordPage = lazy(
   () => import("../modules/auth/pages/ResetPasswordPage"),
 );
+const PaymentSuccessPage = lazy(
+  () => import("../modules/payment/pages/PaymentSuccessPage"),
+);
+const PaymentCancelPage = lazy(
+  () => import("../modules/payment/pages/PaymentCancelPage"),
+);
 
 const RootRedirect = () => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -51,6 +57,8 @@ const AppRoutes = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/payment/success" element={<PaymentSuccessPage />} />
+          <Route path="/payment/cancel" element={<PaymentCancelPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>

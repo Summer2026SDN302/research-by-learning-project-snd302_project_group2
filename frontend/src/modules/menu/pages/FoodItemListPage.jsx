@@ -237,7 +237,7 @@ const FoodItemListPage = () => {
           onConfirm={confirmDiscardChanges}
           onCancel={cancelDiscardChanges}
         />,
-        document.body
+        document.body,
       )}
 
       {createPortal(
@@ -250,16 +250,18 @@ const FoodItemListPage = () => {
           }
           description={
             archiveConfirmTarget?.isArchived
-              ? `Bạn có chắc chắn muốn mở bán lại món ăn "${archiveConfirmTarget?.name}"?`
-              : `Bạn có chắc chắn muốn ngừng bán món ăn "${archiveConfirmTarget?.name}"?`
+              ? `Bạn có chắc chắn muốn mở bán lại món ăn "${archiveConfirmTarget?.name}"? Món sẽ có thể được thêm lại vào lịch bán và thực đơn.`
+              : `Bạn có chắc chắn muốn ngừng bán món ăn "${archiveConfirmTarget?.name}"? Lưu ý: Không thể ngừng bán nếu món ăn đang được sử dụng trong thực đơn theo lịch hoặc thực đơn hàng ngày của hôm nay/tương lai.`
           }
-          confirmLabel="Xác nhận"
+          confirmLabel={
+            archiveConfirmTarget?.isArchived ? "Mở bán lại" : "Ngừng bán"
+          }
           cancelLabel="Hủy"
           variant={archiveConfirmTarget?.isArchived ? "info" : "danger"}
           onConfirm={handleConfirmToggleArchive}
           onCancel={handleCancelToggleArchive}
         />,
-        document.body
+        document.body,
       )}
     </div>
   );

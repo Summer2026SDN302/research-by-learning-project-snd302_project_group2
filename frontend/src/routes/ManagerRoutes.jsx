@@ -16,8 +16,17 @@ const CategoryListPage = lazy(
 const FoodItemListPage = lazy(
   () => import("../modules/menu/pages/FoodItemListPage"),
 );
-const DailyMenuPage = lazy(
-  () => import("../modules/menu/pages/DailyMenuPage"),
+const DailyMenuPage = lazy(() => import("../modules/menu/pages/DailyMenuPage"));
+const PosPage = lazy(() => import("../modules/order/pages/PosPage"));
+const OwnOrderHistoryPage = lazy(
+  () => import("../modules/order/pages/OwnOrderHistoryPage"),
+);
+const OrderListPage = lazy(
+  () => import("../modules/order/pages/OrderListPage"),
+);
+const ReceiptPage = lazy(() => import("../modules/payment/pages/ReceiptPage"));
+const PaymentListPage = lazy(
+  () => import("../modules/payment/pages/PaymentListPage"),
 );
 const AiDashboardPage = lazy(
   () => import("../modules/ai/pages/AiDashboardPage"),
@@ -30,11 +39,12 @@ const ManagerRoutes = () => (
       path="dashboard"
       element={<PlaceholderPage title="Tổng quan Manager" />}
     />
-    <Route path="create-order" element={<PlaceholderPage title="POS" />} />
+    <Route path="create-order" element={<PosPage role="manager" />} />
     <Route
-      path="my-orders"
-      element={<PlaceholderPage title="Đơn hàng của tôi" />}
+      path="receipts/:paymentId"
+      element={<ReceiptPage role="manager" />}
     />
+    <Route path="my-orders" element={<OwnOrderHistoryPage />} />
     <Route path="daily-menu" element={<DailyMenuPage />} />
     <Route
       path="scheduled-menu"
@@ -42,8 +52,8 @@ const ManagerRoutes = () => (
     />
     <Route path="pricing" element={<Navigate to="../ai" replace />} />
     <Route path="ai" element={<AiDashboardPage />} />
-    <Route path="orders" element={<PlaceholderPage title="Đơn hàng" />} />
-    <Route path="payments" element={<PlaceholderPage title="Thanh toán" />} />
+    <Route path="orders" element={<OrderListPage />} />
+    <Route path="payments" element={<PaymentListPage />} />
     <Route path="profile" element={<ProfilePage />} />
     <Route path="change-password" element={<ChangePasswordPage />} />
     <Route
