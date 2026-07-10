@@ -98,7 +98,10 @@ const assertReceiptAvailable = (payment) => {
 };
 
 const reconcilePaymentStatus = async (payment, order) => {
-  if (payment.paymentStatus === PAYMENT_STATUS.PENDING && payment.paymentMethod === PAYMENT_METHOD.QR) {
+  if (
+    payment.paymentStatus === PAYMENT_STATUS.PENDING &&
+    payment.paymentMethod === PAYMENT_METHOD.QR
+  ) {
     try {
       const orderCode = parseInt(order.orderNumber.replace(/\D/g, ""), 10);
       const payosPayment = await payos.paymentRequests.get(orderCode);
@@ -116,7 +119,10 @@ const reconcilePaymentStatus = async (payment, order) => {
         });
       }
     } catch (payosError) {
-      console.error("Failed to fetch PayOS status for auto-reconciliation:", payosError);
+      console.error(
+        "Failed to fetch PayOS status for auto-reconciliation:",
+        payosError,
+      );
     }
   }
 };
@@ -165,17 +171,43 @@ const paymentService = {
 
     if (body.paymentMethod === PAYMENT_METHOD.QR) {
       const orderCode = parseInt(order.orderNumber.replace(/\D/g, ""), 10);
-      const description = `STB ${order.orderNumber}`.replace(/[^a-zA-Z0-9 ]/g, "").slice(0, 25);
+      const description = `STB ${order.orderNumber}`
+        .replace(/[^a-zA-Z0-9 ]/g, "")
+        .slice(0, 25);
 
-      const paymentLinkRes = await payos.paymentRequests.create({
-        orderCode,
-        amount: totalAmount,
-        description,
-        cancelUrl: `${process.env.FRONTEND_URL}/payment/cancel`,
-        returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
-      });
+      let paymentLinkRes;
+      try {
+        paymentLinkRes = await payos.paymentRequests.create({
+          orderCode,
+          amount: 2000, // Override amount to 2000 VND for testing/demo purposes
+          description,
+          cancelUrl: `${process.env.CLIENT_URL}/payment/cancel`,
+          returnUrl: `${process.env.CLIENT_URL}/payment/success`,
+        });
+      } catch (payosError) {
+        if (
+          payosError?.code === "231" ||
+          payosError?.error?.code === "231" ||
+          String(payosError?.message).includes("231")
+        ) {
+          paymentLinkRes = await payos.paymentRequests.get(orderCode);
+        } else {
+          throw payosError;
+        }
+      }
 
       const paymentId = await withTransaction(async (session) => {
+        const existingPayment = await paymentRepository.findByOrderId(
+          order._id,
+          { session },
+        );
+        if (
+          existingPayment &&
+          existingPayment.paymentStatus === PAYMENT_STATUS.PENDING
+        ) {
+          return existingPayment._id;
+        }
+
         const payment = await paymentRepository.create(
           {
             paymentNumber: generateReferenceNumber("PAY"),
@@ -260,9 +292,15 @@ const paymentService = {
     const verifiedData = await payos.webhooks.verify(webhookBody);
 
     if (verifiedData.code === "00") {
-      const order = await orderRepository.findByOrderCodeInt(verifiedData.orderCode);
+      const order = await orderRepository.findByOrderCodeInt(
+        verifiedData.orderCode,
+      );
       if (!order) {
-        throw new AppError("Order not found from PayOS webhook", 404, "ORDER_NOT_FOUND");
+        throw new AppError(
+          "Order not found from PayOS webhook",
+          404,
+          "ORDER_NOT_FOUND",
+        );
       }
 
       const payment = await paymentRepository.findByOrderId(order._id);
@@ -366,6 +404,22 @@ const paymentService = {
 
     const completedPayment = await paymentRepository.findById(payment._id);
     return toPaymentResponse(completedPayment);
+  },
+
+  async getPaymentByOrderId(orderId, requestingUserId, requestingRole) {
+    const order = await getOrderByIdOrThrow(orderId);
+    assertOrderAccess(order, requestingUserId, requestingRole);
+
+    const payment = await paymentRepository.findByOrderId(order._id);
+    if (!payment) {
+      throw new AppError(
+        "Payment not found for this order",
+        404,
+        "PAYMENT_NOT_FOUND",
+      );
+    }
+
+    return toPaymentResponse(payment);
   },
 };
 

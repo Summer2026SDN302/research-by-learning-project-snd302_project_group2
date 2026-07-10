@@ -1,4 +1,5 @@
 import { toObjectId } from "../../shared/helpers/mongo.helper.js";
+import { escapeRegex } from "../../shared/helpers/regex.helper.js";
 import { PAYMENT_TRANSACTION_CODE_LOCKED_STATUSES } from "./payment.constants.js";
 import Payment from "./payment.model.js";
 
@@ -87,7 +88,7 @@ const paymentRepository = {
     }
 
     if (searchKeyword) {
-      const regex = new RegExp(searchKeyword, "i");
+      const regex = new RegExp(escapeRegex(searchKeyword), "i");
       const searchOr = [
         { paymentNumber: regex },
         { transactionCode: regex },

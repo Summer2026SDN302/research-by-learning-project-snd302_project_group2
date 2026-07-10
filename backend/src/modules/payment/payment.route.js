@@ -61,4 +61,10 @@ router.post(
   paymentController.confirmPayment,
 );
 
+router.get(
+  "/order/:orderId",
+  authorizeRoles(...PAYMENT_READ_ROLES),
+  paymentController.getPaymentByOrderId,
+);
+
 export default router;
