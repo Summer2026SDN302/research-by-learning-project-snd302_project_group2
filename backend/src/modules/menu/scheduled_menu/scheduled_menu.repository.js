@@ -30,8 +30,8 @@ const scheduledMenuRepository = {
       .lean();
   },
 
-  async upsertByDay(day, menuItems, userId) {
-    return ScheduledMenu.findOneAndUpdate(
+  async upsertByDay(day, menuItems, userId, options = {}) {
+    const query = ScheduledMenu.findOneAndUpdate(
       { dayOfWeek: day },
       {
         $set: {
@@ -42,14 +42,39 @@ const scheduledMenuRepository = {
           createdBy: toObjectId(userId),
         },
       },
-      { upsert: true, returnDocument: "after", runValidators: true },
-    )
-      .populate(FOOD_ITEM_POPULATE)
-      .lean();
+      {
+        upsert: true,
+        returnDocument: "after",
+        runValidators: true,
+        session: options.session,
+      },
+    );
+
+    // Avoid cross-collection populate while the transaction is holding locks.
+    // batchUpdateSchedule does not use the returned document payload anyway.
+    if (options.session) {
+      return query.lean();
+    }
+
+    return query.populate(FOOD_ITEM_POPULATE).lean();
   },
 
   async findAllRaw() {
     return ScheduledMenu.find();
+  },
+  async removeFoodItemFromAllSchedules(foodItemId) {
+    return ScheduledMenu.updateMany(
+      {
+        "menuItems.foodItemId": toObjectId(foodItemId),
+      },
+      {
+        $pull: {
+          menuItems: {
+            foodItemId: toObjectId(foodItemId),
+          },
+        },
+      },
+    );
   },
 };
 

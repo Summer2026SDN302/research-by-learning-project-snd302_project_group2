@@ -20,8 +20,8 @@ export const countActiveByFoodItemId = async (foodItemId, fromDate) => {
   });
 };
 
-export const findMenuByDate = async (date) => {
-  return DailyMenu.findOne({ date })
+export const findMenuByDate = async (date, filter = {}) => {
+  return DailyMenu.findOne({ date, ...filter })
     .populate("createdBy", "-passwordHash")
     .populate({
       path: "items.foodItemId",
@@ -221,6 +221,36 @@ export const decrementSoldQuantity = async (
   );
 };
 
+export const incrementSoldQuantity = async (
+  menuId,
+  foodItemId,
+  quantity,
+  session,
+) => {
+  return DailyMenu.findByIdAndUpdate(
+    menuId,
+    {
+      $inc: {
+        "items.$[item].soldQuantity": -quantity,
+        "items.$[item].remainingQuantity": quantity,
+      },
+    },
+    {
+      // Guard: chỉ hoàn trả nếu soldQuantity đủ lớn, tránh để giá trị âm.
+      // Trường hợp soldQuantity < quantity là bất thường (dữ liệu bị lệch),
+      // giữ nguyên thay vì tạo giá trị âm.
+      arrayFilters: [
+        {
+          "item.foodItemId": toObjectId(foodItemId),
+          "item.soldQuantity": { $gte: quantity },
+        },
+      ],
+      new: true,
+      session,
+    },
+  );
+};
+
 export const setItemUnavailable = async (menuId, foodItemId) => {
   return DailyMenu.findByIdAndUpdate(
     menuId,
@@ -253,5 +283,32 @@ export const expireAllPastMenus = async (beforeDateStr) => {
     { date: { $lt: beforeDateStr } },
     { $set: { "items.$[elem].status": DAILY_MENU_ITEM_STATUS.UNAVAILABLE } },
     { arrayFilters: [{ "elem.status": DAILY_MENU_ITEM_STATUS.AVAILABLE }] },
+  );
+};
+
+export const setFoodItemUnavailableFromDate = async (foodItemId, fromDate) => {
+  return DailyMenu.updateMany(
+    {
+      date: { $gte: fromDate },
+      items: {
+        $elemMatch: {
+          foodItemId: toObjectId(foodItemId),
+          status: DAILY_MENU_ITEM_STATUS.AVAILABLE,
+        },
+      },
+    },
+    {
+      $set: {
+        "items.$[item].status": DAILY_MENU_ITEM_STATUS.UNAVAILABLE,
+      },
+    },
+    {
+      arrayFilters: [
+        {
+          "item.foodItemId": toObjectId(foodItemId),
+          "item.status": DAILY_MENU_ITEM_STATUS.AVAILABLE,
+        },
+      ],
+    },
   );
 };

@@ -20,7 +20,6 @@ export const ALLOWED_ICONS = [
   "cookie",
   "set_meal",
   "restaurant_menu",
-  // legacy
   "local_dining",
   "local_bar",
   "restaurant",
