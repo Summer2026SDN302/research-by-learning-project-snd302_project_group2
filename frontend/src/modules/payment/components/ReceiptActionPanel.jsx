@@ -15,7 +15,7 @@ const ROLE_CONFIG = {
   },
   admin: {
     primaryPath: "/admin/payments",
-    primaryLabel: "Quay lai thanh toán",
+    primaryLabel: "Quay lại thanh toán",
     primaryIcon: "arrow_back",
     dashboardPath: "/admin/dashboard",
   },

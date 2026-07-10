@@ -24,6 +24,9 @@ const DailyMenuPage = lazy(() => import("../modules/menu/pages/DailyMenuPage"));
 const OrderListPage = lazy(
   () => import("../modules/order/pages/OrderListPage"),
 );
+const AiDashboardPage = lazy(
+  () => import("../modules/ai/pages/AiDashboardPage"),
+);
 const PaymentListPage = lazy(
   () => import("../modules/payment/pages/PaymentListPage"),
 );
@@ -44,6 +47,8 @@ const AdminRoutes = () => (
     <Route path="food-items" element={<FoodItemListPage title="Mon an" />} />
     <Route path="scheduled-menu" element={<ScheduledMenuPage />} />
     <Route path="daily-menu" element={<DailyMenuPage />} />
+    <Route path="pricing" element={<Navigate to="../ai" replace />} />
+    <Route path="ai" element={<AiDashboardPage />} />
     <Route path="orders" element={<OrderListPage />} />
     <Route path="payments" element={<PaymentListPage />} />
     <Route path="receipts/:paymentId" element={<ReceiptPage role="admin" />} />
