@@ -7,8 +7,8 @@ const parseToUTCMidnight = (dateString) => {
 };
 
 /**
- * Trả về đầu ngày tiếp theo (UTC midnight của ngày + 1).
- * Dùng cho $lt khi query “≤ toDate” để bao gồm toàn bộ ngày toDate.
+ * Tra ve dau ngay tiep theo (UTC midnight cua ngay + 1).
+ * Dung cho $lt khi query "<= toDate" de bao gom toan bo ngay toDate.
  */
 const parseToNextDayUTCMidnight = (dateString) => {
   const [year, month, day] = dateString.split("-");
@@ -17,7 +17,7 @@ const parseToNextDayUTCMidnight = (dateString) => {
 
 const orderRepository = {
   async create(payload, session) {
-    // Fix #3: nhận session từ transaction để đảm bảo rollback nếu có lỗi
+    // Fix #3: nhan session tu transaction de dam bao rollback neu co loi
     const [order] = await Order.create([payload], { session });
     return order;
   },
@@ -38,9 +38,9 @@ const orderRepository = {
     } else if (fromDate || toDate) {
       filter.orderDate = {};
       if (fromDate) filter.orderDate.$gte = parseToUTCMidnight(fromDate);
-      // Dùng $lt với ngày tiếp theo để bao gồm toàn bộ ngày toDate
-      // Ví dụ: toDate=2026-06-15 → $lt 2026-06-16T00:00Z (đúng)
-      // Nếu dùng $lte 2026-06-15T00:00Z → bỏ sót mọi order tạo sau midnight
+      // Dung $lt voi ngay tiep theo de bao gom toan bo ngay toDate
+      // Vi du: toDate=2026-06-15 -> $lt 2026-06-16T00:00Z (dung)
+      // Neu dung $lte 2026-06-15T00:00Z -> bo sot moi order tao sau midnight
       if (toDate) filter.orderDate.$lt = parseToNextDayUTCMidnight(toDate);
     }
 
@@ -79,6 +79,17 @@ const orderRepository = {
     });
   },
 
+  async findIdsByOrderNumberKeyword(keyword) {
+    const regex = new RegExp(keyword, "i");
+    const orders = await Order.find({ orderNumber: regex }).select("_id");
+    return orders.map((item) => item._id);
+  },
+
+  async findByOrderCodeInt(orderCode) {
+    const regex = new RegExp(String(orderCode));
+    return Order.findOne({ orderNumber: regex });
+  },
+
   async updateItemsById(id, fields, session) {
     return Order.findOneAndUpdate(
       { _id: toObjectId(id) },
@@ -91,4 +102,3 @@ const orderRepository = {
 };
 
 export default orderRepository;
-
