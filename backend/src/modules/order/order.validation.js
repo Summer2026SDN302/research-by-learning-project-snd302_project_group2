@@ -1,7 +1,7 @@
 import { body, param, query } from "express-validator";
 import { ORDER_STATUS } from "./order.constants.js";
 
-/** Helper: kiểm tra chuỗi YYYY-MM-DD có phải ngày thực sự hợp lệ không */
+/** Helper: kiem tra chuoi YYYY-MM-DD co phai ngay thuc su hop le khong */
 const isRealDate = (value) => {
   const [year, month, day] = value.split("-").map(Number);
   const d = new Date(Date.UTC(year, month - 1, day));
@@ -75,14 +75,14 @@ export const validateGetOrders = [
     .isInt({ min: 1, max: 50 })
     .withMessage("Limit must be between 1 and 50"),
 
-  // trim() để tránh lỗi do khoảng trắng thừa
+  // trim() de tranh loi do khoang trang thua
   query("orderStatus")
     .optional()
     .trim()
     .isIn(Object.values(ORDER_STATUS))
     .withMessage("Invalid status filter"),
 
-  // validate staffId là MongoId hợp lệ (Admin/Manager filter theo staff)
+  // validate staffId la MongoId hop le (Admin/Manager filter theo staff)
   query("staffId")
     .optional()
     .isMongoId()
@@ -113,7 +113,7 @@ export const validateGetOrders = [
       return true;
     }),
 
-  // Custom validator: nếu date tồn tại thì fromDate / toDate phải absent
+  // Custom validator: neu date ton tai thi fromDate / toDate phai absent
   query("date").custom((value, { req }) => {
     if (value && (req.query.fromDate || req.query.toDate)) {
       throw new Error(
@@ -127,4 +127,3 @@ export const validateGetOrders = [
 export const validateGetOrderById = [
   param("id").isMongoId().withMessage("Invalid order id"),
 ];
-

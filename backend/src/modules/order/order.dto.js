@@ -3,11 +3,11 @@ import { TAX_PERCENT } from "./order.constants.js";
 export const toOrderResponse = (order) => ({
   _id: order._id,
   orderNumber: order.orderNumber,
-  // Fix #6: staffId là raw ObjectId (chưa populate).
-  // Nếu frontend cần tên nhân viên, thêm .populate("staffId", "name") trong repository.
+  // Fix #6: staffId la raw ObjectId (chua populate).
+  // Neu frontend can ten nhan vien, them .populate("staffId", "name") trong repository.
   staffId: order.staffId,
   items: (order.items ?? []).map((item) => ({
-    // Sau khi populate, foodItemId là FoodItem object — trả về _id để giữ response clean
+    // Sau khi populate, foodItemId la FoodItem object - tra ve _id de giu response clean
     foodItemId: item.foodItemId?._id ?? item.foodItemId,
     name: item.name,
     unitPrice: item.unitPrice,

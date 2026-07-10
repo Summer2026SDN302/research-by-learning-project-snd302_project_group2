@@ -8,12 +8,20 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "backfill:payment-billing:dry": "node scripts/backfill-payment-billing.js",
+    "backfill:payment-billing:apply": "node scripts/backfill-payment-billing.js --apply",
+    "migrate:payment-only:dry": "node scripts/migrate-payment-only.js",
+    "migrate:payment-only:apply": "node scripts/migrate-payment-only.js --apply",
+    "migrate:payment-transaction-code-index": "node scripts/rebuild-payment-transaction-code-index.js",
+    "cleanup:stale-pos-orders:dry": "node scripts/release-stale-pos-orders.js",
+    "cleanup:stale-pos-orders:apply": "node scripts/release-stale-pos-orders.js --apply"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@payos/node": "^2.0.5",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
