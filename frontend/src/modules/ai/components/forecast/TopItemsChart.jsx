@@ -18,7 +18,7 @@ const TopItemsChart = ({ forecasts }) => {
       .sort((a, b) => b.predictedDemand - a.predictedDemand)
       .slice(0, 5)
       .map((item) => ({
-        name: item.foodItemId?.name || "Món ẩn",
+        name: item.name || "Món ẩn",
         demand: item.predictedDemand,
       }));
   }, [forecasts]);

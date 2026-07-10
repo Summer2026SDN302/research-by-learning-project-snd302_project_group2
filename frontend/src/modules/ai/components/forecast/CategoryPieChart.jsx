@@ -9,12 +9,12 @@ import {
 } from "recharts";
 
 const COLORS = [
-  "fill-secondary",
-  "fill-primary-fixed-dim",
-  "fill-on-primary-fixed-variant",
-  "fill-secondary-container",
-  "fill-tertiary",
-  "fill-tertiary-fixed-dim",
+  "#006a60", // Teal/Primary
+  "#005fd9", // Blue/Secondary
+  "#7a5700", // Gold/Tertiary
+  "#e35b00", // Orange
+  "#683cb7", // Purple
+  "#8c9099", // Gray
 ];
 
 const CategoryPieChart = ({ forecasts }) => {
@@ -24,7 +24,7 @@ const CategoryPieChart = ({ forecasts }) => {
     // Group by category name
     const categoryMap = {};
     forecasts.forEach((f) => {
-      const catName = f.foodItemId?.categoryId?.name || "Khác";
+      const catName = f.categoryName || "Khác";
       if (!categoryMap[catName]) {
         categoryMap[catName] = 0;
       }
@@ -67,7 +67,7 @@ const CategoryPieChart = ({ forecasts }) => {
               {data.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  className={COLORS[index % COLORS.length]}
+                  fill={COLORS[index % COLORS.length]}
                 />
               ))}
             </Pie>

@@ -32,8 +32,8 @@ export const applyForecasts = (insightId, updates) =>
  * POST /ai/pricing/recommendations
  * Body: { targetDate }
  */
-export const generatePricingRecommendations = (targetDate) =>
-  apiClient.post("/ai/pricing/recommendations", { targetDate }).then((r) => r.data.data);
+export const generatePricingRecommendations = (targetDate, isManual = true) =>
+  apiClient.post("/ai/pricing/recommendations", { targetDate, isManual }).then((r) => r.data.data);
 
 /**
  * PUT /ai/pricing/recommendations/:insightId/apply

@@ -94,6 +94,7 @@ const useAiInsight = () => {
       try {
         const data = await aiApi.generateInsight(date);
         dispatch(setInsight(data));
+        await fetchVersions(date); // Cập nhật danh sách version trên UI
         toast.success(
           "Thành công",
           "Đã khởi tạo dự đoán nhu cầu AI thành công.",
@@ -109,7 +110,7 @@ const useAiInsight = () => {
         dispatch(setLoading(false));
       }
     },
-    [dispatch, toast],
+    [dispatch, toast, fetchVersions],
   );
 
   // Apply forecasts menu quantities
@@ -142,8 +143,9 @@ const useAiInsight = () => {
     async (date) => {
       dispatch(setLoading(true));
       try {
-        const data = await aiApi.generatePricingRecommendations(date);
+        const data = await aiApi.generatePricingRecommendations(date, true);
         dispatch(setInsight(data));
+        await fetchVersions(date); // Cập nhật danh sách version trên UI
         toast.success("Thành công", "Đã tạo đề xuất định giá động thành công.");
       } catch (err) {
         const msg = getApiErrorMsg(
@@ -156,7 +158,7 @@ const useAiInsight = () => {
         dispatch(setLoading(false));
       }
     },
-    [dispatch, toast],
+    [dispatch, toast, fetchVersions],
   );
 
   // Apply dynamic pricing discounts

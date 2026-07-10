@@ -47,8 +47,6 @@ const AdminRoutes = () => (
     <Route path="food-items" element={<FoodItemListPage title="Mon an" />} />
     <Route path="scheduled-menu" element={<ScheduledMenuPage />} />
     <Route path="daily-menu" element={<DailyMenuPage />} />
-    <Route path="orders" element={<PlaceholderPage title="Đơn hàng" />} />
-    <Route path="payments" element={<PlaceholderPage title="Thanh toán" />} />
     <Route path="pricing" element={<Navigate to="../ai" replace />} />
     <Route path="ai" element={<AiDashboardPage />} />
     <Route path="orders" element={<OrderListPage />} />
