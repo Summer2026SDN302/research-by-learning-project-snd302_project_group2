@@ -5,6 +5,7 @@ import {
   DATE_FORMAT_REGEX,
   TREND_PERIOD,
   WEEKDAY_LABELS_VI,
+  TIMEZONE_OFFSET,
 } from "../../modules/analytics/analytics.constants.js";
 
 export const validateDateString = (date, fieldName = "date") => {
@@ -16,14 +17,14 @@ export const validateDateString = (date, fieldName = "date") => {
     );
   }
 
-  const parsed = new Date(`${date}T12:00:00+07:00`);
+  const parsed = new Date(`${date}T12:00:00${TIMEZONE_OFFSET}`);
   if (Number.isNaN(parsed.getTime())) {
     throw new AppError(`Invalid ${fieldName}`, 400, "VALIDATION_ERROR");
   }
 };
 
 export const addDays = (dateStr, days) => {
-  const date = new Date(`${dateStr}T12:00:00+07:00`);
+  const date = new Date(`${dateStr}T12:00:00${TIMEZONE_OFFSET}`);
   date.setDate(date.getDate() + days);
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Ho_Chi_Minh",
@@ -33,13 +34,13 @@ export const addDays = (dateStr, days) => {
 export const subtractDays = (dateStr, days) => addDays(dateStr, -days);
 
 export const toStartOfDayVN = (dateStr) =>
-  new Date(`${dateStr}T00:00:00+07:00`);
+  new Date(`${dateStr}T00:00:00${TIMEZONE_OFFSET}`);
 
 export const toEndOfDayVN = (dateStr) =>
-  new Date(`${dateStr}T23:59:59.999+07:00`);
+  new Date(`${dateStr}T23:59:59.999${TIMEZONE_OFFSET}`);
 
 export const getWeekdayLabel = (dateStr) => {
-  const date = new Date(`${dateStr}T12:00:00+07:00`);
+  const date = new Date(`${dateStr}T12:00:00${TIMEZONE_OFFSET}`);
   return WEEKDAY_LABELS_VI[date.getDay()];
 };
 
@@ -53,8 +54,8 @@ export const calcPercentChange = (current, previous) => {
 };
 
 export const getPreviousPeriod = (from, to) => {
-  const fromDate = new Date(`${from}T12:00:00+07:00`);
-  const toDate = new Date(`${to}T12:00:00+07:00`);
+  const fromDate = new Date(`${from}T12:00:00${TIMEZONE_OFFSET}`);
+  const toDate = new Date(`${to}T12:00:00${TIMEZONE_OFFSET}`);
   const dayCount =
     Math.round((toDate.getTime() - fromDate.getTime()) / 86_400_000) + 1;
   const prevTo = subtractDays(from, 1);
@@ -64,6 +65,10 @@ export const getPreviousPeriod = (from, to) => {
 
 export const parseChartRange = (range, refDate) => {
   const date = refDate ?? getTodayVNDateString();
+
+  if (range === "today") {
+    return { from: date, to: date };
+  }
 
   if (range === CHART_RANGE.MONTH) {
     const [year, month] = date.split("-");
@@ -139,6 +144,24 @@ export const fillMissingDates = (points, from, to) => {
   return result;
 };
 
+export const fillMissingHours = (points) => {
+  const map = new Map(points.map((point) => [point.hour, point]));
+  const result = [];
+
+  for (let h = 0; h < 24; h++) {
+    const hourStr = `${h.toString().padStart(2, "0")}:00`;
+    result.push(
+      map.get(hourStr) ?? {
+        hour: hourStr,
+        revenue: 0,
+        orderCount: 0,
+      },
+    );
+  }
+
+  return result;
+};
+
 export const roundAmount = (value) => Math.round(Number(value) || 0);
 
 export const formatVNDateTime = (value) => {
@@ -159,7 +182,10 @@ export const formatVNDateTime = (value) => {
 };
 
 export const escapeCsvValue = (value) => {
-  const str = String(value ?? "");
+  let str = String(value ?? "");
+  if (/^[=\+\-@]/.test(str)) {
+    str = `'${str}`;
+  }
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
     return `"${str.replace(/"/g, '""')}"`;
   }

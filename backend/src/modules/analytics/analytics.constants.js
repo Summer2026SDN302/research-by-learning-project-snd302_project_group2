@@ -1,7 +1,9 @@
 export const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 export const TIMEZONE = "Asia/Ho_Chi_Minh";
+export const TIMEZONE_OFFSET = "+07:00";
 
 export const CHART_RANGE = {
+  TODAY: "today",
   SEVEN_DAYS: "7d",
   THIRTY_DAYS: "30d",
   MONTH: "month",

@@ -8,6 +8,7 @@ import {
   PAYMENT_STATUS_VALUES,
   TREND_PERIOD_VALUES,
   TOP_FOODS_SORT_VALUES,
+  TIMEZONE_OFFSET,
 } from "./analytics.constants.js";
 
 const dateQuery = (field) =>
@@ -17,7 +18,7 @@ const dateQuery = (field) =>
     .withMessage(`${field} must be in YYYY-MM-DD format`)
     .bail()
     .custom((value) => {
-      const date = new Date(`${value}T12:00:00+07:00`);
+      const date = new Date(`${value}T12:00:00${TIMEZONE_OFFSET}`);
       if (Number.isNaN(date.getTime())) {
         throw new Error(`Invalid ${field}`);
       }
@@ -25,17 +26,20 @@ const dateQuery = (field) =>
     });
 
 const intQuery = (field, { min = 1, max } = {}) => {
-  const chain = query(field)
-    .optional({ values: "falsy" })
-    .isInt({ min })
-    .withMessage(`${field} must be an integer >= ${min}`)
-    .toInt();
-
+  const isIntOptions = { min };
   if (max !== undefined) {
-    chain.isInt({ min, max }).withMessage(`${field} must be <= ${max}`);
+    isIntOptions.max = max;
   }
 
-  return chain;
+  const msg = max !== undefined
+    ? `${field} must be an integer between ${min} and ${max}`
+    : `${field} must be an integer >= ${min}`;
+
+  return query(field)
+    .optional({ values: "falsy" })
+    .isInt(isIntOptions)
+    .withMessage(msg)
+    .toInt();
 };
 
 export const dashboardSummaryValidation = [

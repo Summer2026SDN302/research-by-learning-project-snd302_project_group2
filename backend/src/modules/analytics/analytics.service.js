@@ -3,6 +3,7 @@ import {
   calcPercentChange,
   escapeCsvValue,
   fillMissingDates,
+  fillMissingHours,
   formatVNDateTime,
   getPreviousPeriod,
   parseChartRange,
@@ -30,13 +31,14 @@ import {
 } from "./analytics.constants.js";
 import * as analyticsDto from "./analytics.dto.js";
 import * as analyticsRepository from "./analytics.repository.js";
+import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.js";
 
-const resolveRevenueSource = async () => {
-  const count = await analyticsRepository.countPaidPayments();
+const resolveRevenueSource = async (from, to) => {
+  const count = await analyticsRepository.countPaidPayments(from, to);
   return count > 0 ? REVENUE_SOURCE.PAYMENT : REVENUE_SOURCE.ORDER;
 };
 
-const buildTopFoodsWithChange = async (refDate, limit) => {
+const buildTopFoodsWithChange = async (refDate, limit, source) => {
   const to = refDate;
   const from = subtractDays(refDate, 6);
   const { from: prevFrom, to: prevTo } = getPreviousPeriod(from, to);
@@ -47,12 +49,14 @@ const buildTopFoodsWithChange = async (refDate, limit) => {
       to,
       limit,
       sortBy: TOP_FOODS_SORT.QUANTITY,
+      source,
     }),
     analyticsRepository.getTopFoods({
       from: prevFrom,
       to: prevTo,
       limit: 100,
       sortBy: TOP_FOODS_SORT.QUANTITY,
+      source,
     }),
   ]);
 
@@ -71,7 +75,18 @@ const buildTopFoodsWithChange = async (refDate, limit) => {
 
 const buildChartData = async (chartRange, refDate, source) => {
   const { from, to } = parseChartRange(chartRange, refDate);
-  const points = await analyticsRepository.getRevenueGroupedByDay(from, to, source);
+  if (from === to) {
+    const points = await analyticsRepository.getRevenueGroupedByHour(
+      from,
+      source,
+    );
+    return fillMissingHours(points);
+  }
+  const points = await analyticsRepository.getRevenueGroupedByDay(
+    from,
+    to,
+    source,
+  );
   return fillMissingDates(points, from, to);
 };
 
@@ -96,16 +111,25 @@ const normalizeTopFoodsQuery = (query) => {
   const to = query.to ?? refDate;
 
   if (from > to) {
-    throw new AppError("from must be before or equal to to", 400, "VALIDATION_ERROR");
+    throw new AppError(
+      "from must be before or equal to to",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
   return {
     from,
     to,
-    limit: clampLimit(query.limit, DEFAULT_TOP_FOODS_LIMIT, MAX_TOP_FOODS_LIMIT),
-    sortBy: query.sortBy === TOP_FOODS_SORT.REVENUE
-      ? TOP_FOODS_SORT.REVENUE
-      : TOP_FOODS_SORT.QUANTITY,
+    limit: clampLimit(
+      query.limit,
+      DEFAULT_TOP_FOODS_LIMIT,
+      MAX_TOP_FOODS_LIMIT,
+    ),
+    sortBy:
+      query.sortBy === TOP_FOODS_SORT.REVENUE
+        ? TOP_FOODS_SORT.REVENUE
+        : TOP_FOODS_SORT.QUANTITY,
   };
 };
 
@@ -123,7 +147,6 @@ const computeOrderTotals = (rows) => {
     completedCount: 0,
     cancelledCount: 0,
     returnedCount: 0,
-    totalRevenue: 0,
   };
 
   for (const row of rows) {
@@ -131,7 +154,6 @@ const computeOrderTotals = (rows) => {
 
     if (row.status === "Completed") {
       totals.completedCount += row.count;
-      totals.totalRevenue += row.revenue;
     } else if (row.status === "Cancelled") {
       totals.cancelledCount += row.count;
     } else if (row.status === "Returned") {
@@ -155,14 +177,17 @@ export const getDashboardSummary = async (query = {}) => {
     MAX_TOP_FOODS_LIMIT,
   );
   const yesterday = subtractDays(refDate, 1);
-  const source = await resolveRevenueSource();
+  const { from: chartFrom, to: chartTo } = parseChartRange(chartRange, refDate);
+  const source = await resolveRevenueSource(chartFrom, chartTo);
 
-  const [todayStats, yesterdayStats, chartPoints, topFoods] = await Promise.all([
-    analyticsRepository.sumRevenueForDate(refDate, source),
-    analyticsRepository.sumRevenueForDate(yesterday, source),
-    buildChartData(chartRange, refDate, source),
-    buildTopFoodsWithChange(refDate, topFoodsLimit),
-  ]);
+  const [todayStats, yesterdayStats, chartPoints, topFoods] = await Promise.all(
+    [
+      analyticsRepository.sumRevenueForDate(refDate, source),
+      analyticsRepository.sumRevenueForDate(yesterday, source),
+      buildChartData(chartRange, refDate, source),
+      buildTopFoodsWithChange(refDate, topFoodsLimit, source),
+    ],
+  );
 
   return analyticsDto.toDashboardSummaryDto({
     date: refDate,
@@ -177,11 +202,7 @@ export const getDashboardSummary = async (query = {}) => {
 export const getRevenueChart = async (query = {}) => {
   const refDate = query.to ?? query.date ?? getTodayVNDateString();
   const range = query.range ?? CHART_RANGE.SEVEN_DAYS;
-  const source = await resolveRevenueSource();
-
-  let from;
-  let to;
-
+  let from, to;
   if (query.from && query.to) {
     validateDateString(query.from, "from");
     validateDateString(query.to, "to");
@@ -192,14 +213,25 @@ export const getRevenueChart = async (query = {}) => {
   }
 
   if (from > to) {
-    throw new AppError("from must be before or equal to to", 400, "VALIDATION_ERROR");
+    throw new AppError(
+      "from must be before or equal to to",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
-  const points = fillMissingDates(
-    await analyticsRepository.getRevenueGroupedByDay(from, to, source),
-    from,
-    to,
-  );
+  const source = await resolveRevenueSource(from, to);
+
+  const points =
+    from === to
+      ? fillMissingHours(
+          await analyticsRepository.getRevenueGroupedByHour(from, source),
+        )
+      : fillMissingDates(
+          await analyticsRepository.getRevenueGroupedByDay(from, to, source),
+          from,
+          to,
+        );
 
   return analyticsDto.toRevenueChartDto({ range, from, to, points });
 };
@@ -207,14 +239,16 @@ export const getRevenueChart = async (query = {}) => {
 export const getTopFoods = async (query = {}) => {
   const { from, to, limit, sortBy } = normalizeTopFoodsQuery(query);
   const { from: prevFrom, to: prevTo } = getPreviousPeriod(from, to);
+  const source = await resolveRevenueSource(from, to);
 
   const [currentItems, previousItems] = await Promise.all([
-    analyticsRepository.getTopFoods({ from, to, limit, sortBy }),
+    analyticsRepository.getTopFoods({ from, to, limit, sortBy, source }),
     analyticsRepository.getTopFoods({
       from: prevFrom,
       to: prevTo,
       limit: 100,
       sortBy,
+      source,
     }),
   ]);
 
@@ -248,7 +282,7 @@ export const getSalesTrend = async (query = {}) => {
   const period = query.period ?? "day";
   const currentRange = parseTrendPeriod(period, refDate);
   const previousRange = getPreviousPeriod(currentRange.from, currentRange.to);
-  const source = await resolveRevenueSource();
+  const source = await resolveRevenueSource(currentRange.from, currentRange.to);
 
   const [current, previous] = await Promise.all([
     analyticsRepository.sumRevenueByDateRange(
@@ -276,20 +310,20 @@ export const getOrderStatistics = async (query = {}) => {
     date: query.date,
   });
 
+  const source = await resolveRevenueSource(from, to);
+
   const [byStatus, byPaymentMethod, paymentStats, rangeRevenue] =
     await Promise.all([
       analyticsRepository.getOrdersByStatus(from, to),
       analyticsRepository.getPaymentsByMethod(from, to),
       analyticsRepository.getPaymentStats(from, to),
-      analyticsRepository.sumRevenueByDateRange(
-        from,
-        to,
-        await resolveRevenueSource(),
-      ),
+      analyticsRepository.sumRevenueByDateRange(from, to, source),
     ]);
 
-  const totals = computeOrderTotals(byStatus);
-  totals.totalRevenue = rangeRevenue.revenue;
+  const totals = {
+    ...computeOrderTotals(byStatus),
+    totalRevenue: rangeRevenue.revenue,
+  };
 
   return analyticsDto.toOrderStatisticsDto({
     from,
@@ -315,7 +349,11 @@ export const getTransactionReport = async (query = {}) => {
     validateDateString(filters.to, "to");
   }
   if (filters.from && filters.to && filters.from > filters.to) {
-    throw new AppError("from must be before or equal to to", 400, "VALIDATION_ERROR");
+    throw new AppError(
+      "from must be before or equal to to",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
   const [{ items, total }, summary] = await Promise.all([
@@ -329,9 +367,13 @@ export const getTransactionReport = async (query = {}) => {
       filters.from,
       filters.to,
     );
-    const source = await resolveRevenueSource();
+    const source = await resolveRevenueSource(filters.from, filters.to);
     const [currentRevenue, previousRevenue] = await Promise.all([
-      analyticsRepository.sumRevenueByDateRange(filters.from, filters.to, source),
+      analyticsRepository.sumRevenueByDateRange(
+        filters.from,
+        filters.to,
+        source,
+      ),
       analyticsRepository.sumRevenueByDateRange(prevFrom, prevTo, source),
     ]);
     revenueChangePercent = calcPercentChange(
@@ -356,6 +398,13 @@ export const exportRevenueReport = async (query = {}) => {
   }
   if (filters.to) {
     validateDateString(filters.to, "to");
+  }
+  if (filters.from && filters.to && filters.from > filters.to) {
+    throw new AppError(
+      "from must be before or equal to to",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
   const rows = await analyticsRepository.findTransactionsForExport(filters);
@@ -385,4 +434,47 @@ export const exportRevenueReport = async (query = {}) => {
   );
 
   return `\uFEFF${[header.join(","), ...lines].join("\n")}`;
+};
+
+export const getStaffDashboardSummary = async (query = {}) => {
+  const refDate = query.date ?? getTodayVNDateString();
+  if (query.date) {
+    validateDateString(query.date, "date");
+  }
+
+  // Calculate order statistics (Pending, Confirmed, Completed today)
+  const [pendingOrdersCount, completedOrdersCount] = await Promise.all([
+    analyticsRepository.countOrdersByStatus("Pending"),
+    analyticsRepository.countOrdersByStatus("Confirmed"),
+    analyticsRepository.countCompletedOrdersForDateRange(refDate, refDate),
+  ]);
+
+  const activeOrdersCount = pendingOrdersCount;
+
+  // Calculate menu summary (active items, sold out items)
+  const dailyMenu = await dailyMenuRepository.findMenuByDate(refDate);
+  const activeMenuItemsCount = dailyMenu
+    ? dailyMenu.items.filter((item) => item.status === "Available").length
+    : 0;
+  const soldOutMenuItemsCount = dailyMenu
+    ? dailyMenu.items.filter((item) => item.remainingQuantity === 0).length
+    : 0;
+
+  // Calculate top foods sold today by quantity
+  const topFoods = await analyticsRepository.getTopFoods({
+    from: refDate,
+    to: refDate,
+    limit: 5,
+    sortBy: "quantity",
+    source: "order",
+  });
+
+  return analyticsDto.toStaffDashboardSummaryDto({
+    activeOrdersCount,
+    pendingOrdersCount,
+    completedOrdersCount,
+    activeMenuItemsCount,
+    soldOutMenuItemsCount,
+    topFoods,
+  });
 };

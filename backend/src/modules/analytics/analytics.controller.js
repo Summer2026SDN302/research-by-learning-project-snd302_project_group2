@@ -41,3 +41,8 @@ export const exportRevenueReport = asyncHandler(async (req, res) => {
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
   return res.send(csv);
 });
+
+export const getStaffDashboardSummary = asyncHandler(async (req, res) => {
+  const data = await analyticsService.getStaffDashboardSummary(req.query);
+  return successResponse(res, data, "Staff dashboard summary fetched successfully");
+});

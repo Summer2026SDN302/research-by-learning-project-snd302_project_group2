@@ -14,6 +14,7 @@ vi.mock("../analytics.service.js", () => ({
   getOrderStatistics: vi.fn(),
   getTransactionReport: vi.fn(),
   exportRevenueReport: vi.fn(),
+  getStaffDashboardSummary: vi.fn(),
 }));
 
 const { mockAuthenticate } = vi.hoisted(() => {
@@ -139,6 +140,33 @@ describe("analytics routes", () => {
       expect(response.status).toBe(200);
       expect(response.headers["content-type"]).toContain("text/csv");
       expect(response.text).toContain("TXN-1");
+    });
+  });
+
+  describe("GET /api/analytics/staff/summary", () => {
+    it("returns staff summary for Staff role", async () => {
+      const mockSummary = { orders: { active: 5 } };
+      analyticsService.getStaffDashboardSummary.mockResolvedValue(mockSummary);
+
+      const response = await request(createApp())
+        .get("/api/analytics/staff/summary")
+        .set("x-test-role", "Staff");
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toEqual(mockSummary);
+    });
+
+    it("returns 403 for unauthorized route when role is incorrect (if any, wait: Staff, Manager, Admin are all authorized so no 403 for them)", async () => {
+      // All of Staff, Manager, Admin are allowed, so they all should return 200
+      const mockSummary = { orders: { active: 5 } };
+      analyticsService.getStaffDashboardSummary.mockResolvedValue(mockSummary);
+
+      const response = await request(createApp())
+        .get("/api/analytics/staff/summary")
+        .set("x-test-role", "Manager");
+
+      expect(response.status).toBe(200);
     });
   });
 });

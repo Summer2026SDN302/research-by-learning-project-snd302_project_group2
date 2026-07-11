@@ -18,9 +18,7 @@ export const toDashboardSummaryDto = ({
   const todayOrderCount = todayStats.orderCount;
   const yesterdayOrderCount = yesterdayStats.orderCount;
   const averageOrderValue =
-    todayOrderCount === 0
-      ? 0
-      : roundAmount(todayRevenue / todayOrderCount);
+    todayOrderCount === 0 ? 0 : roundAmount(todayRevenue / todayOrderCount);
   const yesterdayAverage =
     yesterdayOrderCount === 0
       ? 0
@@ -44,7 +42,12 @@ export const toDashboardSummaryDto = ({
     },
     revenueChart: {
       range: chartRange,
-      labels: chartPoints.map((point) => getWeekdayLabel(point.date)),
+      labels: chartPoints.map((point) =>
+        chartRange === "today" ? point.hour : getWeekdayLabel(point.date),
+      ),
+      dates: chartPoints.map((point) =>
+        chartRange === "today" ? point.hour : point.date,
+      ),
       values: chartPoints.map((point) => roundAmount(point.revenue)),
       unit: "VND",
     },
@@ -53,9 +56,10 @@ export const toDashboardSummaryDto = ({
 };
 
 export const toRevenueChartDto = ({ range, from, to, points }) => {
+  const isHourly = from === to;
   const mappedPoints = points.map((point) => ({
-    date: point.date,
-    label: getWeekdayLabel(point.date),
+    date: isHourly ? point.hour : point.date,
+    label: isHourly ? point.hour : getWeekdayLabel(point.date),
     revenue: roundAmount(point.revenue),
     orderCount: point.orderCount,
   }));
@@ -109,6 +113,10 @@ export const toSalesTrendDto = ({ current, previous }) => ({
   changes: {
     revenuePercent: calcPercentChange(current.revenue, previous.revenue),
     orderCountDelta: current.orderCount - previous.orderCount,
+    orderCountPercent: calcPercentChange(
+      current.orderCount,
+      previous.orderCount,
+    ),
     averageOrderValuePercent: calcPercentChange(
       current.orderCount === 0 ? 0 : current.revenue / current.orderCount,
       previous.orderCount === 0 ? 0 : previous.revenue / previous.orderCount,
@@ -180,3 +188,27 @@ export const toTransactionReportDto = ({
 });
 
 export const getDefaultChartRange = (value) => value ?? CHART_RANGE.SEVEN_DAYS;
+
+export const toStaffDashboardSummaryDto = ({
+  activeOrdersCount,
+  pendingOrdersCount,
+  completedOrdersCount,
+  activeMenuItemsCount,
+  soldOutMenuItemsCount,
+  topFoods,
+}) => ({
+  orders: {
+    active: activeOrdersCount,
+    pending: pendingOrdersCount,
+    completedToday: completedOrdersCount,
+  },
+  menu: {
+    active: activeMenuItemsCount,
+    soldOut: soldOutMenuItemsCount,
+  },
+  topFoods: topFoods.map((item) => ({
+    foodItemId: item.foodItemId,
+    name: item.name,
+    quantity: item.quantity,
+  })),
+});

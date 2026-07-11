@@ -17,6 +17,13 @@ import {
 const router = express.Router();
 
 router.use(authenticate);
+
+router.get(
+  "/staff/summary",
+  authorizeRoles(USER_ROLES.STAFF, USER_ROLES.MANAGER, USER_ROLES.ADMIN),
+  analyticsController.getStaffDashboardSummary,
+);
+
 router.use(authorizeRoles(USER_ROLES.MANAGER, USER_ROLES.ADMIN));
 
 router.get(

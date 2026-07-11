@@ -4,11 +4,14 @@ import {
   ORDER_STATUS,
   PAYMENT_STATUS,
   TIMEZONE,
+  EXPORT_MAX_ROWS,
 } from "./analytics.constants.js";
 import {
   toEndOfDayVN,
   toStartOfDayVN,
 } from "../../shared/helpers/analytics.helper.js";
+
+const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const matchPaidPaymentsByCreatedAt = (fromDateStr, toDateStr) => ({
   paymentStatus: PAYMENT_STATUS.PAID,
@@ -26,19 +29,8 @@ const matchCompletedOrdersByOrderDate = (fromDateStr, toDateStr) => ({
   },
 });
 
-const buildPaymentDateMatch = (fromDateStr, toDateStr) => {
-  if (fromDateStr === toDateStr) {
-    return matchPaidPaymentsByCreatedAt(fromDateStr, toDateStr);
-  }
-
-  return {
-    paymentStatus: PAYMENT_STATUS.PAID,
-    createdAt: {
-      $gte: toStartOfDayVN(fromDateStr),
-      $lte: toEndOfDayVN(toDateStr),
-    },
-  };
-};
+const buildPaymentDateMatch = (fromDateStr, toDateStr) =>
+  matchPaidPaymentsByCreatedAt(fromDateStr, toDateStr);
 
 const buildPaymentFilterMatch = (filters = {}) => {
   const match = {};
@@ -61,15 +53,27 @@ const buildPaymentFilterMatch = (filters = {}) => {
   }
 
   if (filters.search) {
-    const regex = new RegExp(filters.search.trim(), "i");
+    const escapedSearch = escapeRegExp(filters.search.trim());
+    const regex = new RegExp(escapedSearch, "i");
     match.$or = [{ paymentNumber: regex }, { transactionCode: regex }];
   }
 
   return match;
 };
 
-export const countPaidPayments = () =>
-  Payment.countDocuments({ paymentStatus: PAYMENT_STATUS.PAID });
+export const countPaidPayments = (from, to) => {
+  const query = { paymentStatus: PAYMENT_STATUS.PAID };
+  if (from || to) {
+    query.createdAt = {};
+    if (from) {
+      query.createdAt.$gte = toStartOfDayVN(from);
+    }
+    if (to) {
+      query.createdAt.$lte = toEndOfDayVN(to);
+    }
+  }
+  return Payment.countDocuments(query);
+};
 
 export const sumRevenueForDate = async (dateStr, source) => {
   if (source === "payment") {
@@ -203,8 +207,45 @@ export const getRevenueGroupedByDay = async (from, to, source) => {
   }));
 };
 
-export const getTopFoods = async ({ from, to, limit, sortBy }) => {
+export const getTopFoods = async ({ from, to, limit, sortBy, source }) => {
   const sortField = sortBy === "revenue" ? "revenue" : "quantity";
+
+  if (source === "payment") {
+    return Payment.aggregate([
+      { $match: buildPaymentDateMatch(from, to) },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "orderId",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      { $unwind: "$order.items" },
+      {
+        $group: {
+          _id: "$order.items.foodItemId",
+          name: { $first: "$order.items.name" },
+          quantity: { $sum: "$order.items.quantity" },
+          revenue: {
+            $sum: { $multiply: ["$order.items.quantity", "$order.items.unitPrice"] },
+          },
+        },
+      },
+      { $sort: { [sortField]: -1 } },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 0,
+          foodItemId: "$_id",
+          name: 1,
+          quantity: 1,
+          revenue: 1,
+        },
+      },
+    ]);
+  }
 
   return Order.aggregate([
     { $match: matchCompletedOrdersByOrderDate(from, to) },
@@ -228,7 +269,6 @@ export const getTopFoods = async ({ from, to, limit, sortBy }) => {
         name: 1,
         quantity: 1,
         revenue: 1,
-        imageUrl: { $literal: null },
       },
     },
   ]);
@@ -360,7 +400,13 @@ const buildTransactionPipeline = (filters, pagination) => {
         paymentNumber: 1,
         orderId: 1,
         orderNumber: "$order.orderNumber",
-        paidAt: "$createdAt",
+        paidAt: {
+          $cond: {
+            if: { $in: ["$paymentStatus", ["Paid", "Refunded"]] },
+            then: { $ifNull: ["$updatedAt", "$createdAt"] },
+            else: null,
+          },
+        },
         paymentMethod: 1,
         finalAmount: 1,
         paymentStatus: 1,
@@ -374,7 +420,7 @@ const buildTransactionPipeline = (filters, pagination) => {
     const skip = (pagination.page - 1) * pagination.limit;
     pipeline.push({ $skip: skip }, { $limit: pagination.limit });
   } else {
-    pipeline.push({ $limit: 10_000 });
+    pipeline.push({ $limit: EXPORT_MAX_ROWS + 1 });
   }
 
   return pipeline;
@@ -440,4 +486,70 @@ export const getTransactionSummary = async (filters) => {
     successRate:
       resolved === 0 ? 0 : Math.round((successCount / resolved) * 1000) / 10,
   };
+};
+
+export const getRevenueGroupedByHour = async (dateStr, source) => {
+  if (source === "payment") {
+    const rows = await Payment.aggregate([
+      { $match: buildPaymentDateMatch(dateStr, dateStr) },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%H:00",
+              date: "$createdAt",
+              timezone: TIMEZONE,
+            },
+          },
+          revenue: { $sum: "$finalAmount" },
+          orderCount: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return rows.map((row) => ({
+      hour: row._id,
+      revenue: row.revenue,
+      orderCount: row.orderCount,
+    }));
+  }
+
+  const rows = await Order.aggregate([
+    { $match: matchCompletedOrdersByOrderDate(dateStr, dateStr) },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: "%H:00",
+            date: "$orderDate",
+            timezone: TIMEZONE,
+          },
+        },
+        revenue: { $sum: "$totalAmount" },
+        orderCount: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  return rows.map((row) => ({
+    hour: row._id,
+    revenue: row.revenue,
+    orderCount: row.orderCount,
+  }));
+};
+
+export const countOrdersByStatus = (status) => {
+  return Order.countDocuments({ orderStatus: status });
+};
+
+export const countCompletedOrdersForDateRange = (from, to) => {
+  return Order.countDocuments({
+    orderStatus: ORDER_STATUS.COMPLETED,
+    orderDate: {
+      $gte: toStartOfDayVN(from),
+      $lte: toEndOfDayVN(to),
+    },
+  });
 };
