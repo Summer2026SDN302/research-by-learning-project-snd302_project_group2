@@ -1,3 +1,6 @@
+import { PAYMENT_STATUS as PM_STATUS, PAYMENT_METHOD } from "../payment/payment.constants.js";
+import { ORDER_STATUS as ORD_STATUS } from "../order/order.constants.js";
+
 export const DATE_FORMAT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 export const TIMEZONE = "Asia/Ho_Chi_Minh";
 export const TIMEZONE_OFFSET = "+07:00";
@@ -26,21 +29,16 @@ export const TOP_FOODS_SORT = {
 
 export const TOP_FOODS_SORT_VALUES = Object.values(TOP_FOODS_SORT);
 
-export const PAYMENT_STATUS = {
-  PAID: "Paid",
-  PENDING: "Pending",
-  FAILED: "Failed",
-  REFUNDED: "Refunded",
-};
+export const PAYMENT_STATUS = PM_STATUS;
 
 export const PAYMENT_STATUS_VALUES = Object.values(PAYMENT_STATUS);
 
-export const PAYMENT_METHOD_VALUES = ["Cash", "Momo", "VNPay"];
+export const PAYMENT_METHOD_VALUES = Object.values(PAYMENT_METHOD);
 
 export const ORDER_STATUS = {
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
-  RETURNED: "Returned",
+  COMPLETED: ORD_STATUS.COMPLETED,
+  CANCELLED: ORD_STATUS.CANCELLED,
+  RETURNED: ORD_STATUS.RETURNED,
 };
 
 export const EXPORT_MAX_ROWS = 10_000;
