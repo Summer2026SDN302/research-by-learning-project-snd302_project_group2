@@ -1,5 +1,6 @@
 import { toObjectId } from "../../shared/helpers/mongo.helper.js";
 import Order from "./order.model.js";
+import { ORDER_STATUS } from "./order.constants.js";
 
 const parseToUTCMidnight = (dateString) => {
   const [year, month, day] = dateString.split("-");
@@ -7,8 +8,8 @@ const parseToUTCMidnight = (dateString) => {
 };
 
 /**
- * Trả về đầu ngày tiếp theo (UTC midnight của ngày + 1).
- * Dùng cho $lt khi query “≤ toDate” để bao gồm toàn bộ ngày toDate.
+ * Tra ve dau ngay tiep theo (UTC midnight cua ngay + 1).
+ * Dung cho $lt khi query "<= toDate" de bao gom toan bo ngay toDate.
  */
 const parseToNextDayUTCMidnight = (dateString) => {
   const [year, month, day] = dateString.split("-");
@@ -17,7 +18,7 @@ const parseToNextDayUTCMidnight = (dateString) => {
 
 const orderRepository = {
   async create(payload, session) {
-    // Fix #3: nhận session từ transaction để đảm bảo rollback nếu có lỗi
+    // Fix #3: nhan session tu transaction de dam bao rollback neu co loi
     const [order] = await Order.create([payload], { session });
     return order;
   },
@@ -38,9 +39,9 @@ const orderRepository = {
     } else if (fromDate || toDate) {
       filter.orderDate = {};
       if (fromDate) filter.orderDate.$gte = parseToUTCMidnight(fromDate);
-      // Dùng $lt với ngày tiếp theo để bao gồm toàn bộ ngày toDate
-      // Ví dụ: toDate=2026-06-15 → $lt 2026-06-16T00:00Z (đúng)
-      // Nếu dùng $lte 2026-06-15T00:00Z → bỏ sót mọi order tạo sau midnight
+      // Dung $lt voi ngay tiep theo de bao gom toan bo ngay toDate
+      // Vi du: toDate=2026-06-15 -> $lt 2026-06-16T00:00Z (dung)
+      // Neu dung $lte 2026-06-15T00:00Z -> bo sot moi order tao sau midnight
       if (toDate) filter.orderDate.$lt = parseToNextDayUTCMidnight(toDate);
     }
 
@@ -49,6 +50,7 @@ const orderRepository = {
     const [items, total] = await Promise.all([
       Order.find(filter)
         .populate("items.foodItemId", "name") // Fix #7: populate để có tên món trong response
+        .populate("staffId", "fullName username role")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -59,17 +61,16 @@ const orderRepository = {
   },
 
   async findById(id) {
-    return Order.findOne({ _id: toObjectId(id) }).populate(
-      "items.foodItemId",
-      "name",
-    );
+    return Order.findOne({ _id: toObjectId(id) })
+      .populate("items.foodItemId", "name")
+      .populate("staffId", "fullName username role");
   },
 
-  async updateStatusById(id, status) {
+  async updateStatusById(id, status, session) {
     return Order.findOneAndUpdate(
       { _id: toObjectId(id) },
       { $set: { orderStatus: status } },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true, session },
     );
   },
 
@@ -78,7 +79,34 @@ const orderRepository = {
       "items.foodItemId": toObjectId(foodItemId),
     });
   },
+
+  async findCompletedOrdersSince(date) {
+    return Order.find({
+      orderStatus: { $in: [ORDER_STATUS.COMPLETED] },
+      orderDate: { $gte: date },
+    });
+  },
+
+  async findIdsByOrderNumberKeyword(keyword) {
+    const regex = new RegExp(keyword, "i");
+    const orders = await Order.find({ orderNumber: regex }).select("_id");
+    return orders.map((item) => item._id);
+  },
+
+  async findByOrderCodeInt(orderCode) {
+    const regex = new RegExp(String(orderCode));
+    return Order.findOne({ orderNumber: regex });
+  },
+
+  async updateItemsById(id, fields, session) {
+    return Order.findOneAndUpdate(
+      { _id: toObjectId(id) },
+      { $set: fields },
+      { new: true, runValidators: true, session },
+    )
+      .populate("items.foodItemId", "name")
+      .populate("staffId", "fullName username role");
+  },
 };
 
 export default orderRepository;
-

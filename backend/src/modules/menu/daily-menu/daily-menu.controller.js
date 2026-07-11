@@ -3,7 +3,7 @@ import { successResponse } from "../../../shared/response/responseFormatter.js";
 import * as dailyMenuService from "./daily-menu.service.js";
 
 export const getTodayMenu = asyncHandler(async (req, res) => {
-  const data = await dailyMenuService.getTodayMenu(req.user.role);
+  const data = await dailyMenuService.getTodayMenu(req.user.role, req.query);
   if (!data) {
     return successResponse(res, null, "No daily menu for today");
   }

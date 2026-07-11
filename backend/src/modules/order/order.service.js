@@ -4,13 +4,22 @@ import { buildPaginationMeta } from "../../shared/helpers/pagination.helper.js";
 import { parsePagination } from "../../shared/helpers/query.helper.js";
 import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.js";
 import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
+import { withTransaction } from "../../shared/helpers/transaction.helper.js";
 import orderRepository from "./order.repository.js";
-import { triggerLowStockNotification, triggerOrderStatusNotification } from "../notification/notification.service.js";
+import {
+  triggerLowStockNotification,
+  triggerOrderStatusNotification,
+} from "../notification/notification.service.js";
 import { toOrderResponse } from "./order.dto.js";
-import { VALID_STATUS_TRANSITIONS, TAX_PERCENT } from "./order.constants.js";
+import {
+  ORDER_STATUS,
+  VALID_STATUS_TRANSITIONS,
+  TAX_PERCENT,
+} from "./order.constants.js";
 import { USER_ROLES } from "../user/user.constants.js";
+import { DAILY_MENU_ITEM_STATUS } from "../menu/daily-menu/daily-menu.constants.js";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 const generateOrderNumber = () => {
   const now = new Date();
@@ -18,6 +27,12 @@ const generateOrderNumber = () => {
   const random = Math.floor(1000 + Math.random() * 9000);
   return `ORD-${dateStr}-${random}`;
 };
+
+/**
+ * Kiểm tra lỗi duplicate key MongoDB (code 11000 / 11001).
+ * Dùng để phát hiện trùng orderNumber và retry.
+ */
+const isDuplicateKeyError = (err) => err?.code === 11000 || err?.code === 11001;
 
 const getOrderOrThrow = async (id) => {
   const order = await orderRepository.findById(id);
@@ -28,30 +43,27 @@ const getOrderOrThrow = async (id) => {
 };
 
 /**
- * Pure function — tính toán giá trị đơn hàng từ danh sách món đã validate.
+ * Calculates pricing subtotal, discounts and final total.
  *
- * @param {Array<{ menuItem, requestedQty }>} lineItems
- *   menuItem: document từ dailyMenu (có originalPrice, currentPrice, foodItemId đã populate)
- *   requestedQty: số lượng khách yêu cầu
- *
+ * @param {Array<{menuItem: Object, requestedQty: number}>} lineItems
  * @returns {{
  *   orderItems: Array,   — mảng item để lưu vào DB
  *   subTotal: number,    — Σ lineTotal (trước thuế)
  *   discountAmount: number, — Σ (originalPrice − currentPrice) × qty
- *   taxAmount: number,   — subTotal × TAX_PERCENT
- *   totalAmount: number  — subTotal + taxAmount
+ *   totalAmount: number  — subTotal
  * }}
  */
 const calculateOrderPricing = (lineItems) => {
-  let subTotal = 0;
+  let totalAmount = 0;
   let discountAmount = 0;
 
-  const orderItems = lineItems.map(({ menuItem, requestedQty }) => {
+  const orderItems = lineItems.map(({ menuItem, requestedQty, note }) => {
     const unitPrice = menuItem.currentPrice;
     const lineTotal = unitPrice * requestedQty;
-    const discount = (menuItem.originalPrice - menuItem.currentPrice) * requestedQty;
+    const discount =
+      (menuItem.originalPrice - menuItem.currentPrice) * requestedQty;
 
-    subTotal += lineTotal;
+    totalAmount += lineTotal;
     discountAmount += discount;
 
     return {
@@ -60,26 +72,26 @@ const calculateOrderPricing = (lineItems) => {
       unitPrice,
       quantity: requestedQty,
       lineTotal,
+      note: note || "",
     };
   });
 
-  const taxAmount = Math.round(subTotal * TAX_PERCENT * 100) / 100;
-  const totalAmount = Math.round((subTotal + taxAmount) * 100) / 100;
+  const taxAmount =
+    Math.round((totalAmount - totalAmount / (1 + TAX_PERCENT)) * 100) / 100;
+  const subTotal = totalAmount - taxAmount;
 
   return {
     orderItems,
-    subTotal: Math.round(subTotal * 100) / 100,
-    discountAmount: Math.round(discountAmount * 100) / 100,
+    subTotal,
+    discountAmount,
     taxAmount,
     totalAmount,
   };
 };
 
-// ─── Service ──────────────────────────────────────────────────────────────────
-
 const orderService = {
   async createOrder(body, staffId) {
-    const todayStr = getTodayVNDateString(); // "YYYY-MM-DD" theo múi giờ VN
+    const todayStr = getTodayVNDateString();
     const seen = new Set();
     for (const item of body.items) {
       if (seen.has(item.foodItemId)) {
@@ -93,9 +105,11 @@ const orderService = {
     }
 
     // Fix #1: findByDate giờ populate items.foodItemId với field "name"
-    const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr);
+    const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr, {
+      isConfigured: true,
+    });
 
-    if (!dailyMenu || !dailyMenu.isConfigured) {
+    if (!dailyMenu) {
       throw new AppError(
         "Daily menu not found or not configured for today",
         404,
@@ -103,13 +117,11 @@ const orderService = {
       );
     }
 
-    // Build lookup map — sau khi populate, foodItemId là FoodItem object
     const menuItemMap = {};
     for (const item of dailyMenu.items) {
       menuItemMap[item.foodItemId._id.toString()] = item;
     }
 
-    // Validate từng item và collect lineItems để tính giá
     const lineItems = [];
 
     for (const requested of body.items) {
@@ -123,7 +135,7 @@ const orderService = {
         );
       }
 
-      if (menuItem.status !== "Available") {
+      if (menuItem.status !== DAILY_MENU_ITEM_STATUS.AVAILABLE) {
         throw new AppError(
           `Food item "${menuItem.foodItemId.name}" is unavailable`,
           400,
@@ -140,67 +152,110 @@ const orderService = {
       }
 
       // Thu thập dữ liệu để truyền vào calculateOrderPricing
-      lineItems.push({ menuItem, requestedQty: requested.quantity });
+      lineItems.push({
+        menuItem,
+        requestedQty: requested.quantity,
+        note: requested.note || "",
+      });
     }
 
-    // Tính toán giá trị đơn hàng
     const { orderItems, subTotal, discountAmount, taxAmount, totalAmount } =
       calculateOrderPricing(lineItems);
 
-    // Fix #3: dùng Mongoose session + transaction để đảm bảo rollback nếu có lỗi.
-    // Nếu orderRepository.create thất bại, các deduct đã làm sẽ bị rollback.
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    /**
+     * Chạy transaction trong 1 attempt.
+     * Mỗi attempt nhận orderNumber riêng để tránh trùng.
+     * Trả về order document đã được lưu.
+     */
+    const runTransaction = async (orderNumber) => {
+      // Mỗi lần retry PHẢI tạo session mới. Khi transaction throw lỗi bất kỳ,
+      // MongoDB đánh dấu session đó là "aborted" — không thể tiếp tục dùng lại.
+      const session = await mongoose.startSession();
+      session.startTransaction();
+      try {
+        // Fix #2: deductSoldQuantity giờ có atomic guard ($gte) và nhận session
+        let lastUpdatedMenu = null;
+        for (const { foodItemId, quantity } of body.items) {
+          lastUpdatedMenu = await dailyMenuRepository.decrementSoldQuantity(
+            dailyMenu._id,
+            foodItemId,
+            quantity,
+            session,
+          );
+        }
 
-    try {
-      // Fix #2: deductSoldQuantity giờ có atomic guard ($gte) và nhận session
-      const updatedMenus = await Promise.all(
-        body.items.map(({ foodItemId, quantity }) =>
-          dailyMenuRepository.decrementSoldQuantity(dailyMenu._id, foodItemId, quantity, session),
-        ),
-      );
+        const order = await orderRepository.create(
+          {
+            orderNumber,
+            staffId,
+            items: orderItems,
+            subTotal,
+            discountAmount,
+            taxAmount,
+            totalAmount,
+            orderStatus: ORDER_STATUS.PENDING,
+            orderDate: new Date(),
+            notes: body.notes || "",
+          },
+          session,
+        );
 
-      const order = await orderRepository.create(
-        {
-          orderNumber: generateOrderNumber(),
-          staffId,
-          items: orderItems,
-          subTotal,
-          discountAmount,
-          taxAmount,
-          totalAmount,
-          orderStatus: "Pending",
-          orderDate: new Date(todayStr),
-        },
-        session,
-      );
+        // Trigger low stock notifications for items that fell below threshold
+        if (lastUpdatedMenu?.items) {
+          for (const item of body.items) {
+            const updatedItem = lastUpdatedMenu.items.find(
+              (i) => i.foodItemId.toString() === item.foodItemId,
+            );
+            if (!updatedItem) continue;
 
-      // Trigger low stock notifications for items that fell below threshold
-      const lastMenu = updatedMenus[updatedMenus.length - 1];
-      if (lastMenu) {
-        for (const item of body.items) {
-          const updatedItem = lastMenu.items.find((i) => i.foodItemId.toString() === item.foodItemId);
-          if (updatedItem) {
-            const originalItem = dailyMenu.items.find((i) => i.foodItemId._id.toString() === item.foodItemId);
+            const originalItem = dailyMenu.items.find(
+              (i) => i.foodItemId._id.toString() === item.foodItemId,
+            );
             const foodItemName = originalItem?.foodItemId?.name || "Món ăn";
-            
+
             triggerLowStockNotification(
               todayStr,
               item.foodItemId,
               foodItemName,
-              updatedItem.remainingQuantity
-            ).catch((err) => console.error("Error triggering low stock notification:", err));
+              updatedItem.remainingQuantity,
+            ).catch((err) =>
+              console.error("Error triggering low stock notification:", err),
+            );
           }
         }
-      }
 
-      await session.commitTransaction();
-      return toOrderResponse(order);
-    } catch (err) {
-      await session.abortTransaction();
-      throw err;
-    } finally {
-      session.endSession();
+        await session.commitTransaction();
+        return order;
+      } catch (err) {
+        await session.abortTransaction();
+        throw err;
+      } finally {
+        session.endSession();
+      }
+    };
+
+    // Retry vòng ngoài: mỗi lần tạo session mới + orderNumber mới.
+    // Lý do: MongoDB invalidate toàn bộ session khi transaction gặp lỗi,
+    // nên không thể retry bên trong cùng một transaction/session.
+    const MAX_RETRIES = 3;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const order = await runTransaction(generateOrderNumber());
+        return toOrderResponse(order);
+      } catch (err) {
+        if (isDuplicateKeyError(err) && attempt < MAX_RETRIES) {
+          // orderNumber trùng — thử lại với session + số mới
+          continue;
+        }
+        if (isDuplicateKeyError(err)) {
+          throw new AppError(
+            "Không thể tạo mã đơn hàng duy nhất sau nhiều lần thử. Vui lòng thử lại.",
+            500,
+            "ORDER_NUMBER_CONFLICT",
+          );
+        }
+        throw err;
+      }
     }
   },
 
@@ -227,7 +282,7 @@ const orderService = {
   async getOrderById(id, requestingUserId, requestingRole) {
     const order = await getOrderOrThrow(id);
 
-    // Staff chỉ được xem order của chính mình
+    // Staff chi duoc xem order cua chinh minh
     if (
       requestingRole === USER_ROLES.STAFF &&
       order.staffId.toString() !== requestingUserId
@@ -242,11 +297,20 @@ const orderService = {
     return toOrderResponse(order);
   },
 
-  // Fix #4: bỏ param `role` vì không dùng trong hàm này.
-  // Việc kiểm tra role (chỉ Manager/Admin mới cancel được) nên để ở middleware/router.
-  async updateOrderStatus(id, newStatus) {
+  async updateOrderStatus(id, newStatus, requestingUserId, requestingRole) {
     const order = await getOrderOrThrow(id);
     const currentStatus = order.orderStatus;
+
+    if (
+      requestingRole === USER_ROLES.STAFF &&
+      order.staffId.toString() !== requestingUserId
+    ) {
+      throw new AppError(
+        "You do not have permission to modify this order",
+        403,
+        "FORBIDDEN",
+      );
+    }
 
     const allowedNext = VALID_STATUS_TRANSITIONS[currentStatus] ?? [];
 
@@ -260,9 +324,241 @@ const orderService = {
 
     const updated = await orderRepository.updateStatusById(id, newStatus);
 
-    triggerOrderStatusNotification(updated, newStatus)
-      .catch((err) => console.error("Error triggering order status notification:", err));
+    triggerOrderStatusNotification(updated, newStatus).catch((err) =>
+      console.error("Error triggering order status notification:", err),
+    );
 
+    return toOrderResponse(updated);
+  },
+
+  /**
+   * Hủy đơn hàng.
+   * Luồng:
+   *  1. Validate quyền + trạng thái hiện tại cho phép chuyển sang Cancelled.
+   *  2. Trong transaction: hoàn trả tồn kho về daily menu, sau đó cập nhật status.
+   *
+   * Lý do cần transaction: nếu hoàn tồn kho thành công nhưng updateStatus thất bại
+   * (hoặc ngược lại), dữ liệu sẽ bị lệch. Transaction đảm bảo cả hai cùng thành công hoặc rollback.
+   */
+  async cancelOrder(id, requestingUserId, requestingRole) {
+    const order = await getOrderOrThrow(id);
+
+    // Kiểm tra quyền (giữ nguyên logic như updateOrderStatus)
+    if (
+      requestingRole === USER_ROLES.STAFF &&
+      order.staffId.toString() !== requestingUserId
+    ) {
+      throw new AppError(
+        "You do not have permission to cancel this order",
+        403,
+        "FORBIDDEN",
+      );
+    }
+
+    // Kiểm tra transition hợp lệ theo VALID_STATUS_TRANSITIONS
+    const allowedNext = VALID_STATUS_TRANSITIONS[order.orderStatus] ?? [];
+    if (!allowedNext.includes(ORDER_STATUS.CANCELLED)) {
+      throw new AppError(
+        `Cannot cancel order with status "${order.orderStatus}"`,
+        400,
+        "INVALID_STATUS_TRANSITION",
+      );
+    }
+
+    // Chỉ hoàn tồn kho nếu đơn đang Pending (chưa được xử lý).
+    // Nếu đơn Confirmed thì quản lý quyết định hoàn hàng thủ công ngoài hệ thống.
+    const shouldRestoreInventory = order.orderStatus === ORDER_STATUS.PENDING;
+
+    if (!shouldRestoreInventory) {
+      // Không cần hoàn tồn kho, cập nhật status trực tiếp
+      const updated = await orderRepository.updateStatusById(
+        id,
+        ORDER_STATUS.CANCELLED,
+      );
+      return toOrderResponse(updated);
+    }
+
+    // Tìm daily menu của ngày đặt đơn để hoàn tồn kho
+    const todayStr = getTodayVNDateString();
+    const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr, {
+      isConfigured: true,
+    });
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      // Hoàn trả soldQuantity và remainingQuantity cho từng món trong đơn
+      if (dailyMenu) {
+        for (const item of order.items) {
+          await dailyMenuRepository.incrementSoldQuantity(
+            dailyMenu._id,
+            item.foodItemId._id ?? item.foodItemId,
+            item.quantity,
+            session,
+          );
+        }
+      }
+
+      const updated = await orderRepository.updateStatusById(
+        id,
+        ORDER_STATUS.CANCELLED,
+        session,
+      );
+      await session.commitTransaction();
+      return toOrderResponse(updated);
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
+    }
+  },
+
+  /**
+   * Cập nhật danh sách món trong đơn hàng đang Pending.
+   * Luồng xử lý:
+   *  1. Validate đơn tồn tại, đang Pending, và người yêu cầu có quyền.
+   *  2. Hoàn tác soldQuantity cũ về menu (increment).
+   *  3. Validate các món mới với menu hôm nay.
+   *  4. Tính lại giá, deduct soldQuantity mới.
+   *  5. Lưu items + totals mới vào DB.
+   * Mỗi attempt dùng session riêng (giống createOrder) để tránh lỗi transaction aborted.
+   */
+  async updateOrderItems(id, newItems, requestingUserId, requestingRole) {
+    const order = await getOrderOrThrow(id);
+
+    if (order.orderStatus !== ORDER_STATUS.PENDING) {
+      throw new AppError(
+        `Only Pending orders can be updated. Current status: "${order.orderStatus}"`,
+        400,
+        "ORDER_NOT_PENDING",
+      );
+    }
+
+    if (
+      requestingRole === USER_ROLES.STAFF &&
+      order.staffId.toString() !== requestingUserId
+    ) {
+      throw new AppError(
+        "You do not have permission to modify this order",
+        403,
+        "FORBIDDEN",
+      );
+    }
+
+    // Kiểm tra trùng foodItemId trong danh sách mới
+    const seen = new Set();
+    for (const item of newItems) {
+      if (seen.has(item.foodItemId)) {
+        throw new AppError(
+          "Duplicate food item in order",
+          400,
+          "DUPLICATE_ITEM",
+        );
+      }
+      seen.add(item.foodItemId);
+    }
+
+    const todayStr = getTodayVNDateString();
+    const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr, {
+      isConfigured: true,
+    });
+
+    if (!dailyMenu) {
+      throw new AppError(
+        "Daily menu not found or not configured for today",
+        404,
+        "DAILY_MENU_NOT_FOUND",
+      );
+    }
+
+    const menuItemMap = {};
+    for (const item of dailyMenu.items) {
+      menuItemMap[item.foodItemId._id.toString()] = item;
+    }
+
+    const lineItems = [];
+    for (const requested of newItems) {
+      const menuItem = menuItemMap[requested.foodItemId];
+      if (!menuItem) {
+        throw new AppError(
+          `Food item ${requested.foodItemId} is not in today's menu`,
+          400,
+          "ITEM_NOT_IN_MENU",
+        );
+      }
+      if (menuItem.status !== DAILY_MENU_ITEM_STATUS.AVAILABLE) {
+        throw new AppError(
+          `Food item "${menuItem.foodItemId.name}" is unavailable`,
+          400,
+          "ITEM_UNAVAILABLE",
+        );
+      }
+      if (menuItem.remainingQuantity < requested.quantity) {
+        throw new AppError(
+          `Insufficient quantity for item "${menuItem.foodItemId.name}"`,
+          400,
+          "INSUFFICIENT_QUANTITY",
+        );
+      }
+      lineItems.push({
+        menuItem,
+        requestedQty: requested.quantity,
+        note: requested.note || "",
+      });
+    }
+
+    const { orderItems, subTotal, discountAmount, taxAmount, totalAmount } =
+      calculateOrderPricing(lineItems);
+
+    const runUpdateTransaction = async () => {
+      const session = await mongoose.startSession();
+      session.startTransaction();
+      try {
+        // 1. Hoàn tác soldQuantity của các món cũ
+        for (const oldItem of order.items) {
+          await dailyMenuRepository.incrementSoldQuantity(
+            dailyMenu._id,
+            oldItem.foodItemId._id ?? oldItem.foodItemId,
+            oldItem.quantity,
+            session,
+          );
+        }
+
+        // 2. Deduct soldQuantity cho các món mới
+        for (const { foodItemId, quantity } of newItems) {
+          await dailyMenuRepository.decrementSoldQuantity(
+            dailyMenu._id,
+            foodItemId,
+            quantity,
+            session,
+          );
+        }
+
+        // 3. Cập nhật items và totals
+        const updated = await orderRepository.updateItemsById(
+          id,
+          {
+            items: orderItems,
+            subTotal,
+            discountAmount,
+            taxAmount,
+            totalAmount,
+          },
+          session,
+        );
+
+        await session.commitTransaction();
+        return updated;
+      } catch (err) {
+        await session.abortTransaction();
+        throw err;
+      } finally {
+        session.endSession();
+      }
+    };
+
+    const updated = await runUpdateTransaction();
     return toOrderResponse(updated);
   },
 };
