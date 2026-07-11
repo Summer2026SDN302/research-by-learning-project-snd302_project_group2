@@ -94,7 +94,7 @@ const orderRepository = {
   },
 
   async findByOrderCodeInt(orderCode) {
-    const regex = new RegExp(String(orderCode));
+    const regex = new RegExp(`-${orderCode}$`);
     return Order.findOne({ orderNumber: regex });
   },
 
