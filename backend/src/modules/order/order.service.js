@@ -189,30 +189,6 @@ const orderService = {
           session,
         );
 
-        // Trigger low stock notifications for items that fell below threshold
-        if (lastUpdatedMenu?.items) {
-          for (const item of body.items) {
-            const updatedItem = lastUpdatedMenu.items.find(
-              (i) => i.foodItemId.toString() === item.foodItemId,
-            );
-            if (!updatedItem) continue;
-
-            const originalItem = dailyMenu.items.find(
-              (i) => i.foodItemId._id.toString() === item.foodItemId,
-            );
-            const foodItemName = originalItem?.foodItemId?.name || "Món ăn";
-
-            triggerLowStockNotification(
-              todayStr,
-              item.foodItemId,
-              foodItemName,
-              updatedItem.remainingQuantity,
-            ).catch((err) =>
-              console.error("Error triggering low stock notification:", err),
-            );
-          }
-        }
-
         await session.commitTransaction();
         return order;
       } catch (err) {

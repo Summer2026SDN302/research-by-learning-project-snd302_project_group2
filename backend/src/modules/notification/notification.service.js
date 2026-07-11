@@ -1,8 +1,12 @@
 import * as notificationRepository from "./notification.repository.js";
 import { findUsers } from "../user/user.repository.js";
 import AppError from "../../shared/exceptions/AppError.js";
-import { NOTIFICATION_TYPES } from "./notification.constants.js";
+import {
+  NOTIFICATION_TYPES,
+  ORDER_STATUS_VI,
+} from "./notification.constants.js";
 import { USER_ROLES } from "../user/user.constants.js";
+import { getIO } from "../../sockets/socket.js";
 
 /**
  * Resolves active recipients (combining explicit userIds and roleScope)
@@ -31,7 +35,11 @@ export const createForRecipients = async ({
   if (conditions.length > 0) {
     recipientFilter.$or = conditions;
   } else {
-    throw new AppError("Either roleScope or userIds must be specified", 400, "VALIDATION_ERROR");
+    throw new AppError(
+      "Either roleScope or userIds must be specified",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
   // Resolve active users matching filter criteria
@@ -55,7 +63,14 @@ export const createForRecipients = async ({
   }));
 
   try {
-    await notificationRepository.createMany(notificationDocs);
+    const created = await notificationRepository.createMany(notificationDocs);
+    const io = getIO();
+    if (io && created) {
+      const docs = Array.isArray(created) ? created : [created];
+      for (const notif of docs) {
+        io.to(notif.userId.toString()).emit("notification-received", notif);
+      }
+    }
   } catch (error) {
     // Swallow duplicate key error (11000)
     const isDuplicateKeyError =
@@ -116,7 +131,12 @@ export const markAllAsRead = async (userId) => {
  * Helper to trigger Low Stock alerts idempotently.
  * Checks threshold and constructs dedup key.
  */
-export const triggerLowStockNotification = async (menuDate, foodItemId, foodItemName, remainingQuantity) => {
+export const triggerLowStockNotification = async (
+  menuDate,
+  foodItemId,
+  foodItemName,
+  remainingQuantity,
+) => {
   const threshold = 3;
   if (remainingQuantity <= 0 || remainingQuantity > threshold) {
     return; // Ignore recovery or out-of-stock triggers
@@ -137,8 +157,8 @@ export const triggerLowStockNotification = async (menuDate, foodItemId, foodItem
   await createForRecipients({
     roleScope: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
     type: NOTIFICATION_TYPES.SYSTEM_LOG,
-    title: "Sắp hết hàng",
-    content: `${foodItemName} còn ${remainingQuantity} phần.`,
+    title: "Cảnh báo sắp hết món",
+    content: `Món ăn "${foodItemName}" hiện chỉ còn lại ${remainingQuantity} phần phục vụ. Vui lòng kiểm tra và chuẩn bị thêm.`,
     dedupKey,
   });
 };
@@ -148,14 +168,23 @@ export const triggerLowStockNotification = async (menuDate, foodItemId, foodItem
  */
 export const triggerOrderStatusNotification = async (order, newStatus) => {
   const dedupKey = `order_status:${order._id}:${newStatus}`;
+  const statusVi = ORDER_STATUS_VI[newStatus] || newStatus;
+
+  const isNewOrder = newStatus === "Pending";
+  const title = isNewOrder
+    ? "Đơn hàng mới được tạo"
+    : "Cập nhật trạng thái đơn hàng";
+  const content = isNewOrder
+    ? `Đơn hàng #${order.orderNumber} đã được tạo thành công và đang chờ khách hàng thanh toán.`
+    : `Đơn hàng #${order.orderNumber} đã chuyển sang trạng thái: "${statusVi}".`;
 
   // Recipient list combines creating staff and all active Admins/Managers.
   await createForRecipients({
     userIds: [order.staffId],
     roleScope: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
     type: NOTIFICATION_TYPES.ORDER_UPDATE,
-    title: "Cập nhật đơn hàng",
-    content: `Đơn #${order.orderNumber} đã chuyển sang trạng thái: ${newStatus}.`,
+    title,
+    content,
     dedupKey,
   });
 };

@@ -21,8 +21,8 @@ export const countActiveByFoodItemId = async (foodItemId, fromDate) => {
   });
 };
 
-export const findMenuByDate = async (date, filter = {}) => {
-  return DailyMenu.findOne({ date, ...filter })
+export const findMenuByDate = async (date, filter = {}, options = {}) => {
+  return DailyMenu.findOne({ date, ...filter }, null, options)
     .populate("createdBy", "-passwordHash")
     .populate({
       path: "items.foodItemId",
