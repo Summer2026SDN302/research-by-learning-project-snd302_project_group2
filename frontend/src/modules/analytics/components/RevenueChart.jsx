@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import {
   Area,
   AreaChart,
@@ -9,23 +10,28 @@ import {
 } from "recharts";
 
 import EmptyState from "../../../components/data-display/EmptyState";
-import { CHART_RANGE } from "../constants/analyticsConstants";
-import { CHART_COLORS, chartTooltipFormatter } from "../utils/chartConfig";
+import { CHART_COLORS, chartTooltipFormatter, formatYAxisTick } from "../utils/chartConfig";
 import DashboardSkeleton from "./DashboardSkeleton";
+
+const formatXAxisTick = (tickVal) => {
+  if (typeof tickVal === "string" && /^\d{4}-\d{2}-\d{2}$/.test(tickVal)) {
+    const d = dayjs(tickVal);
+    return d.isValid() ? d.format("DD/MM") : tickVal;
+  }
+  return tickVal;
+};
 
 const RevenueChart = ({
   labels = [],
   values = [],
   loading = false,
-  range,
-  onRangeChange,
 }) => {
   const chartData = labels.map((label, index) => ({
     label,
     revenue: values[index] ?? 0,
   }));
 
-  const hasData = chartData.some((point) => point.revenue > 0);
+  const hasData = chartData.length > 0;
 
   return (
     <div className="bg-surface rounded-xl border border-outline-variant shadow-soft p-6">
@@ -33,17 +39,6 @@ const RevenueChart = ({
         <h3 className="text-headline-sm font-bold text-on-surface">
           Biểu Đồ Doanh Thu
         </h3>
-        <select
-          value={range}
-          onChange={(event) => onRangeChange(event.target.value)}
-          className="bg-surface-container-low border border-outline-variant text-on-surface text-body-sm rounded-lg focus:ring-primary focus:border-primary block p-2"
-        >
-          {Object.values(CHART_RANGE).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
       </div>
 
       {loading ? (
@@ -60,14 +55,40 @@ const RevenueChart = ({
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData}>
               <defs>
-                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={CHART_COLORS.primary} stopOpacity={0.2} />
-                  <stop offset="100%" stopColor={CHART_COLORS.primary} stopOpacity={0} />
+                <linearGradient
+                  id="revenueGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="0%"
+                    stopColor={CHART_COLORS.primary}
+                    stopOpacity={0.2}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={CHART_COLORS.primary}
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="5 5" stroke={CHART_COLORS.grid} vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: CHART_COLORS.axis, fontSize: 12 }} />
-              <YAxis tick={{ fill: CHART_COLORS.axis, fontSize: 12 }} />
+              <CartesianGrid
+                strokeDasharray="5 5"
+                stroke={CHART_COLORS.grid}
+                vertical={false}
+              />
+              <XAxis
+                dataKey="label"
+                tick={{ fill: CHART_COLORS.axis, fontSize: 12 }}
+                tickFormatter={formatXAxisTick}
+                minTickGap={45}
+              />
+              <YAxis
+                tick={{ fill: CHART_COLORS.axis, fontSize: 12 }}
+                tickFormatter={formatYAxisTick}
+              />
               <Tooltip
                 formatter={(value) => chartTooltipFormatter(value)}
                 contentStyle={{
@@ -75,6 +96,7 @@ const RevenueChart = ({
                   border: "none",
                   borderRadius: 8,
                   color: "#fff",
+                  fontSize: 13,
                 }}
               />
               <Area

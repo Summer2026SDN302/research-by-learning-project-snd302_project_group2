@@ -5,11 +5,16 @@ import { DASHBOARD_POLL_INTERVAL_MS } from "../constants/analyticsConstants";
 import {
   fetchDashboardSummary,
   fetchOrderStatistics,
+  fetchRecentTransactions,
+  fetchRevenueChart,
   selectDashboardData,
   selectDashboardError,
   selectDashboardLoading,
+  selectDashboardFilters,
   selectOrderStats,
   selectOrderStatsLoading,
+  selectRecentTransactions,
+  selectRecentTransactionsLoading,
 } from "../redux/analyticsSlice";
 
 const useDashboard = () => {
@@ -19,11 +24,25 @@ const useDashboard = () => {
   const dashboardError = useSelector(selectDashboardError);
   const orderStats = useSelector(selectOrderStats);
   const orderStatsLoading = useSelector(selectOrderStatsLoading);
+  const recentTransactions = useSelector(selectRecentTransactions);
+  const recentTransactionsLoading = useSelector(selectRecentTransactionsLoading);
+  const filters = useSelector(selectDashboardFilters);
 
   const refresh = useCallback(() => {
-    dispatch(fetchDashboardSummary());
-    dispatch(fetchOrderStatistics());
-  }, [dispatch]);
+    const params = {
+      chartRange: filters.preset !== "custom" ? filters.preset : undefined,
+      from: filters.from,
+      to: filters.to,
+    };
+    dispatch(fetchDashboardSummary({ chartRange: params.chartRange }));
+    dispatch(fetchOrderStatistics({ from: params.from, to: params.to }));
+    dispatch(fetchRecentTransactions());
+    dispatch(fetchRevenueChart({
+      from: params.from,
+      to: params.to,
+      range: params.chartRange,
+    }));
+  }, [dispatch, filters]);
 
   useEffect(() => {
     refresh();
@@ -43,6 +62,8 @@ const useDashboard = () => {
     error: dashboardError,
     orderStats,
     orderStatsLoading,
+    recentTransactions,
+    recentTransactionsLoading,
     refresh,
   };
 };

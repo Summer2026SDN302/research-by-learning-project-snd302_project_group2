@@ -12,11 +12,6 @@ export const NAV_CONFIG = {
     { label: "Thực đơn hôm nay", icon: "today", path: "/admin/daily-menu" },
     { label: "Đơn hàng", icon: "receipt_long", path: "/admin/orders" },
     { label: "Thanh toán", icon: "payments", path: "/admin/payments" },
-    {
-      label: "Báo cáo doanh thu",
-      icon: "bar_chart",
-      path: "/admin/revenue-report",
-    },
     { label: "Phân tích & Dự báo", icon: "auto_awesome", path: "/admin/ai" },
   ],
   manager: [
@@ -34,11 +29,6 @@ export const NAV_CONFIG = {
     { label: "Tối ưu hóa AI", icon: "auto_awesome", path: "/manager/ai" },
     { label: "Đơn hàng", icon: "receipt_long", path: "/manager/orders" },
     { label: "Thanh toán", icon: "payments", path: "/manager/payments" },
-    {
-      label: "Báo cáo doanh thu",
-      icon: "bar_chart",
-      path: "/manager/revenue-report",
-    },
   ],
   staff: [
     { label: "Tổng quan", icon: "dashboard", path: "/staff/dashboard" },

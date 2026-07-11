@@ -1,3 +1,5 @@
+import FilterBar from "../../../components/search/FilterBar";
+import SearchBar from "../../../components/search/SearchBar";
 import {
   DATE_PRESET_OPTIONS,
   PAYMENT_METHOD_OPTIONS,
@@ -11,62 +13,66 @@ const ReportFilterBar = ({
   onPaymentMethodChange,
   onDatePresetChange,
   onSearchChange,
-}) => (
-  <div className="p-6 border-b border-outline-variant flex flex-wrap gap-4 items-center bg-surface-container-lowest">
-    <div className="flex flex-wrap gap-2">
-      {REPORT_STATUS_FILTERS.map((option) => (
-        <button
-          key={option.value || "all"}
-          type="button"
-          onClick={() => onStatusChange(option.value)}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
-            filters.status === option.value
-              ? "bg-primary text-on-primary"
-              : "text-on-surface-variant hover:bg-surface-container"
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
+}) => {
+  const filterConfigs = [
+    {
+      key: "datePreset",
+      options: DATE_PRESET_OPTIONS,
+    },
+    {
+      key: "paymentMethod",
+      options: PAYMENT_METHOD_OPTIONS,
+    },
+  ];
 
-    <div className="ml-auto flex flex-wrap items-center gap-4">
-      <div className="flex items-center gap-2">
-        <span className="text-body-sm text-on-surface-variant">Lọc theo:</span>
-        <select
-          value={filters.datePreset}
-          onChange={(event) => onDatePresetChange(event.target.value)}
-          className="border-outline-variant rounded-lg py-1.5 pl-3 pr-8 text-body-sm focus:border-primary focus:ring-1 focus:ring-primary bg-transparent"
-        >
-          {DATE_PRESET_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+  const filterValues = {
+    datePreset: filters.datePreset,
+    paymentMethod: filters.paymentMethod,
+  };
+
+  const handleFilterChange = (key, value) => {
+    if (key === "datePreset") {
+      onDatePresetChange(value);
+    } else if (key === "paymentMethod") {
+      onPaymentMethodChange(value);
+    }
+  };
+
+  return (
+    <div className="p-6 border-b border-outline-variant flex flex-wrap gap-4 items-center bg-surface-container-lowest">
+      <div className="flex flex-wrap gap-2">
+        {REPORT_STATUS_FILTERS.map((option) => (
+          <button
+            key={option.value || "all"}
+            type="button"
+            onClick={() => onStatusChange(option.value)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
+              filters.status === option.value
+                ? "bg-primary text-on-primary"
+                : "text-on-surface-variant hover:bg-surface-container"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
-      <select
-        value={filters.paymentMethod}
-        onChange={(event) => onPaymentMethodChange(event.target.value)}
-        className="border-outline-variant rounded-lg py-1.5 pl-3 pr-8 text-body-sm focus:border-primary focus:ring-1 focus:ring-primary bg-transparent"
-      >
-        {PAYMENT_METHOD_OPTIONS.map((option) => (
-          <option key={option.value || "all"} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-
-      <input
-        type="search"
-        value={searchInput}
-        onChange={(event) => onSearchChange(event.target.value)}
-        placeholder="Tìm mã GD..."
-        className="border border-outline-variant rounded-lg py-1.5 px-3 text-body-sm focus:border-primary focus:ring-1 focus:ring-primary bg-transparent min-w-[180px]"
-      />
+      <div className="flex flex-wrap items-center gap-4">
+        <span className="text-body-sm text-on-surface-variant">Lọc theo:</span>
+        <FilterBar
+          filters={filterConfigs}
+          values={filterValues}
+          onChange={handleFilterChange}
+        />
+        <SearchBar
+          placeholder="Tìm mã GD..."
+          value={searchInput}
+          onChange={onSearchChange}
+          className="min-w-[180px]"
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default ReportFilterBar;

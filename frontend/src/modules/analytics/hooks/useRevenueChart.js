@@ -20,14 +20,14 @@ const useRevenueChart = () => {
   const displayChart = useMemo(() => {
     if (chartData?.points?.length) {
       return {
-        labels: chartData.points.map((point) => point.label),
+        labels: chartData.points.map((point) => point.date),
         values: chartData.points.map((point) => point.revenue),
       };
     }
 
     if (dashboardData?.revenueChart) {
       return {
-        labels: dashboardData.revenueChart.labels,
+        labels: dashboardData.revenueChart.dates || dashboardData.revenueChart.labels,
         values: dashboardData.revenueChart.values,
       };
     }

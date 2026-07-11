@@ -31,7 +31,14 @@ export const getTransactionReport = (params = {}) =>
     .then((response) => response.data.data);
 
 export const exportRevenueReport = (params = {}) =>
-  apiClient.get("/analytics/reports/revenue/export", {
-    params,
-    responseType: "blob",
-  });
+  apiClient
+    .get("/analytics/reports/revenue/export", {
+      params,
+      responseType: "blob",
+    })
+    .then((response) => response.data);
+
+export const getStaffDashboardSummary = (params = {}) =>
+  apiClient
+    .get("/analytics/staff/summary", { params })
+    .then((response) => response.data.data);

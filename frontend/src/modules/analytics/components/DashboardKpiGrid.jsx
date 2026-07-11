@@ -3,7 +3,7 @@ import DashboardSkeleton from "./DashboardSkeleton";
 import { formatCurrency } from "@/utils/formatters";
 import { formatOrderDelta, formatPercent } from "../utils/formatPercent";
 
-const DashboardKpiGrid = ({ kpis, loading }) => {
+const DashboardKpiGrid = ({ kpis, loading, rangeLabel }) => {
   if (loading && !kpis) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -27,14 +27,14 @@ const DashboardKpiGrid = ({ kpis, loading }) => {
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
       <StatisticCard
         icon="payments"
-        label="Doanh thu hôm nay"
+        label={rangeLabel ? `Doanh thu (${rangeLabel})` : "Doanh thu hôm nay"}
         value={formatCurrency(data.todayRevenue)}
         change={formatPercent(data.revenueChangePercent)}
         variant="primary"
       />
       <StatisticCard
         icon="receipt_long"
-        label="Số lượng đơn hàng"
+        label={rangeLabel ? `Số lượng đơn hàng (${rangeLabel})` : "Số lượng đơn hàng"}
         value={data.todayOrderCount}
         change={formatOrderDelta(data.orderCountDelta)}
         changeSuffix=""

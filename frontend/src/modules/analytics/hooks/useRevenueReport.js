@@ -71,6 +71,10 @@ const useRevenueReport = () => {
   }, [dispatch, filters.search, debouncedSearch]);
 
   useEffect(() => {
+    setSearchInput(filters.search);
+  }, [filters.search]);
+
+  useEffect(() => {
     dispatch(fetchTransactionReport(queryParams));
   }, [dispatch, queryParams]);
 
@@ -107,7 +111,7 @@ const useRevenueReport = () => {
       ).unwrap();
 
       downloadBlob(
-        new Blob([response.data], { type: "text/csv;charset=utf-8" }),
+        response,
         `revenue-report-${dayjs().format("YYYY-MM-DD")}.csv`,
       );
       toast.success("Xuất báo cáo thành công");

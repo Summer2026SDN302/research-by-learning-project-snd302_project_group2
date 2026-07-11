@@ -26,9 +26,6 @@ const DailyMenuPage = lazy(
 const DashboardPage = lazy(
   () => import("../modules/analytics/pages/DashboardPage"),
 );
-const RevenueReportPage = lazy(
-  () => import("../modules/analytics/pages/RevenueReportPage"),
-);
 
 const AdminRoutes = () => (
   <Route path="/admin" element={<MainLayout role="admin" />}>
@@ -44,7 +41,6 @@ const AdminRoutes = () => (
     <Route path="daily-menu" element={<DailyMenuPage />} />
     <Route path="orders" element={<PlaceholderPage title="Đơn hàng" />} />
     <Route path="payments" element={<PlaceholderPage title="Thanh toán" />} />
-    <Route path="revenue-report" element={<RevenueReportPage />} />
     <Route path="ai" element={<PlaceholderPage title="Phân tích & Dự báo" />} />
     <Route path="profile" element={<ProfilePage />} />
     <Route path="change-password" element={<ChangePasswordPage />} />
