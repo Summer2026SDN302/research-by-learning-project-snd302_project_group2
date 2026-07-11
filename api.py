@@ -78,5 +78,6 @@ def predict_demand(payload: PredictPayload):
 
 if __name__ == "__main__":
     import uvicorn
-    # Default local port is 8000
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Read port from environment variable PORT (default to 8000 for local development)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

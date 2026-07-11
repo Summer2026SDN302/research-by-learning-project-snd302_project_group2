@@ -70,29 +70,29 @@ Kết quả kiểm thử trên dữ liệu mẫu giả lập (60 ngày) thu đư
 ---
 
 ## 6. Kiến trúc Tích hợp Hệ thống (System Integration Architecture)
-Kiến trúc tích hợp giữa máy chủ backend Node.js (Express) và lõi dự báo Python được thiết kế theo mô hình Inter-Process Communication (IPC):
+Kiến trúc tích hợp giữa máy chủ backend Node.js (Express) và lõi dự báo Python (FastAPI) được thiết kế theo mô hình Microservices giao tiếp qua giao thức HTTP (JSON payload):
 
 ```mermaid
 sequenceDiagram
     participant FE as Frontend Client
     participant BE as Node.js Backend
     participant DB as MongoDB Database
-    participant Py as Python Inference Engine
+    participant Py as FastAPI AI Service
 
     FE->>BE: POST /api/ai/generate-insight (targetDate)
     Note over BE: Kiểm tra quyền (Manager/Admin)<br/>Xác thực định dạng ngày
     BE->>DB: Truy vấn FoodItems, Orders (90 ngày qua), ScheduledMenus
     DB-->>BE: Trả về dữ liệu gốc
-    BE->>BE: Xuất dữ liệu ra file CSV trong thư mục raw
-    BE->>Py: Gọi tiến trình con (python main.py --mode predict)
-    Note over Py: Khởi chạy InferenceEngine<br/>Tải trọng số xgb_primary.joblib<br/>Xử lý dữ liệu và suy diễn
-    Py-->>BE: Trả về kết quả (JSON string qua stdout)
+    BE->>BE: Tuần tự hóa dữ liệu thành Payload JSON (food_items, sales, scheduled_menu)
+    BE->>Py: HTTP POST /predict (targetDate, payload)
+    Note over Py: Tiếp nhận JSON qua API FastAPI<br/>Tải trọng số xgb_primary.joblib<br/>Xử lý dữ liệu và suy diễn
+    Py-->>BE: Trả về kết quả dự báo (JSON)
     Note over BE: Phân tích cú pháp JSON<br/>Kiểm tra mảng forecasts rỗng
     alt Mảng forecasts trống
         BE-->>FE: Phản hồi lỗi 422 (AI_NO_FORECAST_DATA)
     else Mảng forecasts có dữ liệu
         BE->>DB: Tìm kiếm bản ghi insight cũ của targetDate
-        Note over BE: Tính toán tăng phiên bản (VD: 1.0.0 -> 1.0.1)
+        Note over BE: Tính toán tăng phiên bản (VD: version + 1)
         BE->>DB: Lưu tài liệu Insight mới vào DB
         DB-->>BE: Xác nhận đã lưu
         BE-->>FE: Trả về kết quả 201 thành công kèm Insight
@@ -100,7 +100,7 @@ sequenceDiagram
 ```
 
 ### Cơ chế Quản lý Phiên bản (Version Control):
-Mỗi lần người dùng kích hoạt dự đoán cho một ngày cụ thể, nếu bản ghi insight của ngày đó đã tồn tại trong Database, hệ thống backend sẽ tự động tính toán tăng số phiên bản (Ví dụ: `1.0.0` nâng lên thành `1.0.1` nhờ tăng patch version). Các thuộc tính dự đoán cũ sẽ được cập nhật phiên bản mới để nhà quản trị canteen so sánh hiệu quả dự đoán qua từng lần thay đổi lịch trình.
+Mỗi lần người dùng kích hoạt dự đoán cho một ngày cụ thể, nếu bản ghi insight của ngày đó đã tồn tại trong Database, hệ thống backend sẽ tự động tính toán tăng số phiên bản (Ví dụ: `1` nâng lên thành `2` nhờ tăng trường `version` tăng dần). Các thuộc tính dự đoán cũ sẽ được giữ lại theo phiên bản cũ để nhà quản trị canteen so sánh hiệu quả dự đoán qua từng lần chạy dự báo khác nhau.
 
 ---
 

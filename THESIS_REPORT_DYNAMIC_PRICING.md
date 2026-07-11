@@ -23,7 +23,7 @@ Do đó, đồ án StallBox áp dụng **Kiến trúc Lai (Hybrid Architecture)*
 *   **Lý do:** 
     *   **Minh bạch (Transparent):** Mọi công thức giảm giá đều rõ ràng, dễ dàng truy vết và điều chỉnh (VD: Giảm 20% sau 14h, giảm 50% sau 17h).
     *   **An toàn tài chính (Financial Safety):** Đảm bảo giá bán luôn lớn hơn giá vốn tối thiểu bằng các chốt chặn (hard constraints).
-    *   **Hiệu năng (Performance):** Tính toán trực tiếp trên Node.js theo thời gian thực (real-time) mà không bị độ trễ (latency) khi gọi IPC sang mô hình Python.
+    *   **Hiệu năng (Performance):** Tính toán trực tiếp trên Node.js theo thời gian thực (real-time) mà không bị độ trễ (latency) khi gọi API HTTP sang FastAPI service.
 
 ---
 
