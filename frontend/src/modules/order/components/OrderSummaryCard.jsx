@@ -111,12 +111,6 @@ const OrderSummaryCard = ({
     {/* Checkout Action Panel */}
     {cart.items.length > 0 && (
       <div className="space-y-3 shrink-0">
-        {/* [CHƯA CÓ BE] Nút chọn phương thức thanh toán (Thẻ / Tiền mặt) — module Payment chưa có
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={() => onCheckout("Card")} ...>Thẻ</button>
-          <button onClick={() => onCheckout("Cash")} ...>Tiền mặt</button>
-        </div> */}
-
         {/* Nút thanh toán — gọi onCheckout (mở PaymentModal) */}
         <button
           type="button"

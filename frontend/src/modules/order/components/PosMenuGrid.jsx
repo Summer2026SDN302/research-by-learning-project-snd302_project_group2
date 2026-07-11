@@ -58,7 +58,7 @@ const PosMenuGrid = ({ items = [], onAddItem }) => {
             {/* AI Dynamic Pricing Badge */}
             {isAiPricing && !isUnavailable && (
               <div
-                className="absolute top-3 right-3 bg-inverse-primary text-on-primary-fixed rounded-full p-0.5 shadow-sm z-10 flex items-center justify-center"
+                className="absolute top-1 right-1 bg-inverse-primary text-on-primary-fixed rounded-full p-0.5 shadow-sm z-10 flex items-center justify-center"
                 title="Giá được tối ưu bởi AI"
               >
                 <span className="material-symbols-outlined text-[14px]">

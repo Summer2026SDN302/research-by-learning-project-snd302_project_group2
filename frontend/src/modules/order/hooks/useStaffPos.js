@@ -15,6 +15,7 @@ import useAppToast from "@/hooks/useAppToast";
 import { getApiErrorMsg } from "@/utils/errorUtils";
 import { ORDER_ERROR_MAP } from "../constants/orderConstants";
 import { buildCartPreviewTotals } from "../utils/orderPreview";
+import { socket } from "@/services/socket";
 
 const MENU_ERROR_MESSAGE = "Không thể tải dữ liệu thực đơn hôm nay.";
 
@@ -86,6 +87,23 @@ export const useStaffPos = () => {
     });
     return () => {
       isMounted = false;
+    };
+  }, [fetchData]);
+
+  useEffect(() => {
+    socket.on("menu-updated", () => {
+      console.log("Menu updated event received, refetching menu...");
+      void fetchData();
+    });
+
+    socket.on("price-updated", () => {
+      console.log("Price updated event received, refetching menu...");
+      void fetchData();
+    });
+
+    return () => {
+      socket.off("menu-updated");
+      socket.off("price-updated");
     };
   }, [fetchData]);
 
@@ -185,8 +203,8 @@ export const useStaffPos = () => {
       const liveCartQuantity = store.getState().order.cart.items.find((i) => i.foodItemId === foodItem._id)?.quantity ?? 0;
       if (liveCartQuantity >= remainingQty) {
         toast.warning(
-          "Vuot qua so luong con lai",
-          `Mon ${foodItem.name} chi co the chon toi da ${remainingQty} phan.`,
+          "Vượt quá số lượng còn lại",
+          `Món "${foodItem.name}" chỉ có thể chọn tối đa ${remainingQty} phần.`,
         );
         return;
       }
@@ -220,8 +238,8 @@ export const useStaffPos = () => {
         if (quantity > remainingQty) {
           const itemName = store.getState().order.cart.items.find((i) => i.foodItemId === foodItemId)?.name || "này";
           toast.warning(
-            "Vuot qua so luong con lai",
-            `Mon ${itemName} chi co the chon toi da ${remainingQty} phan.`,
+            "Vượt quá số lượng còn lại",
+            `Món "${itemName}" chỉ có thể chọn tối đa ${remainingQty} phần.`,
           );
           dispatch(updateCartItemQuantity({ foodItemId, quantity: remainingQty }));
           return false;
@@ -275,8 +293,6 @@ export const useStaffPos = () => {
         isUpdate ? "Cập nhật đơn hàng thành công" : "Tạo đơn hàng thành công",
         `Đơn hàng #${result?.orderNumber ?? ""} đã được ${isUpdate ? "cập nhật" : "tạo"}.`,
       );
-      // Refetch menu để cập nhật số lượng còn lại
-      await fetchData();
       return result;
     } catch (err) {
       toast.error(
@@ -285,7 +301,7 @@ export const useStaffPos = () => {
       );
       return null;
     }
-  }, [cart.items, dispatch, toast, fetchData, orderNotes, currentOrder]);
+  }, [cart.items, dispatch, toast, orderNotes, currentOrder]);
 
   // [CHƯA CÓ BE] handleCheckout mở PaymentModal — module Payment chưa có ở BE.
   // Tạm thời handleCheckout chỉ gọi handleSubmitOrder trực tiếp.
