@@ -23,9 +23,9 @@ const VARIANT_CONFIG = {
   },
   warning: {
     icon: "warning",
-    iconColor: "text-tertiary",
-    bg: "bg-tertiary-container/20",
-    btn: "bg-tertiary hover:opacity-90 text-on-tertiary",
+    iconColor: "text-warning",
+    bg: "bg-warning-container/20",
+    btn: "bg-warning hover:opacity-90 text-on-warning",
   },
   info: {
     icon: "info",
@@ -62,7 +62,7 @@ const ConfirmDialog = ({
       />
 
       {/* Dialog */}
-      <div className="relative bg-surface-container-lowest rounded-2xl shadow-elevated p-6 w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-surface-container-lowest rounded-2xl shadow-elevated p-6 w-full max-w-sm mx-4">
         {/* Icon */}
         <div
           className={`w-14 h-14 ${bg} ${iconColor} rounded-2xl flex items-center justify-center mb-5 mx-auto`}

@@ -23,7 +23,7 @@ const STATUS_MAP = {
   },
   pending: {
     label: "Pending",
-    classes: "bg-tertiary-container/20 text-tertiary border border-tertiary/20",
+    classes: "bg-warning-container/30 text-warning border border-warning/20",
   },
   completed: {
     label: "Completed",
