@@ -1,6 +1,9 @@
 import AppError from "../../shared/exceptions/AppError.js";
 import payos from "../../config/payos.js";
+import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.js";
+import { formatVNDateString } from "../../shared/helpers/date.helper.js";
 import { buildPaginationMeta } from "../../shared/helpers/pagination.helper.js";
+
 import {
   parsePagination,
   parseSearchQuery,
@@ -97,6 +100,42 @@ const assertReceiptAvailable = (payment) => {
   }
 };
 
+/**
+ * Service-layer helper: find the daily menu for the order date, then decrement
+ * soldQuantity and remainingQuantity for every item in the order.
+ * Throws AppError on missing menu or unmatched item (follows project error-handling rules).
+ */
+const deductInventoryForOrder = async (order, session) => {
+  const dateStr = formatVNDateString(order.orderDate);
+  const dailyMenu = await dailyMenuRepository.findMenuByDate(dateStr);
+
+  if (!dailyMenu) {
+    throw new AppError(
+      `Daily menu not found for date ${dateStr}`,
+      404,
+      "DAILY_MENU_NOT_FOUND",
+    );
+  }
+
+  for (const item of order.items) {
+    const foodItemId = item.foodItemId?._id ?? item.foodItemId;
+    const result = await dailyMenuRepository.decrementItemSoldQuantity(
+      dailyMenu._id,
+      foodItemId,
+      item.quantity,
+      session,
+    );
+
+    if (result.matchedCount === 0) {
+      throw new AppError(
+        `Item "${item.name ?? foodItemId}" not found in daily menu`,
+        400,
+        "INSUFFICIENT_QUANTITY",
+      );
+    }
+  }
+};
+
 const reconcilePaymentStatus = async (payment, order) => {
   if (
     payment.paymentStatus === PAYMENT_STATUS.PENDING &&
@@ -108,6 +147,8 @@ const reconcilePaymentStatus = async (payment, order) => {
 
       if (payosPayment && payosPayment.status === "PAID") {
         await withTransaction(async (session) => {
+          await deductInventoryForOrder(order, session);
+
           order.orderStatus = ORDER_STATUS.COMPLETED;
           await order.save({ session });
 
@@ -261,6 +302,8 @@ const paymentService = {
         : 0;
 
     const paymentId = await withTransaction(async (session) => {
+      await deductInventoryForOrder(order, session);
+
       order.orderStatus = ORDER_STATUS.COMPLETED;
       await order.save({ session });
 
@@ -306,6 +349,8 @@ const paymentService = {
       const payment = await paymentRepository.findByOrderId(order._id);
       if (payment && payment.paymentStatus === PAYMENT_STATUS.PENDING) {
         await withTransaction(async (session) => {
+          await deductInventoryForOrder(order, session);
+
           order.orderStatus = ORDER_STATUS.COMPLETED;
           await order.save({ session });
 
@@ -391,6 +436,8 @@ const paymentService = {
     );
 
     await withTransaction(async (session) => {
+      await deductInventoryForOrder(order, session);
+
       order.orderStatus = ORDER_STATUS.COMPLETED;
       await order.save({ session });
 

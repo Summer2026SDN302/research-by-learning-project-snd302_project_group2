@@ -14,6 +14,7 @@ import aiRoute from "./modules/ai/ai.route.js";
 import orderRoute from "./modules/order/order.route.js";
 import paymentRoute from "./modules/payment/payment.route.js";
 import notificationRoute from "./modules/notification/notification.route.js";
+import analyticsRoute from "./modules/analytics/analytics.route.js";
 import {
   errorHandler,
   notFoundHandler,
@@ -52,6 +53,7 @@ app.use("/api/ai", aiRoute);
 app.use("/api/orders", orderRoute);
 app.use("/api/notifications", notificationRoute);
 app.use("/api/payments", paymentRoute);
+app.use("/api/analytics", analyticsRoute);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
