@@ -56,8 +56,14 @@ const useRevenueReport = () => {
   const filters = useSelector(selectReportFilters);
   const loading = useSelector(selectReportLoading);
   const exportLoading = useSelector(selectReportExportLoading);
+  const [prevSearch, setPrevSearch] = useState(filters.search);
   const [searchInput, setSearchInput] = useState(filters.search);
   const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
+
+  if (filters.search !== prevSearch) {
+    setPrevSearch(filters.search);
+    setSearchInput(filters.search);
+  }
 
   const queryParams = useMemo(
     () => buildReportParams(filters, pagination.page),
@@ -69,10 +75,6 @@ const useRevenueReport = () => {
       dispatch(setReportFilters({ search: debouncedSearch }));
     }
   }, [dispatch, filters.search, debouncedSearch]);
-
-  useEffect(() => {
-    setSearchInput(filters.search);
-  }, [filters.search]);
 
   useEffect(() => {
     dispatch(fetchTransactionReport(queryParams));
@@ -103,8 +105,9 @@ const useRevenueReport = () => {
 
   const handleExport = useCallback(async () => {
     try {
-      const { page: _page, limit: _limit, ...exportParams } =
-        buildReportParams(filters, pagination.page);
+      const exportParams = buildReportParams(filters, pagination.page);
+      delete exportParams.page;
+      delete exportParams.limit;
 
       const response = await dispatch(
         exportRevenueReportThunk(exportParams),
