@@ -138,16 +138,20 @@ const foodItemRepository = {
   },
 
   async patchById(id, data) {
-  const updated = await FoodItem.findOneAndUpdate(
-    { _id: toObjectId(id) },
-    { $set: data },
-    { new: true, runValidators: true },
-  );
+    const updated = await FoodItem.findOneAndUpdate(
+      { _id: toObjectId(id) },
+      { $set: data },
+      { new: true, runValidators: true },
+    );
 
-  if (!updated) return null;
+    if (!updated) return null;
 
-  return this.findByIdWithCategory(id);
-},
+    return this.findByIdWithCategory(id);
+  },
+
+  async findAllActiveWithCategory() {
+    return FoodItem.find({ isArchived: false }).populate("categoryId");
+  },
 };
 
 export default foodItemRepository;
