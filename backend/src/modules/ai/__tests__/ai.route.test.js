@@ -147,7 +147,7 @@ describe("AI Insight Routes", () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toEqual(mockInsight);
-      expect(getInsightByDate).toHaveBeenCalledWith("2026-06-25");
+      expect(getInsightByDate).toHaveBeenCalledWith("2026-06-25", undefined);
     });
 
     it("returns 403 for Staff", async () => {
@@ -296,11 +296,15 @@ describe("AI Insight Routes", () => {
             status: "Pending",
             appliedBy: null,
             appliedAt: null,
+            rejectedBy: null,
           }
         ],
         generatedAt: mockInsight.generatedAt,
       });
-      expect(generateDynamicPricingRecommendations).toHaveBeenCalledWith("2026-06-25");
+      expect(generateDynamicPricingRecommendations).toHaveBeenCalledWith(
+        "2026-06-25",
+        true,
+      );
     });
 
     it("returns 400 for invalid targetDate body", async () => {

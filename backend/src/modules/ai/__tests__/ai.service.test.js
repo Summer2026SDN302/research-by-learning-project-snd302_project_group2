@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getInsightByDate, applyForecasts } from "../ai.service.js";
 import * as aiRepository from "../ai.repository.js";
 import * as dailyMenuRepository from "../../menu/daily-menu/daily-menu.repository.js";
+import * as userRepository from "../../user/user.repository.js";
 import AppError from "../../../shared/exceptions/AppError.js";
 
 vi.mock("../ai.repository.js", () => {
@@ -17,6 +18,12 @@ vi.mock("../../menu/daily-menu/daily-menu.repository.js", () => {
   return {
     findMenuByDate: vi.fn(),
     updateMenuItemFields: vi.fn(),
+  };
+});
+
+vi.mock("../../user/user.repository.js", () => {
+  return {
+    findUserById: vi.fn(),
   };
 });
 
@@ -47,6 +54,12 @@ describe("AiService.getInsightByDate", () => {
 describe("AiService.applyForecasts", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    userRepository.findUserById.mockResolvedValue({
+      _id: "user123",
+      username: "tester",
+      fullName: "Tester",
+      role: "Manager",
+    });
   });
 
   it("should throw error if insight is not found", async () => {
@@ -122,8 +135,9 @@ describe("AiService.applyForecasts", () => {
     expect(mockInsight.forecasts[0].appliedAt).toBeInstanceOf(Date);
 
     expect(mockInsight.forecasts[1].status).toBe("Rejected");
-    expect(mockInsight.forecasts[1].appliedBy).toBe("user123");
-    expect(mockInsight.forecasts[1].appliedAt).toBeInstanceOf(Date);
+    expect(mockInsight.forecasts[1].rejectedBy).toBe("user123");
+    expect(mockInsight.forecasts[1].rejectedAt).toBeInstanceOf(Date);
+    expect(mockInsight.forecasts[1].appliedBy).toBeNull();
 
     expect(aiRepository.saveInsight).toHaveBeenCalledWith(mockInsight);
 

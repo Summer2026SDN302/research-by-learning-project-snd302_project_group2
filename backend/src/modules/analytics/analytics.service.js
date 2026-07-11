@@ -442,10 +442,9 @@ export const getStaffDashboardSummary = async (query = {}) => {
     validateDateString(query.date, "date");
   }
 
-  // Calculate order statistics (Pending, Confirmed, Completed today)
+  // Calculate order statistics (Pending, Completed today)
   const [pendingOrdersCount, completedOrdersCount] = await Promise.all([
     analyticsRepository.countOrdersByStatus("Pending"),
-    analyticsRepository.countOrdersByStatus("Confirmed"),
     analyticsRepository.countCompletedOrdersForDateRange(refDate, refDate),
   ]);
 

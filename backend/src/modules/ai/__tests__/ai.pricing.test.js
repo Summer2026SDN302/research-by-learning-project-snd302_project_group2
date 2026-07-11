@@ -2,6 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { generateDynamicPricingRecommendations, applyPricingRecommendations } from "../ai.service.js";
 import * as aiRepository from "../ai.repository.js";
 import * as dailyMenuRepository from "../../menu/daily-menu/daily-menu.repository.js";
+import * as userRepository from "../../user/user.repository.js";
 import AppError from "../../../shared/exceptions/AppError.js";
 
 vi.mock("../ai.repository.js", () => {
@@ -16,6 +17,12 @@ vi.mock("../../menu/daily-menu/daily-menu.repository.js", () => {
   return {
     findMenuByDate: vi.fn(),
     pushPriceHistoryAndUpdatePrice: vi.fn(),
+  };
+});
+
+vi.mock("../../user/user.repository.js", () => {
+  return {
+    findUserById: vi.fn(),
   };
 });
 
@@ -37,8 +44,10 @@ describe("AiService.generateDynamicPricingRecommendations", () => {
   });
 
   it("should calculate D_remain and apply floor price correctly", async () => {
-    // Set time to 18:30 (1.5 hours remaining)
-    vi.setSystemTime(new Date("2026-06-25T18:30:00.000Z"));
+    // Local 18:30 — service uses Date#getHours() (machine timezone)
+    const localEvening = new Date();
+    localEvening.setHours(18, 30, 0, 0);
+    vi.setSystemTime(localEvening);
 
     const mockInsight = {
       _id: "insight123",
@@ -91,8 +100,9 @@ describe("AiService.generateDynamicPricingRecommendations", () => {
   });
   
   it("should use floor price if discount is too deep", async () => {
-    // Set time to 18:30 (1.5 hours remaining)
-    vi.setSystemTime(new Date("2026-06-25T18:30:00.000Z"));
+    const localEvening = new Date();
+    localEvening.setHours(18, 30, 0, 0);
+    vi.setSystemTime(localEvening);
 
     const mockInsight = {
       _id: "insight123",
@@ -138,6 +148,12 @@ describe("AiService.generateDynamicPricingRecommendations", () => {
 describe("AiService.applyPricingRecommendations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    userRepository.findUserById.mockResolvedValue({
+      _id: "user123",
+      username: "tester",
+      fullName: "Tester",
+      role: "Manager",
+    });
   });
 
   it("should apply pricing without double discounting", async () => {

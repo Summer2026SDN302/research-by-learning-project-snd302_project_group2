@@ -1,5 +1,9 @@
 import AppError from "../../shared/exceptions/AppError.js";
 import payos from "../../config/payos.js";
+import {
+  triggerLowStockNotification,
+  triggerOrderStatusNotification,
+} from "../notification/notification.service.js";
 import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.js";
 import { formatVNDateString } from "../../shared/helpers/date.helper.js";
 import { buildPaginationMeta } from "../../shared/helpers/pagination.helper.js";
@@ -134,6 +138,27 @@ const deductInventoryForOrder = async (order, session) => {
       );
     }
   }
+
+  // Fetch updated dailyMenu to check remainingQuantity and trigger low stock alerts
+  const updatedMenu = await dailyMenuRepository.findMenuByDate(dateStr, {}, { session });
+  if (updatedMenu?.items) {
+    for (const item of order.items) {
+      const foodItemId = item.foodItemId?._id ?? item.foodItemId;
+      const updatedItem = updatedMenu.items.find(
+        (i) => i.foodItemId._id.toString() === foodItemId.toString(),
+      );
+      if (updatedItem) {
+        triggerLowStockNotification(
+          dateStr,
+          foodItemId.toString(),
+          updatedItem.foodItemId.name,
+          updatedItem.remainingQuantity,
+        ).catch((err) =>
+          console.error("Error triggering low stock notification:", err),
+        );
+      }
+    }
+  }
 };
 
 const reconcilePaymentStatus = async (payment, order) => {
@@ -149,8 +174,12 @@ const reconcilePaymentStatus = async (payment, order) => {
         await withTransaction(async (session) => {
           await deductInventoryForOrder(order, session);
 
-          order.orderStatus = ORDER_STATUS.COMPLETED;
+           order.orderStatus = ORDER_STATUS.COMPLETED;
           await order.save({ session });
+
+          triggerOrderStatusNotification(order, ORDER_STATUS.COMPLETED).catch((err) =>
+            console.error("Error triggering order completed notification:", err),
+          );
 
           payment.paymentStatus = PAYMENT_STATUS.PAID;
           payment.amountReceived = payosPayment.amountPaid;
@@ -307,6 +336,10 @@ const paymentService = {
       order.orderStatus = ORDER_STATUS.COMPLETED;
       await order.save({ session });
 
+      triggerOrderStatusNotification(order, ORDER_STATUS.COMPLETED).catch((err) =>
+        console.error("Error triggering order completed notification:", err),
+      );
+
       const payment = await paymentRepository.create(
         {
           paymentNumber: generateReferenceNumber("PAY"),
@@ -353,6 +386,10 @@ const paymentService = {
 
           order.orderStatus = ORDER_STATUS.COMPLETED;
           await order.save({ session });
+
+          triggerOrderStatusNotification(order, ORDER_STATUS.COMPLETED).catch((err) =>
+            console.error("Error triggering order completed notification:", err),
+          );
 
           payment.paymentStatus = PAYMENT_STATUS.PAID;
           payment.amountReceived = verifiedData.amount;
@@ -440,6 +477,10 @@ const paymentService = {
 
       order.orderStatus = ORDER_STATUS.COMPLETED;
       await order.save({ session });
+
+      triggerOrderStatusNotification(order, ORDER_STATUS.COMPLETED).catch((err) =>
+        console.error("Error triggering order completed notification:", err),
+      );
 
       payment.paymentStatus = PAYMENT_STATUS.PAID;
       payment.amountReceived = payment.finalAmount;

@@ -3,9 +3,9 @@ import {
   startDailyMenuJob,
   startExpireDailyMenuJob,
 } from "./jobs/dailyMenu.job.js";
-
+import { startMenuReminderJob } from "./jobs/menuReminder.job.js";
+import { startNotificationCleanupJob } from "./jobs/notificationCleanup.job.js";
 import { startAiPricingScheduler } from "./jobs/ai-pricing.job.js";
-
 import http from "http";
 import { initSocket } from "./sockets/socket.js";
 import app from "./app.js";
@@ -18,6 +18,8 @@ connectDB();
 startDailyMenuJob();
 startExpireDailyMenuJob();
 startAiPricingScheduler();
+startMenuReminderJob();
+startNotificationCleanupJob();
 
 const server = http.createServer(app);
 initSocket(server, process.env.CLIENT_URL);

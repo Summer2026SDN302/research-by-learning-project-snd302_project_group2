@@ -6,6 +6,10 @@ import * as dailyMenuRepository from "../menu/daily-menu/daily-menu.repository.j
 import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
 import { withTransaction } from "../../shared/helpers/transaction.helper.js";
 import orderRepository from "./order.repository.js";
+import {
+  triggerLowStockNotification,
+  triggerOrderStatusNotification,
+} from "../notification/notification.service.js";
 import { toOrderResponse } from "./order.dto.js";
 import {
   ORDER_STATUS,
@@ -284,6 +288,11 @@ const orderService = {
     }
 
     const updated = await orderRepository.updateStatusById(id, newStatus);
+
+    triggerOrderStatusNotification(updated, newStatus).catch((err) =>
+      console.error("Error triggering order status notification:", err),
+    );
+
     return toOrderResponse(updated);
   },
 

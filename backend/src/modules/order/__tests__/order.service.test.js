@@ -40,6 +40,11 @@ vi.mock("../../../shared/helpers/transaction.helper.js", () => ({
   }),
 }));
 
+vi.mock("../../notification/notification.service.js", () => ({
+  triggerLowStockNotification: vi.fn().mockResolvedValue(undefined),
+  triggerOrderStatusNotification: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("../order.repository.js", () => ({
   default: {
     create: vi.fn(),
