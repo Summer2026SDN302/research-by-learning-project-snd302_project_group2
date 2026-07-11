@@ -4,7 +4,9 @@ import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 
 import useDebouncedValue from "@/hooks/useDebouncedValue";
+import { getApiErrorMsg } from "@/utils/errorUtils";
 import {
+  ANALYTICS_ERROR_MAP,
   REPORT_PAGE_SIZE,
   SEARCH_DEBOUNCE_MS,
 } from "../constants/analyticsConstants";
@@ -120,7 +122,7 @@ const useRevenueReport = () => {
       toast.success("Xuất báo cáo thành công");
     } catch (error) {
       toast.error(
-        typeof error === "string" ? error : "Xuất báo cáo thất bại",
+        getApiErrorMsg(ANALYTICS_ERROR_MAP, error, "Xuất báo cáo thất bại"),
       );
     }
   }, [dispatch, filters, pagination.page]);

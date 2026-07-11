@@ -82,7 +82,7 @@ const NotificationDropdown = ({
         {unreadCount > 0 && (
           <button
             onClick={onReadAll}
-            className="text-label-sm text-primary hover:opacity-70 transition-opacity"
+            className="text-sm text-primary hover:opacity-70 transition-opacity"
           >
             Đánh dấu tất cả đã đọc
           </button>
@@ -123,11 +123,11 @@ const NotificationDropdown = ({
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <p
-                    className={`text-label-md leading-snug truncate ${!item.isRead ? "font-bold text-on-surface" : "font-semibold text-on-surface-variant"}`}
+                    className={`text-md leading-snug truncate ${!item.isRead ? "font-bold text-on-surface" : "font-semibold text-on-surface-variant"}`}
                   >
                     {item.title}
                   </p>
-                  <p className="text-body-sm text-on-surface-variant mt-0.5 line-clamp-2 leading-snug">
+                  <p className="text-sm text-on-surface-variant mt-0.5 leading-snug break-words">
                     {item.message}
                   </p>
                   <p className="text-[11px] text-outline mt-1">{item.time}</p>

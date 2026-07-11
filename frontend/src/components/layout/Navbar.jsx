@@ -1,15 +1,11 @@
-import useSearch from "../../hooks/useSearch";
 import NotificationDropdown from "../dropdown/NotificationDropdown";
 import UserDropdown from "../dropdown/UserDropdown";
 import useDropdownToggle from "../../hooks/useDropdownToggle";
-import SearchBar from "../search/SearchBar";
 
 /**
  * Navbar / TopBar
  *
  * Props:
- *   onSearch               {fn}      – (query: string) => void  (passed from page)
- *   searchPlaceholder      {string}
  *   user                   {object}  – { name, initials, email }
  *   notifications          {number}  – badge count (0 = hidden)
  *   notificationItems      {Array}   – list of notification objects for dropdown
@@ -24,8 +20,6 @@ import SearchBar from "../search/SearchBar";
 const noop = () => {};
 
 const Navbar = ({
-  onSearch = noop,
-  searchPlaceholder = "Tìm kiếm...",
   user = { name: "Admin User", initials: "A", email: "" },
   notifications = 0,
   notificationItems = [],
@@ -36,28 +30,18 @@ const Navbar = ({
   onSettings = noop,
   onLogout = noop,
 }) => {
-  const { query, handleSearch } = useSearch(onSearch);
-
   /** Track which dropdown is open — only one at a time */
   const { openDropdown, toggleDropdown, closeDropdown } = useDropdownToggle();
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 bg-surface border-b border-outline-variant sticky top-0 z-40 gap-4">
-      {/* Search Bar */}
-      <SearchBar
-        value={query}
-        onChange={handleSearch}
-        placeholder={searchPlaceholder}
-        className="flex-1 max-w-md"
-      />
-
+    <header className="h-16 flex items-center justify-end px-6 bg-surface border-b border-outline-variant sticky top-0 z-40 gap-4">
       {/* Right Actions */}
       <div className="flex items-center gap-2 shrink-0">
         {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => toggleDropdown("notif")}
-            className="relative p-2 rounded-full hover:bg-surface-container transition-colors duration-150"
+            className="relative p-2 rounded-full hover:bg-surface-container transition-colors duration-150 flex items-center justify-center"
             aria-label="Thông báo"
           >
             <span className="material-symbols-outlined text-on-surface-variant text-[22px]">
@@ -81,7 +65,7 @@ const Navbar = ({
 
         {/* Help */}
         <button
-          className="p-2 rounded-full hover:bg-surface-container transition-colors duration-150"
+          className="p-2 rounded-full hover:bg-surface-container transition-colors duration-150 flex items-center justify-center"
           aria-label="Trợ giúp"
         >
           <span className="material-symbols-outlined text-on-surface-variant text-[22px]">

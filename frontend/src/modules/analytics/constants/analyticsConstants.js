@@ -57,3 +57,9 @@ export const DATE_PRESET_OPTIONS = [
 export const DASHBOARD_POLL_INTERVAL_MS = 60_000;
 export const REPORT_PAGE_SIZE = 20;
 export const SEARCH_DEBOUNCE_MS = 300;
+
+export const ANALYTICS_ERROR_MAP = {
+  VALIDATION_ERROR: "Khoảng thời gian không hợp lệ. Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.",
+  EXPORT_TOO_LARGE: "Dữ liệu xuất báo cáo quá lớn, vui lòng lọc giới hạn lại.",
+};
+

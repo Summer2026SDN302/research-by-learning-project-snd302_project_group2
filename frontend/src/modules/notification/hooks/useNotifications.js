@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { socket } from "@/services/socket";
 import * as notificationApi from "../api/notificationApi";
 import {
   setNotifications,
@@ -21,6 +22,7 @@ export const useNotifications = () => {
   const { items, unreadCount, isLoading, isMarkingAll } = useSelector(
     (state) => state.notification
   );
+  const currentUser = useSelector((state) => state.auth.user);
 
   const abortControllerRef = useRef(null);
   const intervalRef = useRef(null);
@@ -114,6 +116,27 @@ export const useNotifications = () => {
       }
     };
   }, [fetchNotifications, handleVisibilityChange, startPolling, stopPolling]);
+
+  // Socket room joining and real-time event listener
+  useEffect(() => {
+    if (currentUser?._id) {
+      socket.emit("join-room", currentUser._id);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    const handleNotificationReceived = (notification) => {
+      if (currentUser?._id && notification.userId === currentUser._id) {
+        fetchNotifications(true);
+      }
+    };
+
+    socket.on("notification-received", handleNotificationReceived);
+
+    return () => {
+      socket.off("notification-received", handleNotificationReceived);
+    };
+  }, [currentUser, fetchNotifications]);
 
   // Mark single as read (optimistic)
   const markAsRead = useCallback(

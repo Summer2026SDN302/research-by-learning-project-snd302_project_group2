@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getStaffDashboardSummary } from "../api/analyticsApi";
+import { getApiErrorMsg } from "@/utils/errorUtils";
+import { ANALYTICS_ERROR_MAP } from "../constants/analyticsConstants";
 
 const useStaffDashboard = () => {
   const [data, setData] = useState(null);
@@ -13,7 +15,7 @@ const useStaffDashboard = () => {
       const summary = await getStaffDashboardSummary();
       setData(summary);
     } catch (err) {
-      setError(err.response?.data?.message || "Không thể tải dữ liệu dashboard");
+      setError(getApiErrorMsg(ANALYTICS_ERROR_MAP, err, "Không thể tải dữ liệu dashboard"));
     } finally {
       setLoading(false);
     }
@@ -29,7 +31,7 @@ const useStaffDashboard = () => {
         }
       } catch (err) {
         if (active) {
-          setError(err.response?.data?.message || "Không thể tải dữ liệu dashboard");
+          setError(getApiErrorMsg(ANALYTICS_ERROR_MAP, err, "Không thể tải dữ liệu dashboard"));
         }
       } finally {
         if (active) {
