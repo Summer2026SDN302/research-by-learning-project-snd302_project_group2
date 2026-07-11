@@ -50,6 +50,8 @@ export const PAYMENT_ERROR_MAP = {
   INSUFFICIENT_CASH_RECEIVED: "Số tiền khách đưa không đủ để thanh toán.",
   INVALID_PAYMENT_STATUS_TRANSITION: "Trạng thái giao dịch không hợp lệ.",
   INSUFFICIENT_PERMISSIONS: "Bạn không có quyền thực hiện giao dịch này.",
+  INSUFFICIENT_QUANTITY: "Một hoặc nhiều món trong đơn không còn đủ số lượng. Vui lòng cập nhật đơn hàng.",
+  DAILY_MENU_NOT_FOUND: "Không tìm thấy thực đơn cho ngày đặt đơn. Vui lòng liên hệ quản lý.",
   NETWORK_ERROR: "Lỗi kết nối mạng, vui lòng thử lại.",
 };
 

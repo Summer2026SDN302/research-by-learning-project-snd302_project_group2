@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useStaffPos } from "../hooks/useStaffPos";
 import CategoryFilterBar from "../components/CategoryFilterBar";
 import PosMenuGrid from "../components/PosMenuGrid";
@@ -13,6 +14,7 @@ import { usePaymentModal } from "@/modules/payment/hooks/usePaymentModal";
 
 const PosPage = ({ role = "staff" }) => {
   const { toast } = useAppToast();
+  const navigate = useNavigate();
   const staffPos = useStaffPos();
   const paymentModal = usePaymentModal();
 
@@ -81,8 +83,12 @@ const PosPage = ({ role = "staff" }) => {
           ? "Giao dịch đã được xác nhận thành công qua PayOS."
           : "Giao dịch đã thanh toán xong và được ghi nhận.",
       );
+
+      if (payment?._id) {
+        navigate(`/${role}/receipts/${payment._id}`);
+      }
     },
-    [handleClearCart, refetchMenu, toast],
+    [handleClearCart, refetchMenu, toast, navigate, role],
   );
 
   const handleCheckoutClick = useCallback(async () => {

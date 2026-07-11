@@ -90,7 +90,7 @@ const ReceiptView = ({ receipt }) => {
             </div>
             {item.note && (
               <span className="whitespace-pre-wrap break-words text-[10px] italic text-primary">
-                - Ghi chu: {item.note}
+                - Ghi chu: {removeAccents(item.note)}
               </span>
             )}
           </div>

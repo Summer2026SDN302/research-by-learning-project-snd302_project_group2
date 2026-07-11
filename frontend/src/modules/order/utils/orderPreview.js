@@ -1,23 +1,17 @@
-const ORDER_PREVIEW_TAX_RATE = 0.08;
-
 const roundCurrency = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
 // Preview-only totals for the POS UI. Backend recalculates the authoritative values.
 export const buildCartPreviewTotals = (items = []) => {
-  const subtotal = roundCurrency(
+  const totalAmount = roundCurrency(
     items.reduce(
-      (sum, item) => sum + Number(item.unitPrice || 0) * Number(item.quantity || 0),
+      (sum, item) =>
+        sum + Number(item.unitPrice || 0) * Number(item.quantity || 0),
       0,
     ),
   );
-  const taxAmount = roundCurrency(subtotal * ORDER_PREVIEW_TAX_RATE);
-  const totalAmount = roundCurrency(subtotal + taxAmount);
 
   return {
-    subtotal,
-    taxRate: ORDER_PREVIEW_TAX_RATE,
-    taxAmount,
     totalAmount,
   };
 };
