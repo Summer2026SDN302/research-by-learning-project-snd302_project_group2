@@ -12,7 +12,7 @@ export const NAV_CONFIG = {
     { label: "Thực đơn hôm nay", icon: "today", path: "/admin/daily-menu" },
     { label: "Đơn hàng", icon: "receipt_long", path: "/admin/orders" },
     { label: "Thanh toán", icon: "payments", path: "/admin/payments" },
-    { label: "Phân tích & Dự báo", icon: "auto_awesome", path: "/admin/ai" },
+    { label: "Tối ưu hóa AI", icon: "auto_awesome", path: "/admin/ai" },
   ],
   manager: [
     { label: "Tổng quan", icon: "dashboard", path: "/manager/dashboard" },

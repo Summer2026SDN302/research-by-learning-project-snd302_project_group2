@@ -1,5 +1,10 @@
 export default {
-  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  darkMode: "class",
+  content: [
+    "./index.html", 
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "./node_modules/react-tailwindcss-datepicker/dist/index.esm.js"
+  ],
   theme: {
     extend: {
       colors: {
@@ -35,6 +40,10 @@ export default {
         "on-error": "#ffffff",
         "error-container": "#ffdad6",
         "on-error-container": "#93000a",
+        warning: "#935100",
+        "on-warning": "#ffffff",
+        "warning-container": "#ffdcbd",
+        "on-warning-container": "#2f1500",
         "primary-fixed": "#89f5e7",
         "primary-fixed-dim": "#6bd8cb",
         "on-primary-fixed": "#00201d",

@@ -1,8 +1,8 @@
 import apiClient from "../../../services/apiClient";
 
 /** GET /daily-menu/today */
-export const getTodayMenu = () =>
-  apiClient.get("/daily-menu/today").then((r) => r.data.data);
+export const getTodayMenu = (params = {}) =>
+  apiClient.get("/daily-menu/today", { params }).then((r) => r.data.data);
 
 /** GET /daily-menu/date/:date */
 export const getMenuByDate = (date) =>

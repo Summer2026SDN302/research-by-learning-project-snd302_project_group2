@@ -119,7 +119,7 @@ const DataTable = ({
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className="px-3 py-3.5 text-body-sm text-on-surface"
+                    className="px-2.5 py-3 text-body-sm text-on-surface"
                   >
                     {renderCell
                       ? renderCell(col.key, row[col.key], row)

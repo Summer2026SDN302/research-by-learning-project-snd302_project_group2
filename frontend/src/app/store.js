@@ -7,6 +7,10 @@ import userReducer from "../modules/user/redux/userSlice";
 import dailyMenuReducer from "../modules/menu/redux/dailyMenuSlice";
 import scheduledMenuReducer from "../modules/menu/redux/scheduledMenuSlice";
 import notificationReducer from "../modules/notification/redux/notificationSlice";
+import analyticsReducer from "../modules/analytics/redux/analyticsSlice";
+import aiReducer from "../modules/ai/redux/aiSlice";
+import orderReducer from "../modules/order/redux/orderSlice";
+import paymentReducer from "../modules/payment/redux/paymentSlice";
 
 export const store = configureStore({
   reducer: {
@@ -18,5 +22,9 @@ export const store = configureStore({
     category: categoryReducer,
     foodItem: foodItemReducer,
     notification: notificationReducer,
+    analytics: analyticsReducer,
+    ai: aiReducer,
+    order: orderReducer,
+    payment: paymentReducer,
   },
 });
