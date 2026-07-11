@@ -24,6 +24,9 @@ const DailyMenuPage = lazy(() => import("../modules/menu/pages/DailyMenuPage"));
 const OrderListPage = lazy(
   () => import("../modules/order/pages/OrderListPage"),
 );
+const DashboardPage = lazy(
+  () => import("../modules/analytics/pages/DashboardPage"),
+);
 const AiDashboardPage = lazy(
   () => import("../modules/ai/pages/AiDashboardPage"),
 );
@@ -35,10 +38,7 @@ const ReceiptPage = lazy(() => import("../modules/payment/pages/ReceiptPage"));
 const AdminRoutes = () => (
   <Route path="/admin" element={<MainLayout role="admin" />}>
     <Route index element={<Navigate to="dashboard" replace />} />
-    <Route
-      path="dashboard"
-      element={<PlaceholderPage title="Tong quan Admin" />}
-    />
+    <Route path="dashboard" element={<DashboardPage />} />
     <Route path="users" element={<UserManagementPage />} />
     <Route
       path="categories"

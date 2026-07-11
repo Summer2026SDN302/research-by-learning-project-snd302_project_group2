@@ -20,6 +20,7 @@ const StatisticCard = ({
   label = "Metric",
   value = "—",
   change = "",
+  changeSuffix = "so với hôm qua",
   variant = "primary",
 }) => {
   const { bg, text } = VARIANT_MAP[variant] ?? VARIANT_MAP.primary;
@@ -64,7 +65,8 @@ const StatisticCard = ({
           >
             {isPositive && "▲ "}
             {isNegative && "▼ "}
-            {change} so với hôm qua
+            {change}
+            {changeSuffix ? ` ${changeSuffix}` : ""}
           </p>
         )}
       </div>

@@ -1,3 +1,10 @@
+export const ORDER_STATUS = {
+  PENDING: "Pending",
+  CONFIRMED: "Confirmed",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+  RETURNED: "Returned",
+};
 export const ORDER_ERROR_MAP = {
   ORDER_NUMBER_CONFLICT: "Không thể tạo mã đơn hàng duy nhất sau nhiều lần thử. Vui lòng thử lại.",
   ORDER_NOT_FOUND: "Không tìm thấy đơn hàng.",

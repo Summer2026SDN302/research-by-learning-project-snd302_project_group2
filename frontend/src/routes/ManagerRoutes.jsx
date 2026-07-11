@@ -1,7 +1,6 @@
 import { lazy } from "react";
 import { Navigate, Route } from "react-router-dom";
 
-import PlaceholderPage from "../components/feedback/PlaceholderPage";
 import MainLayout from "../layouts/MainLayout";
 const ProfilePage = lazy(() => import("../modules/user/pages/ProfilePage"));
 const ChangePasswordPage = lazy(
@@ -31,14 +30,14 @@ const PaymentListPage = lazy(
 const AiDashboardPage = lazy(
   () => import("../modules/ai/pages/AiDashboardPage"),
 );
+const DashboardPage = lazy(
+  () => import("../modules/analytics/pages/DashboardPage"),
+);
 
 const ManagerRoutes = () => (
   <Route path="/manager" element={<MainLayout role="manager" />}>
     <Route index element={<Navigate to="dashboard" replace />} />
-    <Route
-      path="dashboard"
-      element={<PlaceholderPage title="Tổng quan Manager" />}
-    />
+    <Route path="dashboard" element={<DashboardPage />} />
     <Route path="create-order" element={<PosPage role="manager" />} />
     <Route
       path="receipts/:paymentId"
