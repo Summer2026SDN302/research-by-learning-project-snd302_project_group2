@@ -26,7 +26,7 @@ router.post(
   aiController.generateInsight,
 );
 
-// GET /api/ai/insight/:targetDate - All authenticated users can view AI insight
+// GET /api/ai/insight/:targetDate - Manager, Admin can view AI insight
 router.get(
   "/insight/:targetDate",
   authorizeRoles(USER_ROLES.MANAGER, USER_ROLES.ADMIN),
