@@ -169,16 +169,6 @@ const orderService = {
       const session = await mongoose.startSession();
       session.startTransaction();
       try {
-        // Fix #2: deductSoldQuantity giờ có atomic guard ($gte) và nhận session
-        for (const { foodItemId, quantity } of body.items) {
-          await dailyMenuRepository.decrementSoldQuantity(
-            dailyMenu._id,
-            foodItemId,
-            quantity,
-            session,
-          );
-        }
-
         const order = await orderRepository.create(
           {
             orderNumber,
@@ -256,7 +246,7 @@ const orderService = {
     // Staff chi duoc xem order cua chinh minh
     if (
       requestingRole === USER_ROLES.STAFF &&
-      order.staffId.toString() !== requestingUserId
+      (order.staffId?._id || order.staffId).toString() !== requestingUserId
     ) {
       throw new AppError(
         "You do not have permission to view this order",
@@ -274,7 +264,7 @@ const orderService = {
 
     if (
       requestingRole === USER_ROLES.STAFF &&
-      order.staffId.toString() !== requestingUserId
+      (order.staffId?._id || order.staffId).toString() !== requestingUserId
     ) {
       throw new AppError(
         "You do not have permission to modify this order",
@@ -312,7 +302,7 @@ const orderService = {
     // Kiểm tra quyền (giữ nguyên logic như updateOrderStatus)
     if (
       requestingRole === USER_ROLES.STAFF &&
-      order.staffId.toString() !== requestingUserId
+      (order.staffId?._id || order.staffId).toString() !== requestingUserId
     ) {
       throw new AppError(
         "You do not have permission to cancel this order",
@@ -331,53 +321,11 @@ const orderService = {
       );
     }
 
-    // Chỉ hoàn tồn kho nếu đơn đang Pending (chưa được xử lý).
-    // Nếu đơn Confirmed thì quản lý quyết định hoàn hàng thủ công ngoài hệ thống.
-    const shouldRestoreInventory = order.orderStatus === ORDER_STATUS.PENDING;
-
-    if (!shouldRestoreInventory) {
-      // Không cần hoàn tồn kho, cập nhật status trực tiếp
-      const updated = await orderRepository.updateStatusById(
-        id,
-        ORDER_STATUS.CANCELLED,
-      );
-      return toOrderResponse(updated);
-    }
-
-    // Tìm daily menu của ngày đặt đơn để hoàn tồn kho
-    const todayStr = getTodayVNDateString();
-    const dailyMenu = await dailyMenuRepository.findMenuByDate(todayStr, {
-      isConfigured: true,
-    });
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
-    try {
-      // Hoàn trả soldQuantity và remainingQuantity cho từng món trong đơn
-      if (dailyMenu) {
-        for (const item of order.items) {
-          await dailyMenuRepository.incrementSoldQuantity(
-            dailyMenu._id,
-            item.foodItemId._id ?? item.foodItemId,
-            item.quantity,
-            session,
-          );
-        }
-      }
-
-      const updated = await orderRepository.updateStatusById(
-        id,
-        ORDER_STATUS.CANCELLED,
-        session,
-      );
-      await session.commitTransaction();
-      return toOrderResponse(updated);
-    } catch (err) {
-      await session.abortTransaction();
-      throw err;
-    } finally {
-      session.endSession();
-    }
+    const updated = await orderRepository.updateStatusById(
+      id,
+      ORDER_STATUS.CANCELLED,
+    );
+    return toOrderResponse(updated);
   },
 
   /**
@@ -403,7 +351,7 @@ const orderService = {
 
     if (
       requestingRole === USER_ROLES.STAFF &&
-      order.staffId.toString() !== requestingUserId
+      (order.staffId?._id || order.staffId).toString() !== requestingUserId
     ) {
       throw new AppError(
         "You do not have permission to modify this order",
@@ -481,27 +429,7 @@ const orderService = {
       const session = await mongoose.startSession();
       session.startTransaction();
       try {
-        // 1. Hoàn tác soldQuantity của các món cũ
-        for (const oldItem of order.items) {
-          await dailyMenuRepository.incrementSoldQuantity(
-            dailyMenu._id,
-            oldItem.foodItemId._id ?? oldItem.foodItemId,
-            oldItem.quantity,
-            session,
-          );
-        }
-
-        // 2. Deduct soldQuantity cho các món mới
-        for (const { foodItemId, quantity } of newItems) {
-          await dailyMenuRepository.decrementSoldQuantity(
-            dailyMenu._id,
-            foodItemId,
-            quantity,
-            session,
-          );
-        }
-
-        // 3. Cập nhật items và totals
+        // 1. Cập nhật items và totals
         const updated = await orderRepository.updateItemsById(
           id,
           {

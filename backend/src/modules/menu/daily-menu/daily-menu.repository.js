@@ -2,6 +2,7 @@ import { toObjectId } from "../../../shared/helpers/mongo.helper.js";
 import mongoose from "mongoose";
 import DailyMenu from "./daily-menu.model.js";
 import { DAILY_MENU_ITEM_STATUS } from "./daily-menu.constants.js";
+import AppError from "../../../shared/exceptions/AppError.js";
 
 export const countByFoodItemId = async (foodItemId) => {
   return DailyMenu.countDocuments({
@@ -88,7 +89,7 @@ export const updateMenuItemFields = async (
     .populate("items.priceHistory.changedBy", "-passwordHash");
 
   if (!result) {
-    throw new Error("UPDATE_FAILED");
+    throw new AppError("Update failed", 500, "UPDATE_FAILED");
   }
 
   return result;
@@ -122,7 +123,7 @@ export const pushPriceHistoryAndUpdatePrice = async (
       },
     })
     .populate("items.priceHistory.changedBy", "-passwordHash");
-  if (!result) throw new Error("UPDATE_FAILED");
+  if (!result) throw new AppError("Update failed", 500, "UPDATE_FAILED");
   return result;
 };
 
@@ -163,7 +164,7 @@ export const addMenuItem = async (menuId, newItem) => {
     .populate("items.priceHistory.changedBy", "-passwordHash");
 
   if (!result) {
-    throw new Error("UPDATE_FAILED");
+    throw new AppError("Update failed", 500, "UPDATE_FAILED");
   }
 
   return result;
@@ -188,36 +189,31 @@ export const removeMenuItem = async (menuId, foodItemId) => {
     .populate("items.priceHistory.changedBy", "-passwordHash");
 
   if (!result) {
-    throw new Error("UPDATE_FAILED");
+    throw new AppError("Update failed", 500, "UPDATE_FAILED");
   }
 
   return result;
 };
 
-export const decrementSoldQuantity = async (
+/**
+ * Decrement soldQuantity and remainingQuantity for a single item in a daily menu.
+ * Returns the Mongoose UpdateResult (contains matchedCount, modifiedCount).
+ */
+export const decrementItemSoldQuantity = async (
   menuId,
   foodItemId,
   quantity,
   session,
 ) => {
-  return DailyMenu.findByIdAndUpdate(
-    menuId,
+  return DailyMenu.updateOne(
+    { _id: menuId, "items.foodItemId": toObjectId(foodItemId) },
     {
       $inc: {
-        "items.$[item].soldQuantity": quantity,
-        "items.$[item].remainingQuantity": -quantity,
+        "items.$.soldQuantity": quantity,
+        "items.$.remainingQuantity": -quantity,
       },
     },
-    {
-      arrayFilters: [
-        {
-          "item.foodItemId": toObjectId(foodItemId),
-          "item.remainingQuantity": { $gte: quantity },
-        },
-      ],
-      new: true,
-      session,
-    },
+    session ? { session } : {},
   );
 };
 

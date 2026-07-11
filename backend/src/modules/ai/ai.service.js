@@ -90,12 +90,15 @@ const runAIPrediction = async (targetDate, dataPayload) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`AI Service HTTP error: ${response.status} - ${errorText}`);
+      throw new AppError(`AI Service HTTP error: ${response.status} - ${errorText}`, response.status, "AI_SERVICE_HTTP_ERROR");
     }
 
     const parsedOutput = await response.json();
     return parsedOutput;
   } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
     console.error("AI Prediction HTTP Request Failed:", error);
     throw new AppError(
       `Failed to execute AI prediction service: ${error.message}`,
@@ -265,6 +268,10 @@ export const applyForecasts = async (insightId, updates, userId) => {
       forecast.appliedBy = null;
       forecast.appliedAt = null;
       updatedCount++;
+      
+      // Save updated status to DB first so the mutation is persistent
+      await aiRepository.saveInsight(insight);
+      
       throw new AppError(
         "Cannot apply recommendation; the target item is no longer on today's menu.",
         400,
