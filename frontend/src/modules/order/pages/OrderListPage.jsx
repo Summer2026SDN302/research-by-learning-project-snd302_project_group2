@@ -17,6 +17,10 @@ import StatusBadge from "@/components/data-display/StatusBadge";
 import FilterBar from "@/components/search/FilterBar";
 import DataTable from "@/components/data-display/DataTable";
 import SearchBar from "@/components/search/SearchBar";
+import toast from "react-hot-toast";
+import { exportOrderReport } from "../../analytics/api/analyticsApi";
+import { downloadBlob } from "../../analytics/utils/downloadBlob";
+import ExportOrderModal from "../components/ExportOrderModal";
 
 import {
   ORDER_STATUS_OPTIONS,
@@ -60,6 +64,24 @@ const OrderListPage = () => {
   const [isCanceling, setIsCanceling] = React.useState(false);
   const datepickerRef = React.useRef(null);
   const [popoverDir, setPopoverDir] = React.useState("down");
+  const [isExportModalOpen, setIsExportModalOpen] = React.useState(false);
+
+  const handleExportOrder = async (type) => {
+    try {
+      const from = filters.fromDate || "";
+      const to = filters.toDate || "";
+      const buffer = await exportOrderReport({
+        status: type,
+        from,
+        to,
+      });
+      const filename = `order-report-${dayjs().format("YYYY-MM-DD")}.xlsx`;
+      downloadBlob(buffer, filename);
+      toast.success("Xuất báo cáo đơn hàng thành công");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Lỗi khi xuất báo cáo");
+    }
+  };
 
   const handleDatepickerInteraction = () => {
     if (datepickerRef.current) {
@@ -232,6 +254,17 @@ const OrderListPage = () => {
 
             {/* Action Buttons */}
             <button
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-all font-label-md text-sm font-semibold h-[38px]"
+              title="Xuất báo cáo Excel"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                download
+              </span>
+              Xuất báo cáo
+            </button>
+
+            <button
               onClick={refetch}
               className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-primary text-primary rounded-lg hover:bg-primary-container transition-all font-label-md text-sm font-semibold h-[38px]"
               title="Tải lại dữ liệu"
@@ -279,6 +312,13 @@ const OrderListPage = () => {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <ExportOrderModal
+        open={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onExport={handleExportOrder}
+      />
 
       {/* Order Detail Modal */}
       {createPortal(

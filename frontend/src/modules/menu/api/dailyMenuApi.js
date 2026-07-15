@@ -51,3 +51,12 @@ export const removeFoodItemFromDailyMenu = (menuId, itemId) =>
   apiClient
     .delete(`/daily-menu/${menuId}/items/${itemId}`)
     .then((r) => r.data.data);
+
+/** GET /daily-menu/export */
+export const exportInventory = (date, type) =>
+  apiClient
+    .get("/daily-menu/export", {
+      params: { date, type },
+      responseType: "blob",
+    })
+    .then((r) => r.data);
