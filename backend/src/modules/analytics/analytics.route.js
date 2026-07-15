@@ -7,6 +7,7 @@ import * as analyticsController from "./analytics.controller.js";
 import {
   dashboardSummaryValidation,
   exportReportValidation,
+  exportOrderReportValidation,
   orderStatisticsValidation,
   revenueChartValidation,
   salesTrendValidation,
@@ -73,6 +74,13 @@ router.get(
   exportReportValidation,
   validateRequest,
   analyticsController.exportRevenueReport,
+);
+
+router.get(
+  "/reports/orders/export",
+  exportOrderReportValidation,
+  validateRequest,
+  analyticsController.exportOrderReport,
 );
 
 export default router;
