@@ -37,7 +37,9 @@ export const startAiPricingScheduler = () => {
   cron.schedule("30 12 * * *", runPricingJob, { timezone: "Asia/Ho_Chi_Minh" });
 
   // Run at 16:00, 18:00 every day (Sắp đóng và sát giờ đóng quầy tối)
-  cron.schedule("0 16,18 * * *", runPricingJob, { timezone: "Asia/Ho_Chi_Minh" });
+  cron.schedule("0 19,20 * * *", runPricingJob, {
+    timezone: "Asia/Ho_Chi_Minh",
+  });
 
   console.log(
     "[AIPricingJob] Scheduled: dynamic pricing auto-generation at 12:30, 16:00, 18:00",

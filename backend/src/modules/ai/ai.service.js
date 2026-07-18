@@ -36,7 +36,9 @@ const getSerializedDataForAI = async () => {
   orders.forEach((order) => {
     const timestamp = order.orderDate
       ? order.orderDate.toISOString().replace("T", " ").substring(0, 19)
-      : (order.createdAt ? order.createdAt.toISOString().replace("T", " ").substring(0, 19) : "");
+      : order.createdAt
+        ? order.createdAt.toISOString().replace("T", " ").substring(0, 19)
+        : "";
 
     order.items.forEach((item) => {
       salesData.push({
@@ -90,7 +92,11 @@ const runAIPrediction = async (targetDate, dataPayload) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new AppError(`AI Service HTTP error: ${response.status} - ${errorText}`, response.status, "AI_SERVICE_HTTP_ERROR");
+      throw new AppError(
+        `AI Service HTTP error: ${response.status} - ${errorText}`,
+        response.status,
+        "AI_SERVICE_HTTP_ERROR",
+      );
     }
 
     const parsedOutput = await response.json();
@@ -268,10 +274,10 @@ export const applyForecasts = async (insightId, updates, userId) => {
       forecast.appliedBy = null;
       forecast.appliedAt = null;
       updatedCount++;
-      
+
       // Save updated status to DB first so the mutation is persistent
       await aiRepository.saveInsight(insight);
-      
+
       throw new AppError(
         "Cannot apply recommendation; the target item is no longer on today's menu.",
         400,
@@ -342,7 +348,10 @@ export const applyForecasts = async (insightId, updates, userId) => {
 /**
  * Generate dynamic pricing recommendations based on today's remaining inventory and forecast.
  */
-export const generateDynamicPricingRecommendations = async (targetDateStr, isManual = false) => {
+export const generateDynamicPricingRecommendations = async (
+  targetDateStr,
+  isManual = false,
+) => {
   const targetDate = new Date(targetDateStr);
   const latestInsight = await aiRepository.findLatestByDate(targetDate);
 
@@ -447,7 +456,7 @@ export const generateDynamicPricingRecommendations = async (targetDateStr, isMan
           discountPercentage = 30;
           reason = "Tồn dư cao, xả quầy trưa";
         }
-      } else if (currentHour >= 16 && currentHour < 18) {
+      } else if (currentHour >= 19 && currentHour < 20) {
         // 16:00 - 18:00 (Sắp đóng quầy tối)
         if (excessRatio >= 0.1 && excessRatio <= 0.3) {
           discountPercentage = 10;
@@ -459,7 +468,7 @@ export const generateDynamicPricingRecommendations = async (targetDateStr, isMan
           discountPercentage = 30;
           reason = "Tồn dư cao, sắp đóng quầy tối";
         }
-      } else if (currentHour >= 18) {
+      } else if (currentHour >= 20) {
         // After 18:00 (< 2 hours remaining)
         if (excessRatio >= 0.1 && excessRatio <= 0.3) {
           discountPercentage = 20;

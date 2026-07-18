@@ -365,6 +365,11 @@ const paymentService = {
   },
 
   async handlePayOSWebhook(webhookBody) {
+    // If this is a test or confirmation webhook from PayOS
+    if (webhookBody && (webhookBody.desc === "confirm" || webhookBody.desc === "confirm-webhook")) {
+      return { received: true, message: "Webhook confirmed successfully" };
+    }
+
     const verifiedData = await payos.webhooks.verify(webhookBody);
 
     if (verifiedData.code === "00") {
@@ -372,11 +377,8 @@ const paymentService = {
         verifiedData.orderCode,
       );
       if (!order) {
-        throw new AppError(
-          "Order not found from PayOS webhook",
-          404,
-          "ORDER_NOT_FOUND",
-        );
+        console.warn(`Order not found from PayOS webhook for orderCode: ${verifiedData.orderCode}. This might be a test ping.`);
+        return { received: true, message: "Order not found" };
       }
 
       const payment = await paymentRepository.findByOrderId(order._id);
