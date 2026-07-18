@@ -67,8 +67,7 @@ const PosMenuGrid = ({ items = [], onAddItem }) => {
               </div>
             )}
 
-            {/* Food Name */}
-            <h3 className="font-body-md text-body-md text-on-surface font-semibold group-hover:text-primary transition-colors line-clamp-2 mt-2 flex-1 w-full">
+            <h3 className="font-body-md text-body-md text-on-surface font-semibold group-hover:text-primary transition-colors break-words mt-2 flex-1 w-full">
               {foodItemId.name}
             </h3>
 

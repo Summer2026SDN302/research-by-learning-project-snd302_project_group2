@@ -254,10 +254,13 @@ export const usePaymentModal = () => {
             fetchPaymentReceiptThunk(paymentId),
           ).unwrap();
           if (receipt?.paymentStatus === "Paid") {
-            if (activePaymentSuccessCallback) {
-              await activePaymentSuccessCallback(receipt);
-            }
-            resetModalState();
+            // Delay for 2.5 seconds to let the user see the success page in the iframe clearly
+            setTimeout(async () => {
+              if (activePaymentSuccessCallback) {
+                await activePaymentSuccessCallback(receipt);
+              }
+              resetModalState();
+            }, 2500);
           } else {
             toast.error(
               "Thanh toán chưa hoàn tất",
