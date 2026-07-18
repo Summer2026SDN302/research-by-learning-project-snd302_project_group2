@@ -128,9 +128,9 @@ describe("analytics routes", () => {
   });
 
   describe("GET /api/analytics/reports/revenue/export", () => {
-    it("returns CSV attachment for manager", async () => {
+    it("returns Excel attachment for manager", async () => {
       analyticsService.exportRevenueReport.mockResolvedValue(
-        "\uFEFFMã GD,Mã đơn\nTXN-1,ORD-1",
+        Buffer.from("mock-excel-data"),
       );
 
       const response = await request(createApp())
@@ -138,8 +138,10 @@ describe("analytics routes", () => {
         .set("x-test-role", "Manager");
 
       expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toContain("text/csv");
-      expect(response.text).toContain("TXN-1");
+      expect(response.headers["content-type"]).toContain(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      expect(response.body).toBeDefined();
     });
   });
 

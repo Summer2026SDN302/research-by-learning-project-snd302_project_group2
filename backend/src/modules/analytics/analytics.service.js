@@ -1,4 +1,5 @@
 import AppError from "../../shared/exceptions/AppError.js";
+import ExcelJS from "exceljs";
 import {
   calcPercentChange,
   escapeCsvValue,
@@ -407,33 +408,62 @@ export const exportRevenueReport = async (query = {}) => {
     );
   }
 
-  const rows = await analyticsRepository.findTransactionsForExport(filters);
+  const [rows, summary] = await Promise.all([
+    analyticsRepository.findTransactionsForExport(filters),
+    analyticsRepository.getTransactionSummary(filters),
+  ]);
 
   if (rows.length > EXPORT_MAX_ROWS) {
     throw new AppError("Export too large", 413, "EXPORT_TOO_LARGE");
   }
 
-  const header = [
-    "Mã GD",
-    "Mã đơn",
-    "Thời gian",
-    "Phương thức",
-    "Số tiền (VND)",
-    "Trạng thái",
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "SDN System";
+  workbook.created = new Date();
+
+  // Sheet 1: Tổng quan
+  const summarySheet = workbook.addWorksheet("Tổng quan");
+  summarySheet.columns = [
+    { header: "Chỉ số", key: "metric", width: 25 },
+    { header: "Giá trị", key: "value", width: 25 },
+  ];
+  
+  summarySheet.getRow(1).font = { bold: true };
+  summarySheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
+
+  const periodStr = (filters.from && filters.to) ? `${filters.from} đến ${filters.to}` : (filters.from || filters.to || "Tất cả");
+
+  summarySheet.addRow({ metric: "Thời gian", value: periodStr });
+  summarySheet.addRow({ metric: "Tổng doanh thu", value: `${roundAmount(summary.totalRevenue)} VND` });
+  summarySheet.addRow({ metric: "Giao dịch thành công", value: summary.successCount });
+
+  // Sheet 2: Chi tiết giao dịch
+  const detailsSheet = workbook.addWorksheet("Chi tiết giao dịch");
+  detailsSheet.columns = [
+    { header: "Mã GD", key: "paymentNumber", width: 15 },
+    { header: "Mã đơn", key: "orderNumber", width: 15 },
+    { header: "Thời gian", key: "paidAt", width: 25 },
+    { header: "Phương thức", key: "paymentMethod", width: 20 },
+    { header: "Số tiền (VND)", key: "finalAmount", width: 20 },
+    { header: "Trạng thái", key: "paymentStatus", width: 20 },
   ];
 
-  const lines = rows.map((row) =>
-    [
-      escapeCsvValue(row.paymentNumber),
-      escapeCsvValue(row.orderNumber ?? ""),
-      escapeCsvValue(formatVNDateTime(row.paidAt)),
-      escapeCsvValue(row.paymentMethod),
-      escapeCsvValue(roundAmount(row.finalAmount)),
-      escapeCsvValue(row.paymentStatus),
-    ].join(","),
-  );
+  detailsSheet.getRow(1).font = { bold: true };
+  detailsSheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
 
-  return `\uFEFF${[header.join(","), ...lines].join("\n")}`;
+  rows.forEach((row) => {
+    detailsSheet.addRow({
+      paymentNumber: row.paymentNumber,
+      orderNumber: row.orderNumber ?? "",
+      paidAt: formatVNDateTime(row.paidAt),
+      paymentMethod: row.paymentMethod,
+      finalAmount: roundAmount(row.finalAmount),
+      paymentStatus: row.paymentStatus,
+    });
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return buffer;
 };
 
 export const getStaffDashboardSummary = async (query = {}) => {

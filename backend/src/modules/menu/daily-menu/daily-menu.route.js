@@ -19,6 +19,13 @@ const router = express.Router();
 // All routes require authentication
 router.use(authenticate);
 
+// GET /export - Admin, Manager can export inventory report
+router.get(
+  "/export",
+  authorizeRoles(USER_ROLES.MANAGER, USER_ROLES.ADMIN),
+  dailyMenuController.exportInventory,
+);
+
 // GET /today - Staff, Manager, Admin can view today's menu
 router.get(
   "/today",

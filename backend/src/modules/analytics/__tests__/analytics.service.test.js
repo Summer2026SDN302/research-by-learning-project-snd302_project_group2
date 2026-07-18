@@ -84,6 +84,11 @@ describe("analyticsService.exportRevenueReport", () => {
       })),
     );
 
+    analyticsRepository.getTransactionSummary.mockResolvedValue({
+      totalRevenue: 1000,
+      successCount: 1,
+    });
+
     await expect(analyticsService.exportRevenueReport({})).rejects.toEqual(
       expect.objectContaining({
         code: "EXPORT_TOO_LARGE",
@@ -92,7 +97,7 @@ describe("analyticsService.exportRevenueReport", () => {
     );
   });
 
-  it("returns UTF-8 CSV with BOM", async () => {
+  it("returns Excel buffer", async () => {
     analyticsRepository.findTransactionsForExport.mockResolvedValue([
       {
         paymentNumber: "TXN-1",
@@ -103,13 +108,15 @@ describe("analyticsService.exportRevenueReport", () => {
         paymentStatus: "Paid",
       },
     ]);
+    analyticsRepository.getTransactionSummary.mockResolvedValue({
+      totalRevenue: 35000,
+      successCount: 1,
+    });
 
-    const csv = await analyticsService.exportRevenueReport({});
+    const buffer = await analyticsService.exportRevenueReport({});
 
-    expect(csv.startsWith("\uFEFF")).toBe(true);
-    expect(csv).toContain("Mã GD");
-    expect(csv).toContain("TXN-1");
-    expect(csv).toContain("35000");
+    expect(Buffer.isBuffer(buffer)).toBe(true);
+    expect(buffer.length).toBeGreaterThan(0);
   });
 });
 

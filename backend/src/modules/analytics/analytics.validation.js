@@ -113,3 +113,12 @@ export const transactionReportValidation = [
 ];
 
 export const exportReportValidation = [...transactionFiltersValidation];
+
+export const exportOrderReportValidation = [
+  query("status")
+    .optional({ values: "falsy" })
+    .isIn(["All", "Completed", "Cancelled"])
+    .withMessage(`status must be one of: All, Completed, Cancelled`),
+  dateQuery("from"),
+  dateQuery("to"),
+];

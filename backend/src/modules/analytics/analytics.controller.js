@@ -2,6 +2,7 @@ import asyncHandler from "../../shared/helpers/asyncHandler.js";
 import { getTodayVNDateString } from "../../shared/helpers/date.helper.js";
 import { successResponse } from "../../shared/response/responseFormatter.js";
 import * as analyticsService from "./analytics.service.js";
+import { exportOrderReport as exportOrderReportService } from "./order-report.service.js";
 
 export const getDashboardSummary = asyncHandler(async (req, res) => {
   const data = await analyticsService.getDashboardSummary(req.query);
@@ -34,15 +35,30 @@ export const getTransactionReport = asyncHandler(async (req, res) => {
 });
 
 export const exportRevenueReport = asyncHandler(async (req, res) => {
-  const csv = await analyticsService.exportRevenueReport(req.query);
-  const filename = `revenue-report-${getTodayVNDateString()}.csv`;
+  const buffer = await analyticsService.exportRevenueReport(req.query);
+  const filename = `revenue-report-${getTodayVNDateString()}.xlsx`;
 
-  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
   res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-  return res.send(csv);
+  return res.send(buffer);
 });
 
 export const getStaffDashboardSummary = asyncHandler(async (req, res) => {
   const data = await analyticsService.getStaffDashboardSummary(req.query);
   return successResponse(res, data, "Staff dashboard summary fetched successfully");
+});
+
+export const exportOrderReport = asyncHandler(async (req, res) => {
+  const buffer = await exportOrderReportService(req.query);
+  const filename = `order-report-${getTodayVNDateString()}.xlsx`;
+
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  return res.send(buffer);
 });

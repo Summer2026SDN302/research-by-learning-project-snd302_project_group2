@@ -125,3 +125,21 @@ export const removeFoodItemFromDailyMenu = asyncHandler(async (req, res) => {
     "Food item removed from daily menu successfully",
   );
 });
+
+export const exportInventory = asyncHandler(async (req, res) => {
+  const { date, type = "stock" } = req.query;
+  const { exportInventoryReport } = await import("../../analytics/inventory-report.service.js");
+  
+  const buffer = await exportInventoryReport(date, type);
+
+  const timestamp = new Date().toISOString().slice(0, 10);
+  const filename = `inventory-report-${type}-${timestamp}.xlsx`;
+
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+
+  return res.send(buffer);
+});
