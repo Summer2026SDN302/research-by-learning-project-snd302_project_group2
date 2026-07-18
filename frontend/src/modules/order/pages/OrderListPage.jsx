@@ -176,6 +176,18 @@ const OrderListPage = () => {
             ? "Quản lý, theo dõi và xử lý các giao dịch trong hệ thống."
             : "Xem danh sách các giao dịch đơn hàng trong hệ thống."
         }
+        action={
+          <button
+            onClick={refetch}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-primary text-primary rounded-lg hover:bg-primary-container transition-all font-label-md text-sm font-semibold h-[38px]"
+            title="Tải lại dữ liệu"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              refresh
+            </span>
+            Tải lại
+          </button>
+        }
       />
 
       {/* Toolbar + Table card */}
@@ -197,7 +209,7 @@ const OrderListPage = () => {
               ref={datepickerRef}
               onClick={handleDatepickerInteraction}
               onFocusCapture={handleDatepickerInteraction}
-              className="w-full sm:max-w-[200px] relative z-20"
+              className="w-full sm:max-w-[250px] relative z-20"
             >
               <Datepicker
                 popoverDirection={popoverDir}
@@ -262,17 +274,6 @@ const OrderListPage = () => {
                 download
               </span>
               Xuất báo cáo
-            </button>
-
-            <button
-              onClick={refetch}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-primary text-primary rounded-lg hover:bg-primary-container transition-all font-label-md text-sm font-semibold h-[38px]"
-              title="Tải lại dữ liệu"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                refresh
-              </span>
-              Tải lại
             </button>
           </div>
         </div>
