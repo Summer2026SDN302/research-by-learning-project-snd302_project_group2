@@ -69,13 +69,8 @@ const PosPage = ({ role = "staff" }) => {
 
   const handlePaymentSuccess = useCallback(
     async (payment) => {
-      await handleClearCart();
-
-      try {
-        await refetchMenu();
-      } catch {
-        // Receipt navigation should not be blocked by a temporary menu refresh issue.
-      }
+      void handleClearCart();
+      void refetchMenu();
 
       toast.success(
         "Thanh toán thành công",
