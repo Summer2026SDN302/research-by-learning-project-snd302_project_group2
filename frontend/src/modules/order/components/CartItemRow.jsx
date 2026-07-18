@@ -20,7 +20,7 @@ const CartItemRow = ({ item, onUpdateQuantity, onUpdateNote, onRemove }) => {
     <div className="flex flex-col gap-1 pb-3 border-b border-outline-variant/30 last:border-b-0 group">
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1 min-w-0">
-          <h4 className="font-body-sm text-body-sm text-on-surface font-semibold truncate">
+          <h4 className="font-body-sm text-body-sm text-on-surface font-semibold break-words">
             {item.name}
           </h4>
 

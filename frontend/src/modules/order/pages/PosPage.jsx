@@ -84,8 +84,9 @@ const PosPage = ({ role = "staff" }) => {
           : "Giao dịch đã thanh toán xong và được ghi nhận.",
       );
 
-      if (payment?._id) {
-        navigate(`/${role}/receipts/${payment._id}`);
+      const targetPaymentId = payment?._id || payment?.paymentId;
+      if (targetPaymentId) {
+        navigate(`/${role}/receipts/${targetPaymentId}`);
       }
     },
     [handleClearCart, refetchMenu, toast, navigate, role],

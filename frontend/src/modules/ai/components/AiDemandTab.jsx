@@ -53,24 +53,6 @@ const AiDemandTab = ({
         />
       ) : (
         <div className="space-y-6 animate-fade-in">
-          {/* Text Insight Overview */}
-          <div className="bg-primary-container/10 border-l-4 border-primary p-4 rounded-r-xl">
-            <div className="flex gap-3">
-              <span className="material-symbols-outlined text-primary">
-                auto_awesome
-              </span>
-              <div>
-                <h4 className="font-label-md text-primary font-bold uppercase tracking-wider mb-1">
-                  AI Insight
-                </h4>
-                <p className="text-body-md text-on-surface-variant italic">
-                  "Dự báo lượng khách ổn định. Các món thuộc danh mục Cơm trưa
-                  và Bún/Phở sẽ chiếm tỉ trọng cao."
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* KPI Widget */}
           <ForecastStatsWidget
             insight={insight}
