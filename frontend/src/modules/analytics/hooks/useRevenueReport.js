@@ -117,7 +117,7 @@ const useRevenueReport = () => {
 
       downloadBlob(
         response,
-        `revenue-report-${dayjs().format("YYYY-MM-DD")}.csv`,
+        `revenue-report-${dayjs().format("YYYY-MM-DD")}.xlsx`,
       );
       toast.success("Xuất báo cáo thành công");
     } catch (error) {

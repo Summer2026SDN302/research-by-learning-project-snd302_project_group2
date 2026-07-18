@@ -52,7 +52,6 @@ const FoodItemListPage = () => {
     archiveConfirmTarget,
     handleConfirmToggleArchive,
     handleCancelToggleArchive,
-    handleExport,
     detailTarget,
     openDetailDialog,
     closeDetailDialog,
@@ -70,17 +69,6 @@ const FoodItemListPage = () => {
         }
         action={
           <div className="flex items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={handleExport}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary text-primary text-label-md font-semibold hover:bg-surface-container transition-colors"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                download
-              </span>
-              Xuất File
-            </button>
-
             {isAdmin && (
               <button
                 type="button"

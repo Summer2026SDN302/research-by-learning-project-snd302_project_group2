@@ -38,6 +38,14 @@ export const exportRevenueReport = (params = {}) =>
     })
     .then((response) => response.data);
 
+export const exportOrderReport = (params = {}) =>
+  apiClient
+    .get("/analytics/reports/orders/export", {
+      params,
+      responseType: "blob",
+    })
+    .then((response) => response.data);
+
 export const getStaffDashboardSummary = (params = {}) =>
   apiClient
     .get("/analytics/staff/summary", { params })
