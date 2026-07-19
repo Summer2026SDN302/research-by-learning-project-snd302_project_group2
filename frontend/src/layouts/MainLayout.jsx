@@ -3,6 +3,7 @@ import useMainLayout from "../hooks/useMainLayout";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
 import useLogout from "../modules/auth/hooks/useLogout";
+import useNotifications from "../modules/notification/hooks/useNotifications";
 
 const noop = () => {};
 
@@ -11,6 +12,13 @@ const MainLayout = ({ role }) => {
     useMainLayout();
 
   const { logout } = useLogout();
+  
+  const {
+    notifications,
+    notificationItems,
+    onReadNotification,
+    onReadAllNotifications,
+  } = useNotifications();
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -32,10 +40,10 @@ const MainLayout = ({ role }) => {
           user={user}
           searchPlaceholder="Tìm kiếm..."
           onSearch={noop}
-          notifications={0}
-          notificationItems={[]}
-          onReadNotification={noop}
-          onReadAllNotifications={noop}
+          notifications={notifications}
+          notificationItems={notificationItems}
+          onReadNotification={onReadNotification}
+          onReadAllNotifications={onReadAllNotifications}
           onProfile={() => navigate(`/${role}/profile`)}
           onChangePassword={() => navigate(`/${role}/change-password`)}
           onSettings={noop}

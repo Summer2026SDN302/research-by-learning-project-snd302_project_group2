@@ -11,7 +11,12 @@ import UpdateItemModal from "../components/daily-menu/UpdateItemModal";
 import PriceHistoryModal from "../components/daily-menu/PriceHistoryModal";
 import AddFoodItemModal from "../components/daily-menu/AddFoodItemModal";
 import GenerateMenuModal from "../components/daily-menu/GenerateMenuModal";
+import ExportInventoryModal from "../components/daily-menu/ExportInventoryModal";
 import Spinner from "../../../components/feedback/Spinner";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import * as api from "../api/dailyMenuApi";
+import { downloadBlob } from "../../analytics/utils/downloadBlob";
 
 /**
  * DailyMenuPage
@@ -21,6 +26,19 @@ import Spinner from "../../../components/feedback/Spinner";
  * ALL business logic lives in useDailyMenu + useDailyMenuItem hooks.
  */
 const DailyMenuPage = () => {
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const handleExport = async (type) => {
+    try {
+      const response = await api.exportInventory(selectedDate, type);
+      const filename = `inventory-report-${type}-${dayjs(selectedDate).format("YYYY-MM-DD")}.xlsx`;
+      downloadBlob(response, filename);
+      toast.success("Xuất báo cáo thành công");
+    } catch (error) {
+      toast.error("Xuất báo cáo thất bại");
+    }
+  };
+
   const {
     menu,
     isLoading,
@@ -78,6 +96,12 @@ const DailyMenuPage = () => {
     .map((i) => i.foodItemId?._id)
     .filter(Boolean);
 
+  const isAllPreparedQtySet =
+    (menu?.items ?? []).length > 0 &&
+    (menu?.items ?? []).every(
+      (item) => item.preparedQuantity && item.preparedQuantity > 0
+    );
+
   return (
     <section className="space-y-6">
       {/* Page header */}
@@ -89,28 +113,41 @@ const DailyMenuPage = () => {
         title="Thực đơn ngày"
         subtitle="Quản lý thực đơn, số lượng và giá món ăn theo ngày."
         action={
-          hasMenu && isToday ? (
+          hasMenu ? (
             <div className="flex items-center gap-3">
-              {!isConfigured && (
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-label-md text-label-md text-on-primary shadow-sm hover:opacity-90 transition-opacity"
-                  onClick={openConfirmPublish}
-                  disabled={isMutating}
-                >
-                  <span className="material-symbols-outlined">publish</span>
-                  Công bộ thực đơn
-                </button>
-              )}
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/25 px-5 py-3 font-label-md text-label-md text-primary hover:bg-primary/20 shadow-sm transition-colors"
-                onClick={openAddItem}
-                disabled={isLoading || isMutating}
+                className="inline-flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-5 py-3 font-label-md text-label-md text-on-surface shadow-sm hover:bg-surface-container transition-colors disabled:opacity-50"
+                onClick={() => setIsExportModalOpen(true)}
+                disabled={isLoading}
               >
-                <span className="material-symbols-outlined">add_circle</span>
-                Thêm món
+                <span className="material-symbols-outlined">download</span>
+                Xuất báo cáo kho
               </button>
+              {isToday && (
+                <>
+                  {!isConfigured && (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-label-md text-label-md text-on-primary shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={openConfirmPublish}
+                      disabled={isMutating || !isAllPreparedQtySet}
+                    >
+                      <span className="material-symbols-outlined">publish</span>
+                      Công bộ thực đơn
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/25 px-5 py-3 font-label-md text-label-md text-primary hover:bg-primary/20 shadow-sm transition-colors"
+                    onClick={openAddItem}
+                    disabled={isLoading || isMutating}
+                  >
+                    <span className="material-symbols-outlined">add_circle</span>
+                    Thêm món
+                  </button>
+                </>
+              )}
             </div>
           ) : null
         }
@@ -252,6 +289,13 @@ const DailyMenuPage = () => {
         onConfirm={() => handlePublish(menuId)}
         onCancel={closeConfirmPublish}
         isLoading={isMutating}
+      />
+
+      {/* Export Inventory Modal */}
+      <ExportInventoryModal
+        open={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onExport={handleExport}
       />
     </section>
   );

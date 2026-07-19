@@ -1,8 +1,8 @@
 import apiClient from "../../../services/apiClient";
 
 /** GET /daily-menu/today */
-export const getTodayMenu = () =>
-  apiClient.get("/daily-menu/today").then((r) => r.data.data);
+export const getTodayMenu = (params = {}) =>
+  apiClient.get("/daily-menu/today", { params }).then((r) => r.data.data);
 
 /** GET /daily-menu/date/:date */
 export const getMenuByDate = (date) =>
@@ -51,3 +51,12 @@ export const removeFoodItemFromDailyMenu = (menuId, itemId) =>
   apiClient
     .delete(`/daily-menu/${menuId}/items/${itemId}`)
     .then((r) => r.data.data);
+
+/** GET /daily-menu/export */
+export const exportInventory = (date, type) =>
+  apiClient
+    .get("/daily-menu/export", {
+      params: { date, type },
+      responseType: "blob",
+    })
+    .then((r) => r.data);

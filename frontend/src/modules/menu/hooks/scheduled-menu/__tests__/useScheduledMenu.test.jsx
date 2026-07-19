@@ -12,6 +12,7 @@ import * as categoryApi from "../../../api/categoryApi";
 vi.mock("../../../api/scheduledMenuApi", () => ({
   getWeeklySchedule: vi.fn(),
   updateDaySchedule: vi.fn(),
+  batchUpdateSchedule: vi.fn(),
 }));
 
 vi.mock("../../../api/foodItemApi", () => ({
@@ -61,6 +62,7 @@ describe("useScheduledMenu", () => {
     foodItemApi.fetchAllFoodItems.mockResolvedValue(foodItems);
     categoryApi.getCategories.mockResolvedValue({ items: [{ _id: "cat1", name: "Ăn sáng" }] });
     scheduledMenuApi.updateDaySchedule.mockResolvedValue({});
+    scheduledMenuApi.batchUpdateSchedule.mockResolvedValue(weeklySchedule);
   });
 
   it("loads schedule and picker data on mount", async () => {
@@ -149,8 +151,10 @@ describe("useScheduledMenu", () => {
       await result.current.saveAllSchedule();
     });
 
-    expect(scheduledMenuApi.updateDaySchedule).toHaveBeenCalledTimes(1);
-    expect(scheduledMenuApi.updateDaySchedule).toHaveBeenCalledWith("Tuesday", [FOOD_ID_2]);
+    expect(scheduledMenuApi.batchUpdateSchedule).toHaveBeenCalledTimes(1);
+    expect(scheduledMenuApi.batchUpdateSchedule).toHaveBeenCalledWith([
+      { dayOfWeek: "Tuesday", foodItemIds: [FOOD_ID_2] },
+    ]);
     expect(toastMock.success).toHaveBeenCalledWith(
       "Đã lưu",
       "Lịch thực đơn tuần đã được cập nhật.",
@@ -209,5 +213,72 @@ describe("useScheduledMenu", () => {
     await waitFor(() => {
       expect(toastMock.error).toHaveBeenCalledWith("Lỗi", "Server error");
     });
+  });
+
+  it("saveAllSchedule shows error toast and retains unsaved changes when batch API rejects", async () => {
+    scheduledMenuApi.batchUpdateSchedule.mockRejectedValue({
+      response: {
+        data: {
+          error: { code: "FOOD_ITEM_NOT_FOUND" },
+          message: "One or more food items not found",
+        },
+      },
+    });
+
+    const { result } = renderHook(() => useScheduledMenu(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.schedule).toHaveLength(2));
+
+    act(() => {
+      result.current.addItemsToDay("Tuesday", [foodItems[1]]);
+    });
+
+    await act(async () => {
+      const ok = await result.current.saveAllSchedule();
+      expect(ok).toBe(false);
+    });
+
+    expect(scheduledMenuApi.batchUpdateSchedule).toHaveBeenCalledTimes(1);
+    expect(toastMock.error).toHaveBeenCalledWith(
+      "Lưu thất bại",
+      "Một hoặc nhiều món ăn không tồn tại hoặc đã bị ngừng bán.",
+    );
+    expect(result.current.hasUnsavedChanges).toBe(true);
+  });
+
+  it("saveAllSchedule and saveDaySchedule return false and do not call API when isSaving is true", async () => {
+    const { result } = renderHook(() => useScheduledMenu(), {
+      wrapper: createWrapper({
+        scheduledMenu: {
+          schedule: weeklySchedule,
+          savedSnapshot: weeklySchedule,
+          isLoading: false,
+          isSaving: true,
+          error: null,
+        },
+      }),
+    });
+
+    await waitFor(() => expect(result.current.schedule).toHaveLength(2));
+
+    act(() => {
+      result.current.addItemsToDay("Tuesday", [foodItems[1]]);
+    });
+
+    let okAll;
+    await act(async () => {
+      okAll = await result.current.saveAllSchedule();
+    });
+    expect(okAll).toBe(false);
+    expect(scheduledMenuApi.batchUpdateSchedule).not.toHaveBeenCalled();
+
+    let okDay;
+    await act(async () => {
+      okDay = await result.current.saveDaySchedule("Tuesday");
+    });
+    expect(okDay).toBe(false);
+    expect(scheduledMenuApi.updateDaySchedule).not.toHaveBeenCalled();
   });
 });

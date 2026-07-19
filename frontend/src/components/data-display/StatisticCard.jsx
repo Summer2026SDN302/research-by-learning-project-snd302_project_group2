@@ -20,6 +20,7 @@ const StatisticCard = ({
   label = "Metric",
   value = "—",
   change = "",
+  changeSuffix = "so với hôm qua",
   variant = "primary",
 }) => {
   const { bg, text } = VARIANT_MAP[variant] ?? VARIANT_MAP.primary;
@@ -42,7 +43,11 @@ const StatisticCard = ({
 
       {/* Content */}
       <div className="min-w-0">
-        <p className="text-label-md text-on-surface-variant uppercase tracking-wider truncate">
+        <p
+          className="text-label-md text-on-surface-variant uppercase tracking-wider line-clamp-2"
+          title={typeof label === "string" ? label : undefined}
+        >
+          {" "}
           {label}
         </p>
         <p className="text-headline-md font-bold text-on-surface mt-0.5">
@@ -60,7 +65,8 @@ const StatisticCard = ({
           >
             {isPositive && "▲ "}
             {isNegative && "▼ "}
-            {change} so với hôm qua
+            {change}
+            {changeSuffix ? ` ${changeSuffix}` : ""}
           </p>
         )}
       </div>
