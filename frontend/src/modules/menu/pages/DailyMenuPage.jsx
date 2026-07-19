@@ -34,7 +34,7 @@ const DailyMenuPage = () => {
       const filename = `inventory-report-${type}-${dayjs(selectedDate).format("YYYY-MM-DD")}.xlsx`;
       downloadBlob(response, filename);
       toast.success("Xuất báo cáo thành công");
-    } catch (error) {
+    } catch {
       toast.error("Xuất báo cáo thất bại");
     }
   };
@@ -99,7 +99,7 @@ const DailyMenuPage = () => {
   const isAllPreparedQtySet =
     (menu?.items ?? []).length > 0 &&
     (menu?.items ?? []).every(
-      (item) => item.preparedQuantity && item.preparedQuantity > 0
+      (item) => item.preparedQuantity && item.preparedQuantity > 0,
     );
 
   return (
@@ -134,7 +134,7 @@ const DailyMenuPage = () => {
                       disabled={isMutating || !isAllPreparedQtySet}
                     >
                       <span className="material-symbols-outlined">publish</span>
-                      Công bộ thực đơn
+                      Công bố thực đơn
                     </button>
                   )}
                   <button
@@ -143,7 +143,9 @@ const DailyMenuPage = () => {
                     onClick={openAddItem}
                     disabled={isLoading || isMutating}
                   >
-                    <span className="material-symbols-outlined">add_circle</span>
+                    <span className="material-symbols-outlined">
+                      add_circle
+                    </span>
                     Thêm món
                   </button>
                 </>
