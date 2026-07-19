@@ -1,9 +1,10 @@
 import asyncHandler from "../../../shared/helpers/asyncHandler.js";
 import { successResponse } from "../../../shared/response/responseFormatter.js";
 import * as dailyMenuService from "./daily-menu.service.js";
+import { getIO } from "../../../sockets/socket.js";
 
 export const getTodayMenu = asyncHandler(async (req, res) => {
-  const data = await dailyMenuService.getTodayMenu(req.user.role);
+  const data = await dailyMenuService.getTodayMenu(req.user.role, req.query);
   if (!data) {
     return successResponse(res, null, "No daily menu for today");
   }
@@ -25,6 +26,10 @@ export const generateDailyMenu = asyncHandler(async (req, res) => {
 export const publishDailyMenu = asyncHandler(async (req, res) => {
   const { menuId } = req.params;
   const data = await dailyMenuService.publishDailyMenu(menuId);
+  const io = getIO();
+  if (io) {
+    io.emit("menu-updated");
+  }
   return successResponse(res, data, "Daily menu published successfully");
 });
 
@@ -36,6 +41,10 @@ export const updateDailyMenuItem = asyncHandler(async (req, res) => {
     req.body,
     req.userId,
   );
+  const io = getIO();
+  if (io) {
+    io.emit("menu-updated");
+  }
   return successResponse(res, data, "Daily menu item updated successfully");
 });
 
@@ -48,6 +57,10 @@ export const applyAiQuantity = asyncHandler(async (req, res) => {
     recommendedQuantity,
     req.userId,
   );
+  const io = getIO();
+  if (io) {
+    io.emit("menu-updated");
+  }
   return successResponse(
     res,
     data,
@@ -65,6 +78,10 @@ export const applyAiPrice = asyncHandler(async (req, res) => {
     recommendationId,
     req.userId,
   );
+  const io = getIO();
+  if (io) {
+    io.emit("menu-updated");
+  }
   return successResponse(
     res,
     data,
@@ -80,6 +97,10 @@ export const addFoodItemToDailyMenu = asyncHandler(async (req, res) => {
     foodItemId,
     req.userId,
   );
+  const io = getIO();
+  if (io) {
+    io.emit("menu-updated");
+  }
   return successResponse(
     res,
     data,
@@ -94,9 +115,31 @@ export const removeFoodItemFromDailyMenu = asyncHandler(async (req, res) => {
     menuId,
     itemId,
   );
+  const io = getIO();
+  if (io) {
+    io.emit("menu-updated");
+  }
   return successResponse(
     res,
     data,
     "Food item removed from daily menu successfully",
   );
+});
+
+export const exportInventory = asyncHandler(async (req, res) => {
+  const { date, type = "stock" } = req.query;
+  const { exportInventoryReport } = await import("../../analytics/inventory-report.service.js");
+  
+  const buffer = await exportInventoryReport(date, type);
+
+  const timestamp = new Date().toISOString().slice(0, 10);
+  const filename = `inventory-report-${type}-${timestamp}.xlsx`;
+
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+
+  return res.send(buffer);
 });

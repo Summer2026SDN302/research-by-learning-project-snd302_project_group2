@@ -1,5 +1,6 @@
 import AppError from "../../../shared/exceptions/AppError.js";
 import * as dailyMenuRepository from "./daily-menu.repository.js";
+import { triggerLowStockNotification } from "../../notification/notification.service.js";
 import scheduledMenuRepository from "../scheduled_menu/scheduled_menu.repository.js";
 import * as foodItemRepository from "../food_item/food_item.repository.js";
 import {
@@ -57,12 +58,19 @@ const normalizeExpiredMenuStatus = async (menu) => {
   return menu;
 };
 
-export const getTodayMenu = async (role) => {
+export const getTodayMenu = async (role, query = {}) => {
   const todayDate = getTodayVNDateString();
-  const menu = await dailyMenuRepository.findMenuByDate(todayDate);
-  if (role === USER_ROLES.STAFF && !menu.isConfigured) {
-    throw new AppError("Daily menu not found", 404, "DAILY_MENU_NOT_FOUND");
+  const filter = {};
+
+  if (role === USER_ROLES.STAFF) {
+    filter.isConfigured = true;
+  } else if (query.isConfigured !== undefined && query.isConfigured !== "") {
+    filter.isConfigured =
+      query.isConfigured === "true" || query.isConfigured === true;
   }
+
+  const menu = await dailyMenuRepository.findMenuByDate(todayDate, filter);
+
   return menu;
 };
 
@@ -295,6 +303,17 @@ export const updateDailyMenuItem = async (menuId, itemId, payload, userId) => {
       itemId,
       fieldsToUpdate,
     );
+
+    const updatedItem = updatedMenu.items.find((i) => i.foodItemId._id.toString() === itemId);
+    if (updatedItem && fieldsToUpdate.preparedQuantity !== undefined) {
+      triggerLowStockNotification(
+        updatedMenu.date,
+        updatedItem.foodItemId._id.toString(),
+        updatedItem.foodItemId.name,
+        updatedItem.remainingQuantity
+      ).catch((err) => console.error("Error triggering low stock notification:", err));
+    }
+
     return updatedMenu;
   } catch (error) {
     if (error.message === "UPDATE_FAILED") {
@@ -351,6 +370,17 @@ export const applyAiQuantity = async (
         adjustedAt: new Date(),
       },
     );
+
+    const updatedItem = updatedMenu.items.find((i) => i.foodItemId._id.toString() === itemId);
+    if (updatedItem) {
+      triggerLowStockNotification(
+        updatedMenu.date,
+        updatedItem.foodItemId._id.toString(),
+        updatedItem.foodItemId.name,
+        updatedItem.remainingQuantity
+      ).catch((err) => console.error("Error triggering low stock notification:", err));
+    }
+
     return updatedMenu;
   } catch (error) {
     if (error.message === "UPDATE_FAILED") {

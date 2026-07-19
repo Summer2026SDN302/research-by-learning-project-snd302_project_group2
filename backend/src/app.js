@@ -6,10 +6,15 @@ import morgan from "morgan";
 import categoryRoute from "./modules/menu/category/category.route.js";
 import foodItemRoute from "./modules/menu/food_item/food_item.route.js";
 import scheduledMenuRoute from "./modules/menu/scheduled_menu/scheduled_menu.route.js";
+import dailyMenuRoute from "./modules/menu/daily-menu/daily-menu.route.js";
 import authRoute from "./modules/auth/auth.route.js";
 import profileRoute from "./modules/user/profile.route.js";
 import userRoute from "./modules/user/user.route.js";
-import dailyMenuRoute from "./modules/menu/daily-menu/daily-menu.route.js";
+import aiRoute from "./modules/ai/ai.route.js";
+import orderRoute from "./modules/order/order.route.js";
+import paymentRoute from "./modules/payment/payment.route.js";
+import notificationRoute from "./modules/notification/notification.route.js";
+import analyticsRoute from "./modules/analytics/analytics.route.js";
 import {
   errorHandler,
   notFoundHandler,
@@ -44,6 +49,11 @@ app.use("/api/daily-menu", dailyMenuRoute);
 app.use("/api/categories", categoryRoute);
 app.use("/api/food-items", foodItemRoute);
 app.use("/api/scheduled-menu", scheduledMenuRoute);
+app.use("/api/ai", aiRoute);
+app.use("/api/orders", orderRoute);
+app.use("/api/notifications", notificationRoute);
+app.use("/api/payments", paymentRoute);
+app.use("/api/analytics", analyticsRoute);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
