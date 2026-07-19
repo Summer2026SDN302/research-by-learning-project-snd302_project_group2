@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import Spinner from "../../../../components/feedback/Spinner";
 
 /**
@@ -34,7 +35,7 @@ const ExportInventoryModal = ({ open, onClose, onExport }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
       {/* Backdrop */}
       <div
@@ -142,7 +143,8 @@ const ExportInventoryModal = ({ open, onClose, onExport }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
