@@ -1,0 +1,442 @@
+<!DOCTYPE html><html class="light" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Dự báo Nhu cầu Thực phẩm AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-primary-fixed-variant": "#005049",
+                        "surface-dim": "#d6dbd9",
+                        "surface-container-high": "#e4e9e7",
+                        "secondary-container": "#6cf8bb",
+                        "background": "#f5faf8",
+                        "on-primary-fixed": "#00201d",
+                        "surface-container-low": "#f0f5f2",
+                        "secondary": "#006c49",
+                        "on-primary-container": "#f4fffc",
+                        "on-surface": "#171d1c",
+                        "on-background": "#171d1c",
+                        "surface-tint": "#006a61",
+                        "inverse-surface": "#2c3130",
+                        "on-secondary-fixed": "#002113",
+                        "primary": "#00685f",
+                        "inverse-on-surface": "#edf2f0",
+                        "inverse-primary": "#6bd8cb",
+                        "error-container": "#ffdad6",
+                        "surface-container": "#eaefed",
+                        "tertiary-fixed-dim": "#ffb59a",
+                        "primary-container": "#008378",
+                        "surface-variant": "#dee4e1",
+                        "surface-container-highest": "#dee4e1",
+                        "surface-bright": "#f5faf8",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "primary-fixed": "#89f5e7",
+                        "primary-fixed-dim": "#6bd8cb",
+                        "on-tertiary-fixed-variant": "#773215",
+                        "on-secondary-container": "#00714d",
+                        "outline": "#6d7a77",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#924628",
+                        "on-surface-variant": "#3d4947",
+                        "on-tertiary-container": "#fffbff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "tertiary-container": "#b05e3d",
+                        "on-tertiary-fixed": "#370e00",
+                        "surface": "#f5faf8",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#bcc9c6",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#6ffbbe",
+                        "tertiary-fixed": "#ffdbce"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "container-padding-desktop": "32px",
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "container-padding-mobile": "16px",
+                        "section-gap": "40px"
+                    },
+                    fontFamily: {
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    fontSize: {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .ai-glow {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+        }
+        .ai-border-left {
+            border-left: 2px solid #6366f1;
+        }
+        .ai-gradient-top {
+            background: linear-gradient(to right, rgba(99, 102, 241, 0.1), transparent);
+            border-top: 2px solid #6366f1;
+        }
+        .text-ai-indigo {
+            color: #6366f1;
+        }
+        .bg-ai-indigo-light {
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+        
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+        
+        @media (max-width: 768px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex">
+<!-- SideNavBar (Desktop) -->
+<aside class="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-surface border-r border-outline-variant shadow-sm flex-col py-container-padding-desktop px-4 space-y-2 z-50">
+<div class="mb-8 px-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined font-bold">restaurant</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-black text-primary">StallBox</h1>
+<p class="font-label-md text-label-md text-on-surface-variant">Canteen Manager</p>
+</div>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl hover:text-primary" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl hover:text-primary" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span class="font-label-md text-label-md">POS</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl hover:text-primary" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-md text-label-md">Orders</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl hover:text-primary" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-label-md text-label-md">Menu Management</span>
+</a>
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container rounded-xl px-4 py-3 font-bold scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-md text-label-md">AI Insights</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl hover:text-primary" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Users</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl hover:text-primary" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto space-y-4">
+<button class="w-full bg-primary text-on-primary rounded-lg py-3 px-4 font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">analytics</span>
+                Generate Report
+            </button>
+<div class="border-t border-outline-variant pt-4 space-y-2">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-container-high transition-all duration-200 rounded-xl hover:text-primary" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="font-label-md text-label-md">Help</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-container-high transition-all duration-200 rounded-xl hover:text-primary" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- TopAppBar (Mobile & Desktop) -->
+<header class="flex justify-between items-center h-20 px-container-padding-mobile md:px-container-padding-desktop w-full z-40 bg-surface-container-lowest bg-opacity-95 backdrop-blur-sm sticky top-0 border-b border-outline-variant md:border-none">
+<div class="flex items-center gap-4 md:hidden">
+<button class="text-on-surface-variant p-2 rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-headline-sm text-headline-sm font-bold text-primary">StallBox</span>
+</div>
+<div class="hidden md:flex items-center gap-2">
+<span class="font-headline-md text-headline-md text-on-surface">Dự báo Nhu cầu AI</span>
+<span class="bg-ai-indigo-light text-ai-indigo px-2 py-1 rounded text-xs font-bold flex items-center gap-1 ml-2">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+                    BETA
+                </span>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex bg-surface-container rounded-full px-4 py-2 items-center gap-2 border border-outline-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-container transition-all">
+<span class="material-symbols-outlined text-on-surface-variant">search</span>
+<input class="bg-transparent border-none outline-none text-body-sm text-on-surface placeholder-on-surface-variant w-48 focus:ring-0 p-0" placeholder="Tìm kiếm món ăn..." type="text">
+</div>
+<div class="flex items-center gap-2">
+<button class="text-on-surface-variant hover:bg-surface-container transition-colors p-2 rounded-full relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-ai-indigo hover:bg-ai-indigo-light transition-colors p-2 rounded-full bg-ai-indigo-light bg-opacity-50 ai-glow">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container transition-colors p-2 rounded-full hidden sm:block">
+<span class="material-symbols-outlined">schedule</span>
+</button>
+</div>
+<div class="h-8 w-px bg-outline-variant mx-2 hidden sm:block"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="font-label-md text-label-md text-on-surface">Quản lý</p>
+</div>
+<img alt="Manager Avatar" class="w-10 h-10 rounded-full border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfH-Ox7ofcRAuqSeAz1U1kx6qvSJ1LpEWLbVlVfRha6lqRdJPAcdttoo3Hh7VICWNssfPCK1MkeNBqfPw_CTUpDZYheegd6gfB3I7knCnhwCGsWvp4tP9PeRM23-3Pd2mdm38GLAVj59MzGXCFcfAyOxZIAkkDVybmDK1lr4q4xtiEjicQJioVj7f2pjXrxi2GrdYX8y5i8lfNe-6Y1_sdr8L8dpuC7I_m5JLhqTtLc4zOOMK4pYB3xumBTYf6n743qHI3_X9Xq29W">
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="p-container-padding-mobile md:p-container-padding-desktop space-y-section-gap pb-24 md:pb-8">
+<!-- Context & Summary -->
+<div class="bento-grid">
+<!-- Main Prediction Chart Card -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden ai-gradient-top ai-glow">
+<div class="p-gutter border-b border-outline-variant flex justify-between items-center">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-ai-indigo">monitoring</span>
+                                Dự Báo 7 Ngày Tới
+                            </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Dựa trên mô hình AI phân tích dữ liệu lịch sử và yếu tố ngoại cảnh.</p>
+</div>
+<select class="bg-surface-container border border-outline-variant rounded-lg px-3 py-1.5 font-label-md text-label-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>Tất cả các món</option>
+<option>Cơm trưa</option>
+<option>Đồ uống</option>
+</select>
+</div>
+<div class="p-gutter h-80 relative flex items-end justify-between px-8">
+<!-- Mock Bar Chart -->
+<div class="w-12 bg-surface-container rounded-t flex flex-col justify-end relative group">
+<div class="w-full bg-primary bg-opacity-80 rounded-t h-[60%] transition-all group-hover:bg-opacity-100"></div>
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-md text-label-md text-on-surface-variant">T2</span>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">450 phần</div>
+</div>
+<div class="w-12 bg-surface-container rounded-t flex flex-col justify-end relative group">
+<div class="w-full bg-primary bg-opacity-80 rounded-t h-[65%] transition-all group-hover:bg-opacity-100"></div>
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-md text-label-md text-on-surface-variant">T3</span>
+</div>
+<div class="w-12 bg-surface-container rounded-t flex flex-col justify-end relative group">
+<div class="w-full bg-primary bg-opacity-80 rounded-t h-[80%] transition-all group-hover:bg-opacity-100"></div>
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-md text-label-md text-on-surface-variant">T4</span>
+</div>
+<div class="w-12 bg-surface-container rounded-t flex flex-col justify-end relative group">
+<div class="w-full bg-primary bg-opacity-80 rounded-t h-[95%] transition-all group-hover:bg-opacity-100"></div>
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-md text-label-md text-on-surface-variant text-primary font-bold">T5</span>
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-ai-indigo-light border border-indigo-200 text-ai-indigo text-xs py-1 px-2 rounded opacity-100 whitespace-nowrap z-10 flex flex-col items-center shadow-sm">
+<span class="font-bold">Đỉnh điểm</span>
+<span>680 phần</span>
+</div>
+</div>
+<div class="w-12 bg-surface-container rounded-t flex flex-col justify-end relative group">
+<div class="w-full bg-primary bg-opacity-80 rounded-t h-[70%] transition-all group-hover:bg-opacity-100"></div>
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-md text-label-md text-on-surface-variant">T6</span>
+</div>
+<div class="w-12 bg-surface-container rounded-t flex flex-col justify-end relative group">
+<div class="w-full bg-surface-variant rounded-t h-[30%] transition-all group-hover:bg-surface-container-highest"></div>
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-md text-label-md text-on-surface-variant">T7</span>
+</div>
+<div class="w-12 bg-surface-container rounded-t flex flex-col justify-end relative group">
+<div class="w-full bg-surface-variant rounded-t h-[20%] transition-all group-hover:bg-surface-container-highest"></div>
+<span class="absolute -bottom-6 left-1/2 -translate-x-1/2 font-label-md text-label-md text-on-surface-variant">CN</span>
+</div>
+<!-- Mock Trend Line -->
+<svg class="absolute inset-0 w-full h-[calc(100%-1.5rem)] pointer-events-none" preserveAspectRatio="none">
+<path class="opacity-70" d="M 40,200 Q 150,180 250,150 T 450,100 T 650,170 T 850,250" fill="none" stroke="#6366f1" stroke-dasharray="5,5" stroke-width="3"></path>
+</svg>
+</div>
+</div>
+<!-- External Factors & Insights -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<!-- AI Insight Alert -->
+<div class="bg-ai-indigo-light rounded-xl p-6 ai-border-left">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-ai-indigo" style="font-variation-settings: 'FILL' 1;">tips_and_updates</span>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Đề Xuất Chuẩn Bị</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Nhu cầu <strong>Cơm Sườn</strong> dự kiến tăng 40% vào Thứ Năm do dự báo trời mưa lớn. Cần nhập thêm 20kg thịt sườn trước Thứ Tư.</p>
+<button class="bg-[#6366f1] text-white rounded-lg py-2 px-4 font-label-md text-label-md shadow-sm hover:opacity-90 transition-opacity">Tạo Yêu Cầu Nhập Hàng</button>
+</div>
+</div>
+</div>
+<!-- External Factors -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm flex-1 p-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">public</span>
+                            Yếu Tố Ảnh Hưởng
+                        </h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">rainy</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Thời Tiết (T4-T5)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Mưa dông kéo dài</p>
+</div>
+</div>
+<span class="bg-error-container text-on-error-container px-2 py-1 rounded text-xs font-bold">+15% Nhu cầu ăn tại chỗ</span>
+</div>
+<div class="h-px w-full bg-outline-variant opacity-50"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">event</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Sự Kiện Trường (T6)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Hội thao sinh viên</p>
+</div>
+</div>
+<span class="bg-[#e0e7ff] text-[#4338ca] px-2 py-1 rounded text-xs font-bold">+30% Nước giải khát</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Comparison Data Table -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+<div class="p-gutter border-b border-outline-variant flex justify-between items-center">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Phân Tích Chi Tiết: Tuần Qua vs Dự Báo</h2>
+<button class="text-primary font-label-md text-label-md hover:underline flex items-center gap-1">
+                        Xem đầy đủ <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant">Món Ăn</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant">Thực Tế (Tuần trước)</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant">Dự Báo (Tuần này)</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant">Chênh Lệch</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant">Trạng Thái Kho</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant">
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-4 px-6 font-semibold flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-[#6366f1]"></span>
+                                    Cơm Sườn Trứng
+                                </td>
+<td class="py-4 px-6">840 phần</td>
+<td class="py-4 px-6 font-semibold text-ai-indigo">1,120 phần</td>
+<td class="py-4 px-6">
+<span class="text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">trending_up</span> +33%
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<span class="bg-[#fff7ed] text-[#ea580c] px-2 py-1 rounded-full text-xs font-bold border border-[#fed7aa]">Thiếu hụt nguyên liệu</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-4 px-6 font-semibold flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+                                    Phở Bò
+                                </td>
+<td class="py-4 px-6">620 phần</td>
+<td class="py-4 px-6 font-semibold">600 phần</td>
+<td class="py-4 px-6">
+<span class="text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">trending_down</span> -3%
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<span class="bg-[#ecfdf5] text-[#059669] px-2 py-1 rounded-full text-xs font-bold border border-[#a7f3d0]">Đủ đáp ứng</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors">
+<td class="py-4 px-6 font-semibold flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-[#6366f1]"></span>
+                                    Trà Đào Cam Sả
+                                </td>
+<td class="py-4 px-6">450 ly</td>
+<td class="py-4 px-6 font-semibold text-ai-indigo">680 ly</td>
+<td class="py-4 px-6">
+<span class="text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">trending_up</span> +51%
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<span class="bg-[#f0fdf4] text-[#15803d] px-2 py-1 rounded-full text-xs font-bold border border-[#bbf7d0]">Đã nhập hàng</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Navigation -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant z-50 px-4 py-2 flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<a class="flex flex-col items-center gap-1 text-on-surface-variant p-2" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-semibold">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant p-2" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-[10px] font-semibold">Orders</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-ai-indigo p-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="text-[10px] font-semibold">AI Insights</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant p-2" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="text-[10px] font-semibold">Menu</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant p-2" href="#">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="text-[10px] font-semibold">More</span>
+</a>
+</nav>
+</body></html>

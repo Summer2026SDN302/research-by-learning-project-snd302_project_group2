@@ -1,0 +1,28 @@
+export const successResponse = (res, data = null, message = "Success", statusCode = 200) => {
+  return res.status(statusCode).json({
+    success: true,
+    message,
+    data,
+    error: null,
+  });
+};
+
+export const errorResponse = (
+  res,
+  message = "Error",
+  statusCode = 500,
+  error = {
+    code: "INTERNAL_SERVER_ERROR",
+    details: [],
+  },
+) => {
+  return res.status(statusCode).json({
+    success: false,
+    message,
+    data: null,
+    error: {
+      code: error?.code || "INTERNAL_SERVER_ERROR",
+      details: Array.isArray(error?.details) ? error.details : [],
+    },
+  });
+};

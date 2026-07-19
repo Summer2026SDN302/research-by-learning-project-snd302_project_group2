@@ -1,0 +1,366 @@
+<!DOCTYPE html><html class="light" lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>StallBox POS - Staff Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for better UI */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #bcc9c6; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6d7a77; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary": "#ffffff",
+                      "primary-fixed": "#89f5e7",
+                      "tertiary-container": "#b05e3d",
+                      "primary-container": "#008378",
+                      "on-secondary": "#ffffff",
+                      "tertiary": "#924628",
+                      "on-primary-fixed": "#00201d",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container-highest": "#dee4e1",
+                      "on-tertiary-fixed": "#370e00",
+                      "on-background": "#171d1c",
+                      "error-container": "#ffdad6",
+                      "on-secondary-fixed": "#002113",
+                      "primary": "#00685f",
+                      "inverse-surface": "#2c3130",
+                      "error": "#ba1a1a",
+                      "background": "#f5faf8",
+                      "on-error-container": "#93000a",
+                      "inverse-primary": "#6bd8cb",
+                      "tertiary-fixed-dim": "#ffb59a",
+                      "on-surface": "#171d1c",
+                      "inverse-on-surface": "#edf2f0",
+                      "surface-dim": "#d6dbd9",
+                      "outline": "#6d7a77",
+                      "tertiary-fixed": "#ffdbce",
+                      "on-error": "#ffffff",
+                      "surface-container-high": "#e4e9e7",
+                      "surface-bright": "#f5faf8",
+                      "surface": "#f5faf8",
+                      "secondary-fixed": "#6ffbbe",
+                      "surface-container": "#eaefed",
+                      "secondary-fixed-dim": "#4edea3",
+                      "on-tertiary-fixed-variant": "#773215",
+                      "on-surface-variant": "#3d4947",
+                      "on-secondary-fixed-variant": "#005236",
+                      "on-primary-container": "#f4fffc",
+                      "surface-container-low": "#f0f5f2",
+                      "on-tertiary-container": "#fffbff",
+                      "on-secondary-container": "#00714d",
+                      "secondary-container": "#6cf8bb",
+                      "on-primary-fixed-variant": "#005049",
+                      "primary-fixed-dim": "#6bd8cb",
+                      "outline-variant": "#bcc9c6",
+                      "on-tertiary": "#ffffff",
+                      "surface-tint": "#006a61",
+                      "secondary": "#006c49",
+                      "surface-variant": "#dee4e1"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "gutter": "24px",
+                      "container-padding-mobile": "16px",
+                      "container-padding-desktop": "32px",
+                      "section-gap": "40px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "label-md": ["Inter"],
+                      "headline-sm": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "headline-lg-mobile": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background antialiased overflow-hidden">
+<!-- SideNavBar Shell -->
+<aside class="bg-surface text-primary border-r border-outline-variant shadow-sm h-screen w-64 fixed left-0 top-0 flex flex-col py-container-padding-desktop px-4 space-y-2 hidden md:flex z-50">
+<div class="mb-8 px-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold">
+<span class="material-symbols-outlined">restaurant</span>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-sm font-black text-primary">StallBox</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Staff Panel</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 bg-primary-container text-on-primary-container rounded-xl px-4 py-3 font-bold scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">point_of_sale</span>
+                POS
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl" href="#">
+<span class="material-symbols-outlined">history</span>
+                Lịch sử đơn của tôi
+            </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl" href="#">
+<span class="material-symbols-outlined">person</span>
+                Cài đặt &amp; Hồ sơ
+            </a>
+</nav>
+<div class="mt-auto space-y-4">
+<button class="w-full bg-primary text-on-primary font-bold py-3 rounded-lg hover:bg-primary-container transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">assignment</span>
+                Báo cáo cuối ca
+            </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+                    Trợ giúp
+                </a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high transition-all duration-200 rounded-xl" href="#">
+<span class="material-symbols-outlined">logout</span>
+                    Đăng xuất
+                </a>
+</div>
+</div>
+</aside>
+<!-- TopNavBar Shell -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-surface border-b border-outline-variant flex justify-between items-center h-20 px-container-padding-desktop ml-64">
+<div class="flex items-center bg-surface-container-low rounded-full px-4 py-2 w-96">
+<span class="material-symbols-outlined text-outline mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm w-full" placeholder="Tìm món ăn hoặc mã món..." type="text">
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="h-6 w-[1px] bg-outline-variant mx-2"></div>
+<button class="flex items-center gap-2 px-4 py-2 text-error hover:bg-error-container/20 rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md">Đăng xuất</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 pt-16 h-screen flex">
+<!-- Left Column: Product Grid (70%) -->
+<section class="w-[70%] p-gutter overflow-y-auto bg-background">
+<!-- Categories -->
+<div class="flex gap-4 mb-gutter sticky top-0 bg-background/80 backdrop-blur-md py-2 z-10">
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary font-label-md shadow-md transition-all active:scale-95">All</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label-md hover:bg-surface-container-highest transition-all active:scale-95">Main dish</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label-md hover:bg-surface-container-highest transition-all active:scale-95">Drinks</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-high text-on-surface-variant font-label-md hover:bg-surface-container-highest transition-all active:scale-95">Sides</button>
+</div>
+<!-- Bento-style Product Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Product Card 1 -->
+<div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden hover:shadow-md transition-shadow group cursor-pointer">
+<div class="relative overflow-hidden p-4">
+<div class="mb-3 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-widest inline-block">Available</div>
+</div>
+<div class="p-4">
+<h3 class="font-headline-sm text-body-lg text-on-surface mb-1">Cơm Cá Hồi Áp Chảo</h3>
+<p class="text-primary font-bold text-body-md">45,000đ</p>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden hover:shadow-md transition-shadow group cursor-pointer border-l-4 border-l-primary/30">
+<div class="relative overflow-hidden p-4">
+<div class="mb-3 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-widest inline-block">
+<span class="material-symbols-outlined text-[12px]" data-icon="auto_awesome">auto_awesome</span> Recommended
+                        </div>
+</div>
+<div class="p-4">
+<h3 class="font-headline-sm text-body-lg text-on-surface mb-1">Buddha Bowl Thập Cẩm</h3>
+<p class="text-primary font-bold text-body-md">38,000đ</p>
+</div>
+</div>
+<!-- Product Card 3 (Sold Out) -->
+<div class="bg-white/60 rounded-xl border border-outline-variant shadow-sm overflow-hidden grayscale relative">
+<div class="relative overflow-hidden p-4">
+<div class="mb-3"><span class="px-3 py-1 bg-on-surface/80 text-white font-bold rounded-full text-[10px] uppercase tracking-widest">SOLD OUT</span></div>
+</div>
+<div class="p-4 opacity-50">
+<h3 class="font-headline-sm text-body-lg text-on-surface mb-1">Cơm Bò Nướng Hàn Quốc</h3>
+<p class="text-primary font-bold text-body-md">52,000đ</p>
+</div>
+</div>
+<!-- Product Card 4 -->
+<div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden hover:shadow-md transition-shadow group cursor-pointer">
+<div class="relative overflow-hidden p-4">
+<div class="mb-3 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-widest inline-block">Available</div>
+</div>
+<div class="p-4">
+<h3 class="font-headline-sm text-body-lg text-on-surface mb-1">Nước Cam Tươi</h3>
+<p class="text-primary font-bold text-body-md">25,000đ</p>
+</div>
+</div>
+<!-- Product Card 5 -->
+<div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden hover:shadow-md transition-shadow group cursor-pointer">
+<div class="relative overflow-hidden p-4">
+<div class="mb-3 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-widest inline-block">Low Stock</div>
+</div>
+<div class="p-4">
+<h3 class="font-headline-sm text-body-lg text-on-surface mb-1">Phở Bò Tái Lăn</h3>
+<p class="text-primary font-bold text-body-md">42,000đ</p>
+</div>
+</div>
+<!-- Product Card 6 -->
+<div class="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden hover:shadow-md transition-shadow group cursor-pointer">
+<div class="relative overflow-hidden p-4">
+<div class="mb-3 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-widest inline-block">Available</div>
+</div>
+<div class="p-4">
+<h3 class="font-headline-sm text-body-lg text-on-surface mb-1">Mì Xào Hải Sản</h3>
+<p class="text-primary font-bold text-body-md">45,000đ</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Column: Order Summary (30%) -->
+<aside class="w-[30%] bg-white border-l border-outline-variant flex flex-col shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Order Summary</h2>
+<p class="font-label-md text-label-md text-primary bg-primary-container/10 px-2 py-0.5 rounded inline-block mt-1">#ORD-1042</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</button>
+</div>
+<!-- Items List -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Item 1 -->
+<div class="flex gap-4">
+<div class="flex-1">
+<h4 class="font-body-md font-semibold text-on-surface leading-tight">Cơm Cá Hồi Áp Chảo</h4>
+<p class="text-label-md text-on-surface-variant">45,000đ</p>
+<div class="flex items-center gap-3 mt-2">
+<button class="w-7 h-7 flex items-center justify-center rounded-full border border-outline-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="remove">remove</span>
+</button>
+<span class="font-body-md font-bold">2</span>
+<button class="w-7 h-7 flex items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="add">add</span>
+</button>
+</div>
+</div>
+<p class="font-body-md font-bold text-on-surface">90,000đ</p>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-4">
+<div class="flex-1">
+<h4 class="font-body-md font-semibold text-on-surface leading-tight">Nước Cam Tươi</h4>
+<p class="text-label-md text-on-surface-variant">25,000đ</p>
+<div class="flex items-center gap-3 mt-2">
+<button class="w-7 h-7 flex items-center justify-center rounded-full border border-outline-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="remove">remove</span>
+</button>
+<span class="font-body-md font-bold">1</span>
+<button class="w-7 h-7 flex items-center justify-center rounded-full border border-primary text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="add">add</span>
+</button>
+</div>
+</div>
+<p class="font-body-md font-bold text-on-surface">25,000đ</p>
+</div>
+</div>
+<!-- Calculation Area -->
+<div class="p-6 bg-surface-container-low border-t border-outline-variant space-y-2">
+<div class="flex justify-between font-body-sm text-on-surface-variant">
+<span>Subtotal</span>
+<span>115,000đ</span>
+</div>
+<div class="flex justify-between font-body-sm text-on-surface-variant">
+<span>Tax (8%)</span>
+<span>9,200đ</span>
+</div>
+<div class="flex justify-between font-headline-sm text-headline-sm text-primary pt-2 border-t border-outline-variant/30">
+<span>Total</span>
+<span>124,200đ</span>
+</div>
+</div>
+<!-- Payment Area -->
+<div class="p-6 space-y-4">
+<div class="grid grid-cols-2 gap-3">
+<button class="flex flex-col items-center justify-center py-4 rounded-xl border-2 border-primary bg-primary/5 text-primary transition-all hover:bg-primary/10 group">
+<span class="material-symbols-outlined text-3xl mb-1" data-icon="credit_card" style="font-variation-settings: 'FILL' 1;">credit_card</span>
+<span class="font-label-md">Card</span>
+</button>
+<button class="flex flex-col items-center justify-center py-4 rounded-xl border-2 border-outline-variant text-on-surface-variant hover:border-primary/40 transition-all hover:text-primary">
+<span class="material-symbols-outlined text-3xl mb-1" data-icon="payments">payments</span>
+<span class="font-label-md">Cash</span>
+</button>
+</div>
+<button class="w-full py-4 bg-primary text-on-primary rounded-xl font-headline-sm flex items-center justify-center gap-2 shadow-lg hover:bg-primary-container transition-all active:scale-[0.98]">
+<span>Thanh toán</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</aside>
+</main>
+<!-- Micro-interactions Script -->
+<script>
+        // Simple logic for category button toggles
+        const categoryButtons = document.querySelectorAll('button[class*="rounded-full"]');
+        categoryButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (this.innerText === 'All' || this.innerText === 'Main dish' || this.innerText === 'Drinks' || this.innerText === 'Sides') {
+                    categoryButtons.forEach(b => {
+                        b.classList.remove('bg-primary', 'text-on-primary', 'shadow-md');
+                        b.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+                    });
+                    this.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+                    this.classList.add('bg-primary', 'text-on-primary', 'shadow-md');
+                }
+            });
+        });
+
+        // Atmospheric effect: Pulse the "Recommended" badge occasionally
+        setInterval(() => {
+            const badge = document.querySelector('.bg-indigo-100');
+            if (badge) {
+                badge.classList.add('animate-pulse');
+                setTimeout(() => badge.classList.remove('animate-pulse'), 2000);
+            }
+        }, 8000);
+    </script>
+</body></html>
